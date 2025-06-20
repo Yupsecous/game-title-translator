@@ -1,0 +1,106 @@
+key,value
+main_tab_title,Home
+select_source_btn,Select Source Area (OCR)
+select_target_btn,Select Target Area (Translation)
+start_btn,Start
+stop_btn,Stop
+hide_source_btn,Hide/Show Source Window
+hide_target_btn,Hide/Show Target Window
+clear_cache_btn,Clear Translation Cache
+clear_debug_log_btn,Clear Debug Log
+toggle_debug_log_disable_btn,Disable Debug Log
+toggle_debug_log_enable_btn,Enable Debug Log
+gui_language_label,GUI Language
+keyboard_shortcuts_title,Keyboard Shortcuts
+status_ready,Status: Ready
+status_ready_hotkey,Status: Ready (Press ~ to Start/Stop)
+shortcut_start_stop,Start/Stop Translation
+shortcut_toggle_source,Toggle Source Window Visibility
+shortcut_toggle_target,Toggle Translation Window Visibility
+shortcut_save_settings,Save Settings
+shortcut_clear_cache,Clear Cache
+shortcut_clear_log,Clear Debug Log
+status_running,Running (Press ~ to Stop)
+status_stopped,Stopped (Press ~ to Start)
+settings_tab_title,Settings
+translation_model_label,Translation Model:
+translation_model_marianmt_offline,MarianMT (offline and free)
+source_lang_label,Source Language:
+target_lang_label,Target Language:
+marian_model_label,MarianMT Model:
+google_api_key_label,Google Translate API Key:
+deepl_api_key_label,DeepL API Key:
+deepl_model_type_label,Quality:
+deepl_classic_model,Classic
+deepl_nextgen_model,Next-gen
+models_file_label,MarianMT Model List:
+beam_size_label,Translation Beam Size (MarianMT):
+tesseract_path_label,Tesseract Path:
+scan_interval_label,Scan Interval (ms):
+clear_timeout_label,Clear Translation Timeout (s):
+stability_threshold_label,Text Stability Threshold:
+confidence_threshold_label,OCR Confidence Threshold:
+preprocessing_mode_label,Image Preprocessing Mode:
+ocr_debugging_label,OCR Debugging:
+show_debug_checkbox,Show debug images/text
+preview_btn,Preview
+adaptive_block_size_label,"Block Size (3-101, odd)":
+adaptive_c_label,"C Value (-75 to 75)":
+remove_trailing_label,Remove Trailing Garbage:
+remove_trailing_checkbox,Remove text after last punctuation
+source_color_label,Source Area Colour:
+target_color_label,Target Area Colour:
+target_text_color_label,Target Text Colour:
+font_size_label,Target Window Font Size:
+file_cache_frame_title,File Caching Options
+file_cache_description,"File caching saves translations to disk to reduce API costs, and improves performance."
+google_cache_checkbox,"Enable Google Translate file cache (saves to disk, reduces API calls)"
+deepl_cache_checkbox,"Enable DeepL file cache (saves to disk, reduces API calls)"
+cache_files_label,Cache files:
+clear_caches_btn,Clear File Caches
+save_settings_btn,Save Settings Now
+browse_btn,Browse
+show_btn,Show
+hide_btn,Hide
+choose_color_btn,Choose Colour
+debug_tab_title,Debugging
+original_image_label,Original Image
+processed_image_label,Processed Image
+ocr_results_label,OCR Results
+ocr_results_placeholder,OCR results will appear here when translation is running.
+app_log_label,Application Log
+save_debug_images_btn,Save OCR Images
+refresh_log_btn,Refresh Log
+preprocessing_none,None
+preprocessing_binary,Binary
+preprocessing_binary_inv,Binary Inverted
+preprocessing_adaptive,Adaptive
+about_tab_title,About
+settings_saved,Status: Settings Saved
+no_image_captured,No image captured yet
+no_image_processed,No image processed yet
+marian_beam_explanation,Higher beam values = better but slower translations
+marian_quality_note,Note: MarianMT provides high quality translations
+marian_quality_vary,"for many language pairs. Quality may vary by language."
+marian_download_note,"Models are downloaded on first use (requires Internet)."
+marian_unavailable_line1,MarianMT is not available. To enable, install:
+marian_unavailable_line2,pip install transformers torch sentencepiece
+browse_marian_models_title,Select MarianMT Models CSV File
+browse_tesseract_title,Select tesseract.exe
+choose_source_color_title,Choose Source Colour
+choose_target_color_title,Choose Target Colour
+choose_target_text_color_title,Choose Target Text Colour
+dialog_area_selected_title,Area Selected
+dialog_source_area_set_message,Source area set to:
+dialog_target_area_set_message,Target display area set to:
+dialog_debug_images_saved_title,OCR Images Saved
+dialog_debug_images_saved_message,Images saved to '{0}'.
+dialog_debug_image_saved_title,OCR Image Saved
+dialog_debug_image_saved_message,Original image saved to '{0}'. No processed image.
+ocr_preview_title,OCR Preview
+processed_image_preview,Processed Image (1:1 scale)
+recognized_text_preview,Recognized Text
+refresh_preview,Refresh Preview
+close_btn,Close
+no_text_recognized,No text recognized
+no_image_for_ocr,No image available for OCR

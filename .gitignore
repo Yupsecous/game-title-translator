@@ -1,0 +1,69 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+dist*/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Application specific files
+translator_debug.log
+marian_models_cache/
+debug_images/
+*.png
+!screenshots/*.png
+googletrans_cache.txt
+deepl_cache.txt
+
+# API Keys and sensitive information
+api_keys.json
+
+# Windows specific
+Thumbs.db
+Desktop.ini
+
+# MacOS specific
+.DS_Store
+
+# Archives
+*.7z
+*.zip
+
+# Test files and temporary documentation (development)
+test_*.py
+*test*.py
+*verification*.py
+*_COMPLETE.md
+*_APPLIED*.md
+*_FIXES*.md
+*Test*.md
+*fix*.md
+*TO_EXCLUDE*.md
+cleanup_repository.py
+*prompt*.txt
+GPU_chat/
+prompts/
+
+# Development and backup files
+*_backup.py
+build_and_copy_resources.*
+compile_app.bat
+Language_Names_Localized.md
+github_plan.html
+
+# Configuration files (user-generated)
+ocr_translator_config.ini

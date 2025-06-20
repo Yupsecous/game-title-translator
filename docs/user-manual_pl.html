@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Tomasz Kamiński" />
+    <title>Instrukcja obsługi programu OCR Translator</title>
+    <style type="text/css">
+        /* Base styling */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+            
+        /* Avoid page breaks inside the most common attributes, especially for exports (i.e. PDF) */
+        td, h1, h2, h3, h4, h5, p, ul, ol, li {
+            page-break-inside: avoid; 
+        }
+
+        /* Make all images responsive - fit within browser window width */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 0 20px 0; /* Left-aligned with bottom margin */
+        }
+        
+        /* Set main screenshot to 75% of browser window width */
+        img[src="screenshots/screenshot2_pol_deepl.jpg"] {
+            width: 75vw;
+            height: auto;
+        }
+
+        /* Heading styles */
+        h1, h2, h3, h4, h5 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            color: #111;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow: auto;
+        }
+        
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        
+        table th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        
+        table tr:nth-child(2n) {
+            background-color: #f8f8f8;
+        }
+
+        /* List styling */
+        ol, ul {
+            padding-left: 2em;
+        }
+        
+        li {
+            margin: 0.3em 0;
+        }
+
+        /* Code styling */
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 0.9em;
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+        }
+
+        /* Link styling */
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Blockquote styling */
+        blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin: 0 0 16px 0;
+        }
+
+        /* Flag styling */
+        .flag-container {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .flag-container img {
+            width: 48px;
+            height: auto;
+            display: block;
+            margin: 0;
+        }
+
+        /* Gaming note style */
+        .gaming-note {
+            background-color: #f3e5f5;
+            border: 2px solid #9c27b0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 100%;
+        }
+        
+        .gaming-note-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .gaming-note-content {
+            flex: 1;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="flag-container">
+      <img src="screenshots/poland-flag-icon.svg" alt="Polish Flag" title="Polski" />
+    </div>
+    <h1 id="ocr-translator-user-manual">Instrukcja obsługi programu OCR Translator</h1>
+    <p>Copyright © 2025 Tomasz Kamiński<br>
+    <em>Ostatnia aktualizacja: 9 czerwca 2025 r.</em></p>
+    <p>
+      <img src="screenshots/screenshot2_pol_deepl.jpg" alt="Główny interfejs OCR Translator" class="logo-image" />
+    </p>
+    <h2 id="table-of-contents">Spis treści</h2>
+    <ol>
+      <li>
+        <a href="#introduction">Wprowadzenie</a>
+      </li>
+      <li>
+        <a href="#getting-started">Pierwsze kroki</a>
+      </li>
+      <li>
+        <a href="#main-interface">Interfejs główny</a>
+      </li>
+      <li>
+        <a href="#setting-up-translation-areas">Ustawianie obszarów tłumaczenia</a>
+      </li>
+      <li>
+        <a href="#settings-configuration">Konfiguracja ustawień</a>
+      </li>
+      <li>
+        <a href="#translation-methods">Metody tłumaczenia</a>
+      </li>
+      <li>
+        <a href="#keyboard-shortcuts">Skróty klawiszowe</a>
+      </li>
+      <li>
+        <a href="#troubleshooting">Rozwiązywanie problemów</a>
+      </li>
+      <li>
+        <a href="#tips-and-best-practices">Porady i najlepsze praktyki</a>
+      </li>
+    </ol>
+    <h2 id="introduction">Wprowadzenie</h2>
+    <p><strong>OCR Translator</strong>  to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Dzięki ruchomym oknom nakładek tłumaczenie można umieścić w dowolnym miejscu na ekranie, przez co aplikacja doskonale nadaje się do tłumaczenia gier, filmów, plików PDF lub dowolnych programów zawierających tekst, którego nie da się łatwo skopiować i wkleić.</p>
+    <h2 id="getting-started">Pierwsze kroki</h2>
+    <h3 id="requirements">Wymagania</h3>
+    <p>Przed rozpoczęciem korzystania z <strong>OCR Translator</strong>  sprawdź, czy system spełnia następujące wymagania:</p>
+    <ul>
+      <li>System operacyjny Windows.</li>
+      <li>Zainstalowany program <a href="https://github.com/UB-Mannheim/tesseract/wiki">Tesseract OCR</a>.</li>
+      <li>Niniejsza aplikacja zainstalowana zgodnie z <a href="installation_pl.html">instrukcją instalacji</a>.</li>
+    </ul>
+    <h3 id="first-run">Pierwsze uruchomienie</h3>
+    <ol>
+      <li>Uruchom <strong>OCR Translator</strong> przez wykonanie skryptu <code>main.py</code> lub pliku wykonywalnego, jeśli korzystasz z wersji skompilowanej.</li>
+      <li>Przy pierwszym uruchomieniu aplikacja ładuje się z domyślnymi ustawieniami, a oba obszary (źródłowy i docelowy) będą ukryte.</li>
+      <li>Przed rozpoczęciem tłumaczenia musisz:
+        <ul>
+          <li>sprawdzić ścieżkę do programu Tesseract w zakładce <strong>Ustawienia</strong>,</li>
+          <li>wybrać obszary źródłowy i docelowy,</li>
+          <li>skonfigurować preferowaną metodę tłumaczenia.</li>
+        </ul>
+      </li>
+      <li>Przycisk <strong>Start</strong> włącza proces tłumaczenia i automatycznie wyświetla <strong>okno tłumaczenia</strong>.</li>
+      <li>Przycisk <strong>Stop</strong> wyłącza proces tłumaczenia i automatycznie ukrywa <strong>okno tłumaczenia</strong>.</li>
+      <li>Widoczność <strong>okna tłumaczenia</strong> można przełączać ręcznie w dowolnym momencie za pomocą skrótu <strong>Alt+2</strong>.</li>
+    </ol>
+    <h2 id="main-interface">Interfejs główny</h2>
+    <p>Interfejs główny jest podzielony na cztery zakładki:</p>
+    <h3 id="main-tab">Zakładka Start</h3>
+    <p>
+      <img src="screenshots/Home_pl.png" alt="Zakładka Start" />
+    </p>
+    <ol>
+      <li>
+        <strong>Wybierz obszar źródłowy (OCR)</strong> – określ obszar, z którego tekst będzie przechwytywany.</li>
+      <li>
+        <strong>Wybierz obszar tłumaczenia</strong> – określ, gdzie ma się pojawić tłumaczenie.</li>
+      <li>
+        <strong>Start/Stop</strong> – włącz proces tłumaczenia.</li>
+      <li>
+        <strong>Pokaż lub ukryj okno źródłowe</strong> – przełącz widoczność obszaru przechwytywania tekstu źródłowego.</li>
+      <li>
+        <strong>Pokaż lub ukryj okno tłumaczenia</strong> – przełącz widoczność obszaru tłumaczenia.</li>
+      <li>
+        <strong>Wyczyść bufor tłumaczenia</strong> – usuń tłumaczenia przechowywane w pamięci, aby wymusić ponowne tłumaczenie.</li>
+      <li>
+        <strong>Wyczyść dziennik debugowania</strong> – wyczyść dziennik zdarzeń aplikacji.</li>
+      <li>
+        <strong>Wyłącz dziennik debugowania</strong> – wyłącz rejestrowanie zdarzeń w pliku w celu poprawy wydajności.</li>
+      <li>
+        <strong>Skróty klawiszowe</strong> – lista dostępnych skrótów klawiszowych.</li>
+      <li>
+        <strong>Status</strong> – aktualny stan aplikacji.</li>
+    </ol>
+    <h3 id="settings-tab">Zakładka Ustawienia</h3>
+    <p>
+      <img src="screenshots/Settings_pl.png" alt="Zakładka Ustawienia" />
+    </p>
+    <p>Tutaj można skonfigurować:</p>
+    <ol>
+      <li>
+        <strong>Model tłumaczenia</strong> – wybierz spośród różnych modeli tłumaczeń.</li>
+      <li>
+        <strong>Język źródłowy</strong> – język źródłowy i rozpoznawany przez OCR (tylko DeepL i Google Translate).</li>
+      <li>
+        <strong>Język docelowy</strong> – język tłumaczenia (tylko DeepL i Google Translate).</li>
+      <li>
+        <strong>Klucz API</strong> – tylko w przypadku DeepL lub Google Translate.</li>
+      <li>
+        <strong>Jakość</strong> – wybierz między opcjami <strong>Klasyczna</strong> (szybsze tłumaczenie) lub <strong>Nowej generacji</strong> (potencjalnie lepsza jakość) (tylko DeepL).</li>
+      <li>
+        <strong>Opcje MarianMT</strong> – lokalne tłumaczenie neuronowe (tylko model MarianMT).</li>
+      <li>
+        <strong>Ścieżka do Tesseract</strong> – ścieżka do pliku wykonywalnego Tesseract OCR.</li>
+      <li>
+        <strong>Interwał skanowania (ms)</strong> – jak często ma być przechwytywany ekran.</li>
+      <li>
+        <strong>Czas wyświetlania tłumaczenia (s)</strong> – czas, po którym tłumaczenie zostanie usunięte, gdy zniknie tekst źródłowy.</li>
+      <li>
+        <strong>Próg stabilności tekstu</strong> – liczba identycznych odczytów wymaganych przed tłumaczeniem.</li>
+      <li>
+        <strong>Próg pewności OCR</strong> – minimalna pewność dla uwzględnienia tekstu wykrytego przez OCR.</li>
+      <li>
+        <strong>Tryb przetwarzania obrazu</strong> – sposób przetwarzania obrazów przez OCR.</li>
+      <li>
+        <strong>Debugowanie OCR</strong> – opcja wyświetlania obrazów debugowania i tekstu na zakładce <strong>Ustawienia</strong>.</li>
+      <li>
+        Przycisk <strong>Podgląd</strong> – otwiera okno podglądu OCR.</li>
+      <li>
+        <strong>Usuń śmieci na końcu</strong> – opcja usuwania tekstu po ostatnim znaku interpunkcyjnym.</li>
+      <li>
+        <strong>Opcje wyglądu</strong> – kolory i rozmiary czcionek dla nakładek.</li>
+      <li>
+        <strong>Opcje buforowania do plików</strong> – ustawienia włączania/wyłączania buforowania w przypadku DeepL i Google Translate.</li>
+    </ol>
+    <h3 id="ocr-preview">Podgląd OCR</h3>
+    <p>
+      <img src="screenshots/OCR_Preview_pl.png" alt="Okno podglądu OCR" />
+    </p>
+    <p>Kliknięcie przycisku <strong>Podgląd</strong> w zakładce <strong>Ustawienia</strong> otwiera osobne okno <strong>Podgląd OCR</strong>. To okno wyświetla:</p>
+    <ol>
+      <li>
+        <strong>Przetworzony obraz (skala 1:1)</strong> – wstępnie przetworzony obraz używany do rozpoznawania OCR.</li>
+      <li>
+        <strong>Rozpoznany tekst</strong> – tekst obecnie rozpoznawany przez silnik OCR.</li>
+    </ol>
+    <p>To okno podglądu jest szczególnie przydatne do precyzyjnego dostrajania ustawień OCR i zrozumienia, dlaczego niektóre teksty mogą nie być rozpoznawane prawidłowo. Można je przesuwać i zmieniać jego rozmiar niezależnie od <strong>głównego okna aplikacji</strong>.</p>
+    <h3 id="debug-tab">Zakładka Debugowanie</h3>
+    <p>
+      <img src="screenshots/Debugging_pl.png" alt="Zakładka Debugowanie" />
+    </p>
+    <p>Ta zakładka pokazuje:</p>
+    <ol>
+      <li>
+        <strong>Obraz oryginalny</strong> – nieprzetworzony przechwycony obraz.</li>
+      <li>
+        <strong>Obraz przetworzony</strong> – obraz po przetworzeniu przez OCR.</li>
+      <li>
+        <strong>Wyniki OCR</strong> – tekst rozpoznany przez OCR.</li>
+      <li>
+        <strong>Dziennik aplikacji</strong> – bieżący dziennik zdarzeń aplikacji.</li>
+      <li>
+        <strong>Zapisz obrazy OCR</strong> i <strong>Odśwież dziennik</strong> – przyciski do zapisywania obrazów debugowania i odświeżania dziennika.</li>
+    </ol>    
+    <h3 id="about-tab">Zakładka Informacje</h3>
+    <p>Ta zakładka zawiera podstawowe informacje o aplikacji.</p>
+    <h2 id="setting-up-translation-areas">Ustawianie obszarów tłumaczenia</h2>
+    <h3 id="selecting-the-source-area">Wybór obszaru źródłowego</h3>
+    <ol>
+      <li>Kliknij przycisk <strong>Wybierz obszar źródłowy (OCR)</strong>.</li>
+      <li>Ekran zostanie przyciemniony i zobaczysz czarny krzyżyk.</li>
+      <li>Kliknij i przeciągnij, aby zaznaczyć obszar zawierający tekst, który chcesz przetłumaczyć.</li>
+      <li>Po zaznaczeniu półprzezroczyste okno nakładki pojawi się w wybranym miejscu.</li>
+      <li>Ta nakładka będzie domyślnie ukryta przy uruchomieniu aplikacji.</li>
+      <li>Nakładkę można:
+        <ul>
+          <li><strong>przesuwać</strong>: przeciągając za pasek tytułowy;</li>
+          <li><strong>powiększać i zmniejszać</strong>: przeciągając dowolną krawędź lub róg;</li>
+          <li><strong>ukrywać lub wyświetlać</strong>: za pomocą przycisku <strong>Pokaż lub ukryj okno źródłowe</strong> lub skrótu <strong>Alt+1</strong>.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="selecting-the-target-area">Wybór obszaru docelowego</h3>
+    <ol>
+      <li>Kliknij przycisk <strong>Wybierz obszar tłumaczenia</strong>.</li>
+      <li>Ekran zostanie przyciemniony i zobaczysz czarny krzyżyk.</li>
+      <li>Kliknij i przeciągnij, aby zaznaczyć miejsce, w którym chcesz, aby pojawiło się tłumaczenie.</li>
+      <li>Po zaznaczeniu półprzezroczyste okno nakładki pojawi się w wybranym miejscu.</li>
+      <li>Ta nakładka będzie domyślnie ukryta przy uruchomieniu aplikacji.</li>
+      <li>Nakładkę można:
+        <ul>
+          <li><strong>przesuwać</strong>: przeciągając za pasek tytułowy;</li>
+          <li><strong>powiększać i zmniejszać</strong>: przeciągając dowolną krawędź lub róg;</li>
+          <li><strong>ukrywać lub wyświetlać</strong>: za pomocą przycisku <strong>Pokaż lub ukryj okno tłumaczenia</strong> lub skrótu <strong>Alt+2</strong>.</li>
+        </ul>
+      </li>
+    </ol>
+    <h2 id="settings-configuration">Konfiguracja ustawień</h2>
+    <h3 id="translation-configuration">Konfiguracja tłumaczenia</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Model tłumaczenia</strong>:</p>
+        <ul>
+          <li>
+            <strong>MarianMT (lokalny i bezpłatny)</strong> – nie wymaga klucza API, pobiera modele przy pierwszym użyciu, działa bez połączenia z Internetem.</li>
+          <li>
+            <strong>DeepL API</strong> – wymaga klucza API, zapewnia tłumaczenia wysokiej jakości.</li>
+          <li>
+            <strong>Google Translate API</strong> – wymaga klucza API, obsługuje wiele języków.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Język źródłowy</strong>:</p>
+        <ul>
+          <li>Język, który będzie tłumaczony na język docelowy.</li>
+          <li>Silnik OCR będzie używał tego języka do rozpoznawania tekstu w celu poprawy dokładności.</li>
+          <li>Gdy zmienisz język źródłowy do tłumaczenia, język OCR zostanie odpowiednio zaktualizowany.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Język docelowy</strong>:</p>
+        <ul>
+          <li>Język, na który tekst ma zostać przetłumaczony.</li>
+          <li>Pamiętaj, że nie wszystkie pary językowe są obsługiwane przez wszystkie metody tłumaczenia.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="ocr-configuration">Konfiguracja OCR</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Ścieżka do Tesseract</strong>:</p>
+        <ul>
+          <li>Powinna wskazywać miejsce instalacji programu Tesseract (np. <code>C:\Program Files\Tesseract-OCR\tesseract.exe</code>).</li>
+          <li>Użyj przycisku <strong>Wskaż</strong>, aby wskazać lokalizację.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Tryb przetwarzania obrazu</strong>:</p>
+        <ul>
+          <li>
+            <strong>Brak</strong> – bez przetwarzania, dobry dla wyraźnego tekstu.</li>
+          <li>
+            <strong>Binarny</strong> – konwersja czarno–biała, dobra dla tekstu o wysokim kontraście.</li>
+          <li>
+            <strong>Binarny odwrócony</strong> – odwrócony tryb binarny, dobry dla białego tekstu na ciemnym tle.</li>
+          <li>
+            <strong>Adaptacyjny</strong> – zaawansowane progowanie adaptacyjne dla trudnych środowisk.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Tryb adaptacyjny</strong>:</p>
+        <p>Po wybraniu trybu przetwarzania <strong>Adaptacyjny</strong> system odblokowuje zaawansowane możliwości progowania adaptacyjnego, które doskonale sprawdzają się w trudnych środowiskach graficznych. Ten tryb jest szczególnie cenny w przypadku kłopotliwych warunków, takich jak małe napisy nałożone na dynamiczne, migające tła o stale zmieniających się kolorach i oświetleniu.</p>
+        <p>W przeciwieństwie do trzech standardowych trybów przetwarzania tryb adaptacyjny zapewnia dwa regulowane parametry, które pozwalają na precyzyjne dostrojenie procesu rozpoznawania OCR:</p>
+        <ul>
+          <li><strong>Rozmiar bloku</strong> – kontroluje wielkość obszaru sąsiadującego używanego do obliczania wartości progowej. Większe wartości (np. 15–25) sprawdzają się lepiej w przypadku tekstu ze stopniowymi zmianami oświetlenia, podczas gdy mniejsze wartości (np. 7–13) są bardziej skuteczne dla tekstu z ostrymi zmianami kontrastu.</li>
+          <li><strong>Wartość C</strong> – działa jako stała odejmowana od średniej wartości progowej. Wartości dodatnie czynią progowanie bardziej konserwatywnym (mniej wykrywanego tekstu, ale wyższa dokładność), podczas gdy wartości ujemne czynią je bardziej agresywnym (więcej wykrywanego tekstu, ale potencjalnie więcej szumów).</li>
+        </ul>
+        <p>Ten tryb okazuje się bezcenny, gdy standardowe przetwarzanie nie zapewnia wiarygodnych wyników. Eksperymentując z tymi dwoma parametrami, często można osiągnąć lepsze rozpoznawanie OCR niż w przypadku gotowych trybów, szczególnie gdy tła zawierają ruchome elementy, zmienne oświetlenie lub złożone wzory wizualne, które w przeciwnym razie przeszkadzałyby w wykrywaniu tekstu.</p>
+        <p>Aby uzyskać optymalne rezultaty, zacznij od umiarkowanych wartości (<strong>Rozmiar bloku</strong>: 11, <strong>Wartość C</strong>: 2) i dostosowuj je do konkretnej treści. Zwiększ <strong>Rozmiar bloku</strong> dla większego tekstu lub stopniowych zmian oświetlenia i zmieniaj <strong>Wartość C</strong>, aby zachować równowagę między przechwytywaniem całego tekstu a rozpoznawaniem go tam, gdzie go nie ma.</p>
+      </li>
+      <li>
+        <p>
+          <strong>Próg pewności OCR</strong>:</p>
+        <ul>
+          <li>Wyższe wartości (np. 80) dają mniej wyników, ale są bardziej dokładne.</li>
+          <li>Niższe wartości (np. 40) wychwytują więcej tekstu, ale mogą zawierać błędy.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Próg stabilności tekstu</strong>:</p>
+        <ul>
+          <li>Określa, ile identycznych odczytów OCR jest potrzebnych przed rozpoczęciem tłumaczenia.</li>
+          <li>Wyższe wartości zmniejszają migotanie, ale zwiększają opóźnienie.</li>
+          <li>Ustaw na 0 w celu natychmiastowego tłumaczenia (może powodować migotanie).</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Debugowanie OCR</strong>:</p>
+        <ul>
+          <li>Po włączeniu pokazuje przechwycone obrazy i wyniki OCR w zakładce <strong>Debugowanie</strong>.</li>
+          <li>Przydatne przy rozwiązywaniu problemów z rozpoznawaniem tekstu.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Usuń śmieci na końcu</strong>:</p>
+        <ul>
+          <li>Po włączeniu usuwa tekst występujący po ostatnim znaku interpunkcyjnym (kropce, wykrzykniku lub znaku zapytania).</li>
+          <li>Przydatna funkcja do usuwania błędów OCR, które często pojawiają się na końcu rozpoznanego tekstu.</li>
+          <li>Poprawia jakość tłumaczenia poprzez usunięcie przypadkowych znaków lub fragmentów słów.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="performance-settings">Ustawienia wydajności</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Interwał skanowania (ms)</strong>:</p>
+        <ul>
+          <li>Czas w milisekundach między kolejnymi zrzutami ekranu.</li>
+          <li>Niższe wartości (np. 50 ms) dają szybszą odpowiedź, ale bardziej obciążają procesor.</li>
+          <li>Wyższe wartości (np. 500 ms) zmniejszają obciążenie procesora, ale spowalniają reakcję.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Czas wyświetlania tłumaczenia (s)</strong>:</p>
+        <ul>
+          <li>Czas w sekundach, po którym tłumaczenie zostanie usunięte, gdy tekst źródłowy zniknie.</li>
+          <li>Jeśli w obszarze źródłowym nadal jest tekst po upływie tego czasu, tłumaczenie pozostanie widoczne.</li>
+          <li>Tłumaczenie jest usuwane tylko wtedy, gdy w obszarze źródłowym nie wykryto żadnego tekstu.</li>
+          <li>Ustaw na 0, aby tłumaczenia były widoczne bezterminowo.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Wyczyść bufor tłumaczenia</strong>:</p>
+        <ul>
+          <li>Ten przycisk usuwa tłumaczenia, które są tymczasowo przechowywane w pamięci aplikacji.</li>
+          <li>Pamięć podręczna przechowuje najnowsze tłumaczenia, aby uniknąć ponownego tłumaczenia identycznego tekstu.</li>
+          <li>Wyczyszczenie tej pamięci podręcznej zmusza aplikację do ponownego przetłumaczenia całego tekstu, nawet jeśli został niedawno przetworzony.</li>
+          <li>Funkcja ta różni się od buforowania plików – dotyczy tylko tłumaczeń przechowywanych w pamięci RAM podczas bieżącej sesji.</li>
+          <li>Przydatne, gdy chcesz zobaczyć nowe tłumaczenia lub gdy wyniki z pamięci podręcznej wydają się nieprawidłowe.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Opcje buforowania do plików (tylko usługi tłumaczenia za pomocą API)</strong>:</p>
+        <ul>
+          <li>
+            <strong>Włącz bufor Google Translate</strong> – wykorzystuje ten sam system buforowania co DeepL (szczegółowe wyjaśnienie w sekcji DeepL).</li>
+          <li>
+            <strong>Włącz bufor DeepL</strong> – zapisuje tłumaczenia DeepL w plikach na dysku, aby zmniejszyć liczbę zapytań API.</li>
+          <li>Te opcje pomagają ograniczyć wykorzystanie API i koszty płatnych usług.</li>
+          <li>Przycisk <strong>Wyczyść pliki buforów</strong> usuwa wszystkie zapisane tłumaczenia przechowywane w plikach.</li>
+          <li>Te ustawienia nie dotyczą modelu MarianMT, ponieważ ten działa w trybie offline.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Zapisywanie zdarzeń w dzienniku</strong>:</p>
+        <ul>
+          <li>
+            <strong>Wyłącz dziennik debugowania</strong> – trwale wyłącza zapisywanie zdarzeń w dzienniku w celu poprawy wydajności aplikacji.</li>
+          <li>Po wyłączeniu informacje o zdarzeniach nie będą już zapisywane w pliku dziennika.</li>
+          <li>Może to zapewnić zauważalną poprawę wydajności w środowiskach o ograniczonych zasobach.</li>
+          <li>Ustawienie pozostaje w mocy między sesjami aplikacji.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="appearance-settings">Ustawienia wyglądu</h3>
+    <ol>
+      <li>
+        <strong>Kolor obszaru źródłowego</strong> – kolor tła nakładki obszaru źródłowego (możliwość dostosowania).</li>
+      <li>
+        <strong>Kolor obszaru tłumaczenia</strong> – kolor tła nakładki tłumaczenia (możliwość dostosowania).</li>
+      <li>
+        <strong>Kolor tekstu tłumaczenia</strong> – kolor przetłumaczonego tekstu (możliwość dostosowania).</li>
+      <li>
+        <strong>Rozmiar czcionki okna tłumaczenia</strong> – wielkość przetłumaczonego tekstu.</li>
+    </ol>
+    <h2 id="translation-methods">Metody tłumaczenia</h2>
+    <h3 id="marianmt-offline-and-free">MarianMT (lokalny i bezpłatny)</h3>
+    <ol>
+      <li>Nie wymaga klucza API – całkowicie bezpłatny w użyciu.</li>
+      <li>Działa całkowicie offline po pobraniu modeli.</li>
+      <li>Modele są pobierane automatycznie przy pierwszym użyciu (około 500 MB na parę językową).</li>
+      <li>Konfiguracja:
+        <ul>
+          <li>Wybierz <strong>MarianMT (lokalny i bezpłatny)</strong> jako model tłumaczenia.</li>
+          <li>Wybierz parę językową z listy rozwijanej <strong>Model MarianMT</strong>.</li>
+          <li>Dostosuj parametr <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> (wyższe wartości = lepsza jakość, ale wolniejsze działanie).</li>
+        </ul>
+      </li>
+    </ol>
+    <p>Modele MarianMT to otwarte systemy tłumaczenia maszynowego oparte na sieciach neuronowych, które zapewniają całkiem dobrą jakość tłumaczenia. Choć nie dorównują standardom usług premium takich jak DeepL, zapewniają zaskakująco dobre tłumaczenia bez kosztów i połączenia z Internetem po początkowym pobraniu modelu.</p>
+    <p>Modele te zostały pierwotnie zaprojektowane do tłumaczenia krótkich, pojedynczych zdań i zwykle obcinają dłuższe fragmenty. Jednak <strong>OCR Translator</strong> w pomysłowy sposób obchodzi to ograniczenie. Aplikacja automatycznie dzieli dłuższe teksty na pojedyncze zdania i przetwarza je równolegle w osobnych wątkach. Przetłumaczone fragmenty są następnie płynnie łączone w całość, zapewniając kompletne tłumaczenia niezależnie od długości tekstu.</p>
+    <p>Takie podejście ma kilka praktycznych zalet:</p>
+    <ul>
+      <li>Pełna prywatność – tekst nigdy nie opuszcza komputera użytkownika.</li>
+      <li>Brak limitów użycia lub kosztów subskrypcji.</li>
+      <li>Działa nawet podczas przerw w dostępie do Internetu.</li>
+      <li>Brak opóźnień API – tłumaczenia działają z prędkością komputera użytkownika.</li>
+    </ul>
+    <p>Ustawienie <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> pozwala zrównoważyć szybkość i jakość. Wyższe wartości (8–12) dają bardziej dopracowane tłumaczenia, ale wymagają więcej czasu przetwarzania, podczas gdy niższe wartości (1–4) priorytetowo traktują szybkość kosztem idealnego sformułowania.</p>
+    <h3 id="deepl-api">DeepL API</h3>
+    <ol>
+      <li>Wymaga konta DeepL i klucza API.</li>
+      <li>Zapewnia tłumaczenia premium, ale obsługuje mniej języków.</li>
+      <li>Uznawany przez wielu za lidera branży pod względem jakości tłumaczenia.</li>
+      <li>Darmowy plan DeepL API pozwala na tłumaczenie 500 000 znaków miesięcznie bez opłat (stan na maj 2025 r.).</li>
+      <li>Konfiguracja:
+        <ul>
+          <li>Wybierz <strong>DeepL API</strong> jako model tłumaczenia.</li>
+          <li>Wprowadź swój klucz API w zakładce <strong>Ustawienia</strong>.</li>
+          <li>Wybierz preferowaną opcję w polu <strong>Jakość</strong>:
+            <ul>
+              <li><strong>Klasyczna</strong> – szybsze tłumaczenie z doskonałą jakością</li>
+              <li><strong>Nowej generacji</strong> – minimalnie wolniejsze tłumaczenie, ale czasami jeszcze lepsza jakość</li>
+            </ul>
+          </li>
+          <li>Jeśli nie masz klucza API, zapoznaj się z <a href="installation_pl.html">Instrukcją instalacji</a>.</li>
+        </ul>
+      </li>
+    </ol>
+    
+    <p><strong>Dwa tryby jakości</strong></p>
+    <p>DeepL ma dwa tryby jakości. Model <strong>Klasyczny</strong> zapewnia szybkie, wysokiej jakości tłumaczenia, które działają ze wszystkimi obsługiwanymi parami językowymi. Model <strong>Nowej generacji</strong> wykorzystuje najnowszą technologię tłumaczeniową DeepL, która może dawać jeszcze lepsze wyniki w przypadku niektórych treści, choć jest nieco wolniejsza i może nie obsługiwać wszystkich par językowych.</p>
+    <p>Jeśli wybierzesz model <strong>Nowej generacji</strong>, a wybrana para językowa nie jest obsługiwana, aplikacja automatycznie przełączy się na tryb <strong>Klasyczny</strong>, aby zapewnić ciągłość tłumaczenia. Obie opcje gwarantują doskonałą jakość, z której słynie DeepL.</p>
+    
+    <p><strong>System buforowania tłumaczeń DeepL w plikach</strong></p>
+    <p><strong>OCR Translator</strong> umożliwia buforowanie tłumaczeń DeepL. Po przetłumaczeniu fragmentu tekstu jest on zapisywany w lokalnej pamięci podręcznej aplikacji (<code>deepl_cache.txt</code>). Gdy ten sam tekst pojawi się ponownie, aplikacja pobiera tłumaczenie z pamięci podręcznej zamiast wysyłać kolejne zapytanie API.</p>
+    <p>Należy pamiętać, że mechanizm buforowania zależy całkowicie od jakości OCR. Aby tłumaczenie zostało pobrane z pamięci podręcznej, tekst rozpoznany przez OCR musi być identyczny – co do ostatniego znaku – z tym, co już jest w niej przechowywane. Nawet pojedyncza różnica znaku spowoduje nowe wywołanie API i nowe tłumaczenie. Oznacza to, że faktyczna efektywność pamięci podręcznej zależy w dużej mierze od spójności wyników OCR.</p>
+    <p>Pamięć podręczna może być pomocna dla graczy w określonych sytuacjach. Na przykład w grze, w której statyczne opcje menu lub powtarzające się dialogi pojawiają się dokładnie w tej samej czcionce, rozmiarze i pozycji na ekranie, OCR prawdopodobnie wygeneruje identyczne wyniki za każdym razem. Jednak jeśli tekst pojawia się na różnych tłach, przy różnym oświetleniu lub z drobnymi zmianami pozycji, różnice w wynikach OCR prawdopodobnie spowodują nowe tłumaczenia.</p>
+    <p>Na przykład, przycisk <strong>Zapisz grę</strong> może być konsekwentnie rozpoznawany tak samo i korzystać z pamięci podręcznej, podczas gdy dynamiczne dialogi ze zmieniającymi się postaciami lub tłami mogą dawać nieco różne wyniki OCR za każdym razem, ograniczając skuteczność buforowania.</p>
+    <p>Pamięć podręczna jest zachowywana między sesjami aplikacji, ale jej praktyczną korzyść należy traktować jako dodatkowy atut, a nie główną funkcję oszczędzającą API. Im bardziej jednolita i wyraźna prezentacja tekstu, tym większa szansa na skorzystanie z systemu buforowania.</p>
+    <h3 id="google-translate-api">Google Translate API</h3>
+    <ol>
+      <li>Wymaga konta Google Cloud i klucza API.</li>
+      <li>Obsługuje największą liczbę języków.</li>
+      <li>Dobrze sprawdza się do ogólnych tłumaczeń z szerokim wyborem języków.</li>
+      <li>Konfiguracja:
+        <ul>
+          <li>Wybierz <strong>Google Translate API</strong> jako model tłumaczenia.</li>
+          <li>Wprowadź swój klucz API w zakładce <strong>Ustawienia</strong>.</li>
+          <li>Jeśli nie masz klucza API, zapoznaj się z <a href="installation_pl.html">Instrukcją instalacji</a>.</li>
+        </ul>
+      </li>
+    </ol>
+    <p>Google Translate wykorzystuje ten sam system pamięci podręcznej plików co DeepL. W sekcji na temat DeepL powyżej znajduje się szczegółowe wyjaśnienie działania mechanizmu buforowania, jego zależności od jakości OCR oraz praktycznych korzyści i ograniczeń. Wszystkie te same uwagi i zastrzeżenia dotyczą funkcji buforowania Google Translate.</p>
+    <h2 id="keyboard-shortcuts">Skróty klawiszowe</h2>
+    <p>Dostępne są następujące skróty klawiszowe:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Skrót</th>
+          <th>Funkcja</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>~</code> (tylda)</td>
+          <td>Rozpocznij/zatrzymaj tłumaczenie</td>
+        </tr>
+        <tr>
+          <td><code>Alt+1</code></td>
+          <td>Przełącz widoczność okna źródłowego</td>
+        </tr>
+        <tr>
+          <td><code>Alt+2</code></td>
+          <td>Przełącz widoczność okna tłumaczenia</td>
+        </tr>
+        <tr>
+          <td><code>Alt+S</code></td>
+          <td>Zapisz ustawienia</td>
+        </tr>
+        <tr>
+          <td><code>Alt+C</code></td>
+          <td>Wyczyść bufor tłumaczenia</td>
+        </tr>
+        <tr>
+          <td><code>Alt+L</code></td>
+          <td>Wyczyść dziennik debugowania</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Uwaga</strong>: gdy aplikacja jest zatrzymana (tłumaczenie nieaktywne), <strong>okno tłumaczenia</strong> zostanie automatycznie ukryte. Gdy aplikacja jest uruchomiona, <strong>okno tłumaczenia</strong> pojawi się automatycznie. Można ręcznie zmienić to zachowanie za pomocą skrótu <strong>Alt+2</strong> w dowolnym momencie.</p>
+    <h2 id="troubleshooting">Rozwiązywanie problemów</h2>
+    <p>W razie problemów:</p>
+    <ol>
+      <li>Sprawdź zakładkę <strong>Debugowanie</strong> pod kątem komunikatów o błędach oraz dziennik aplikacji.</li>
+      <li>Włącz <strong>Debugowanie OCR</strong> w zakładce <strong>Ustawienia</strong>, aby zobaczyć, co jest przechwytywane i rozpoznawane w zakładce <strong>Debugowanie</strong>. Wyświetl też okno <strong>Podgląd OCR</strong> (dostępne w zakładce <strong>Ustawienia</strong> po kliknięciu przycisku <strong>Podgląd</strong>).</li>
+      <li>Dostosuj ustawienia w razie potrzeby:
+        <ul>
+          <li>Wypróbuj różne tryby przetwarzania obrazu, w tym <strong>tryb adaptacyjny</strong> dla trudnych środowisk.</li>
+          <li>Dostosuj progi pewności i stabilności.</li>
+          <li>Sprawdź, czy wybrany język źródłowy jest prawidłowy.</li>
+          <li>Włącz <strong>Usuń śmieci na końcu</strong>, aby wyeliminować błędy OCR.</li>
+          <li>Precyzyjnie ustaw parametry <strong>trybu adaptacyjnego</strong>, jeśli tło tekstu zmienia się lub jest niejednolite.</li>
+        </ul>
+      </li>
+      <li>Zapoznaj się z <a href="troubleshooting.md">Przewodnikiem rozwiązywania problemów</a> (tylko w języku angielskim), aby poznać typowe problemy i ich rozwiązania.</li>
+    </ol>
+    <h2 id="tips-and-best-practices">Porady i najlepsze praktyki</h2>
+    <h3 id="ocr-accuracy">Dokładność OCR</h3>
+    <p>Aby uzyskać najlepsze wyniki OCR:</p>
+    <ol>
+      <li>Przechwytuj wyraźny tekst o wysokim kontraście.</li>
+      <li>Wybierz odpowiedni język źródłowy.</li>
+      <li>Dostosuj tryb przetwarzania obrazu do wyglądu tekstu – wypróbuj <strong>tryb adaptacyjny</strong> dla trudnych teł.</li>
+      <li>Dostosuj rozmiar obszaru przechwytywania tak, aby obejmował tekst ciasno, ale w całości.</li>
+      <li>Użyj większego obszaru źródłowego dla szerszego kontekstu, jeśli OCR ma problemy.</li>
+      <li>Włącz <strong>Usuń śmieci na końcu</strong>, aby wyeliminować artefakty rozpoznawania.</li>
+      <li>Dostosuj próg pewności, aby zrównoważyć przechwytywanie całego tekstu (niższe wartości) i ograniczanie błędów (wyższe wartości).</li>
+      <li>Dla małych napisów na zmieniających się tłach eksperymentuj z parametrami <strong>Rozmiar bloku</strong> i <strong>Wartość C</strong> trybu <strong>adaptacyjnego</strong>.</li>
+    </ol>
+    <h3 id="performance-optimization">Optymalizacja wydajności</h3>
+    <ol>
+      <li>Używaj mniejszego obszaru przechwytywania tekstu źródłowego.</li>
+      <li>Kliknij <strong>Wyłącz dziennik debugowania</strong> w zakładce <strong>Start</strong>.</li>
+      <li>Zwiększ <strong>Interwał skanowania (ms)</strong> w zakładce <strong>Ustawienia</strong>, aby zmniejszyć obciążenie procesora.</li>
+      <li>Wyłącz <strong>Debugowanie OCR</strong> w zakładce <strong>Ustawienia</strong>.</li>
+      <li>Ustaw <strong>Tryb przetwarzania obrazu</strong> na <strong>Brak</strong> w zakładce <strong>Ustawienia</strong>.</li>
+      <li>W przypadku modelu MarianMT:
+        <ul>
+          <li>Niższy <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> zapewni szybsze tłumaczenie.</li>
+        </ul>
+      </li>
+      <li>W przypadku modelu DeepL lub Google Translate:
+        <ul>
+          <li>Włącz pamięć podręczną plików, aby poprawić wydajność przy powtarzającym się tekście.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="practical-applications">Praktyczne zastosowania</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Gry</strong>:
+        </p>
+        <div class="gaming-note">
+          <div class="gaming-note-icon">🎮</div>
+          <div class="gaming-note-content">
+            <strong>UWAGA:</strong> OCR Translator może nie działać w niektórych grach w trybie pełnoekranowym.<br>Zalecane jest korzystanie z <strong>trybu okienkowego bez ramek</strong> (ang. „borderless windowed mode") obsługiwanego w większości nowych gier.
+          </div>
+        </div>
+        <ul>
+          <li>Umieść okno źródłowe na napisach lub dialogach w grze.</li>
+          <li>Umieść okno tłumaczenia w miejscu, w którym nie przeszkadza.</li>
+          <li>Użyj opcji <strong>Czas wyświetlania tłumaczenia (s)</strong>, aby tłumaczenia pozostawały widoczne tak długo, jak tekst jest obecny na ekranie.</li>
+          <li>Włącz <strong>Usuń śmieci na końcu</strong>, aby wyeliminować błędy OCR typowe dla tekstu w grach.</li>
+          <li>Dla gier z trudnymi tłami napisów eksperymentuj z ustawieniami <strong>trybu adaptacyjnego</strong>.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Filmy</strong>:
+        </p>
+        <ul>
+          <li>Przechwyć obszar napisów.</li>
+          <li>Dostosuj tryb przetwarzania, jeśli napisy są wbudowane – <strong>tryb adaptacyjny</strong> często sprawdza się dobrze przy zmiennych tłach filmowych.</li>
+          <li>W przypadku treści strumieniowych ustaw niższy próg stabilności (0–1) dla szybszej reakcji.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Dokumenty i pliki PDF</strong>:
+        </p>
+        <ul>
+          <li>Dostosuj rozmiar okna źródłowego tak, aby obejmował akapity.</li>
+          <li>Użyj progu stabilności 1–2, aby zmniejszyć migotanie podczas przewijania.</li>
+          <li>W przypadku dokumentów naukowych lub technicznych zwiększ próg pewności, aby zmniejszyć liczbę błędów.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Aplikacje</strong>:
+        </p>
+        <ul>
+          <li>Umieść nakładki tak, aby nie zasłaniały ważnych elementów interfejsu.</li>
+          <li>Korzystaj ze skrótów klawiszowych, aby szybko włączać tłumaczenie, gdy jest potrzebne.</li>
+          <li>W przypadku aplikacji ze zmieniającą się zawartością dostosuj interwał skanowania dla optymalnej wydajności.</li>
+        </ul>
+      </li>
+    </ol>
+  </body>
+</html>

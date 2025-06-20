@@ -1,0 +1,106 @@
+key,value
+main_tab_title,Start
+select_source_btn,Wybierz obszar źródłowy (OCR)
+select_target_btn,Wybierz obszar tłumaczenia
+start_btn,Start
+stop_btn,Stop
+hide_source_btn,Pokaż lub ukryj okno źródłowe
+hide_target_btn,Pokaż lub ukryj okno tłumaczenia
+clear_cache_btn,Wyczyść bufor tłumaczenia
+clear_debug_log_btn,Wyczyść dziennik debugowania
+toggle_debug_log_disable_btn,Wyłącz dziennik debugowania
+toggle_debug_log_enable_btn,Włącz dziennik debugowania
+gui_language_label,Język interfejsu
+keyboard_shortcuts_title,Skróty klawiaturowe
+status_ready,Status: Gotowy
+status_ready_hotkey,"Status: program gotowy. Naciśnij ~, aby rozpocząć/zatrzymać."
+shortcut_start_stop,Rozpocznij/zatrzymaj tłumaczenie
+shortcut_toggle_source,Przełącz widoczność okna źródłowego
+shortcut_toggle_target,Przełącz widoczność okna tłumaczenia
+shortcut_save_settings,Zapisz ustawienia
+shortcut_clear_cache,Wyczyść bufor tłumaczenia
+shortcut_clear_log,Wyczyść dziennik debugowania
+status_running,"program uruchomiony (naciśnij ~, aby zatrzymać)"
+status_stopped,"program zatrzymany (naciśnij ~, aby rozpocząć)"
+show_btn,Pokaż
+hide_btn,Ukryj
+settings_tab_title,Ustawienia
+translation_model_label,Model tłumaczenia:
+translation_model_marianmt_offline,MarianMT (lokalny i bezpłatny)
+source_lang_label,Język źródłowy:
+target_lang_label,Język docelowy:
+marian_model_label,Model MarianMT:
+google_api_key_label,Klucz API Google Translate:
+deepl_api_key_label,Klucz API DeepL:
+deepl_model_type_label,Jakość:
+deepl_classic_model,Klasyczna
+deepl_nextgen_model,Nowej generacji
+models_file_label,Lista modeli MarianMT:
+beam_size_label,Rozmiar wiązki tłumaczenia (MarianMT):
+tesseract_path_label,Ścieżka do Tesseract:
+scan_interval_label,Interwał skanowania (ms):
+clear_timeout_label,Czas wyświetlania tłumaczenia (s):
+stability_threshold_label,Próg stabilności tekstu:
+confidence_threshold_label,Próg pewności OCR:
+preprocessing_mode_label,Tryb przetwarzania obrazu:
+ocr_debugging_label,Debugowanie OCR:
+show_debug_checkbox,Pokaż wyniki OCR
+preview_btn,Podgląd
+adaptive_block_size_label,"Rozmiar bloku (3-101, nieparzysty)":
+adaptive_c_label,"Wartość C (-75 do 75)":
+remove_trailing_label,Usuń śmieci na końcu:
+remove_trailing_checkbox,Tłumacz do ostatniego znaku interpunkcyjnego
+source_color_label,Kolor obszaru źródłowego:
+target_color_label,Kolor obszaru tłumaczenia:
+target_text_color_label,Kolor tekstu tłumaczenia:
+font_size_label,Rozmiar czcionki okna tłumaczenia:
+file_cache_frame_title,Opcje buforowania do plików
+file_cache_description,"Buforowanie do plików zapisuje tłumaczenia na dysk, aby zmniejszyć koszty API i poprawić wydajność."
+google_cache_checkbox,"Włącz bufor Google Translate (zapisuje na dysk, zmniejsza wywołania API)"
+deepl_cache_checkbox,"Włącz bufor DeepL (zapisuje na dysk, zmniejsza wywołania API)"
+cache_files_label,Pliki buforów:
+clear_caches_btn,Wyczyść pliki buforów
+save_settings_btn,Zapisz ustawienia
+browse_btn,Wskaż
+choose_color_btn,Wybierz kolor
+debug_tab_title,Debugowanie
+original_image_label,Obraz oryginalny
+processed_image_label,Obraz przetworzony
+ocr_results_label,Wyniki OCR
+ocr_results_placeholder,Wyniki OCR pojawią się tutaj po włączeniu tłumaczenia.
+app_log_label,Dziennik aplikacji
+save_debug_images_btn,Zapisz obrazy OCR
+refresh_log_btn,Odśwież dziennik
+marian_beam_explanation,"Wyższe wartości wiązki = lepsze, ale wolniejsze tłumaczenia"
+marian_quality_note,"Uwaga: MarianMT zapewnia wysoką jakość tłumaczeń dla wielu"
+marian_quality_vary,"par językowych. Jakość może się różnić w zależności od języka."
+marian_download_note,"Modele są pobierane przy pierwszym użyciu (wymaga Internetu)."
+marian_unavailable_line1,"MarianMT nie jest dostępny. Aby włączyć, zainstaluj:"
+marian_unavailable_line2,"pip install transformers torch sentencepiece"
+browse_marian_models_title,Wybierz plik CSV modeli MarianMT
+browse_tesseract_title,Wybierz plik tesseract.exe
+choose_source_color_title,Wybierz kolor obszaru źródłowego
+choose_target_color_title,Wybierz kolor obszaru tłumaczenia
+choose_target_text_color_title,Wybierz kolor tekstu tłumaczenia
+preprocessing_none,Brak
+preprocessing_binary,Binarny
+preprocessing_binary_inv,Binarny odwrócony
+preprocessing_adaptive,Adaptacyjny
+about_tab_title,Informacje
+settings_saved,Status: Ustawienia zapisane
+no_image_captured,Nie przechwycono jeszcze obrazu
+no_image_processed,Nie przetworzono jeszcze obrazu
+dialog_area_selected_title,Obszar wybrany
+dialog_source_area_set_message,Obszar źródłowy ustawiony na:
+dialog_target_area_set_message,Obszar docelowy ustawiony na:
+dialog_debug_images_saved_title,Obrazy OCR zapisane
+dialog_debug_images_saved_message,Obrazy zapisane do '{0}'.
+dialog_debug_image_saved_title,Obraz OCR zapisany
+dialog_debug_image_saved_message,Obraz oryginalny zapisany do '{0}'. Brak przetworzonego obrazu.
+ocr_preview_title,Podgląd OCR
+processed_image_preview,Przetworzony obraz (skala 1:1)
+recognized_text_preview,Rozpoznany tekst
+refresh_preview,Odśwież podgląd
+close_btn,Zamknij
+no_text_recognized,Nie rozpoznano tekstu
+no_image_for_ocr,Brak obrazu dla OCR
