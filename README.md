@@ -1,7 +1,7 @@
 # OCR Translator
 Copyright (C) 2025 Tomasz Kamiński
 
-![OCR Translator Logo](screenshots/screenshot3.jpg)
+![OCR Translator Logo](docs/screenshots/readme_screen.jpg)
 
 ## Overview
 
@@ -9,7 +9,8 @@ OCR Translator is a powerful desktop application that automatically captures tex
 
 This project was inspired by a family member who was learning French by playing games with French subtitles and needed real-time translation. I hope it will be useful both for gamers and non-gamers alike for casual on-screen translations, whether you're learning a new language through entertainment or simply need to understand content in a foreign language.
 
-This application was developed or rather vibe-coded with the support of Claude 3.7 AI model.
+This application was developed or rather vibe-coded with the support of the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
+
 
 ## Key Features
 
@@ -84,9 +85,7 @@ For more detailed usage instructions, see the [User Manual](https://tomkam1702.g
 
 ## Development Status
 
-This project is considered feature-complete with recent improvements to Polish language support and Chinese language selection. The application now provides full localization support for Polish users with proper character sorting and language display.
-
-Small changes may or may not be made in the future, but generally no active development is planned. If you wish to add features or make changes, the best approach is to fork the repository and develop it further yourself.
+This project is considered feature-complete. Small changes may or may not be made in the future, but generally no active development is planned. If you wish to add features or make changes, the best approach is to fork the repository and develop it further yourself.
 
 ## Licence
 
@@ -105,7 +104,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 - [MarianMT](https://huggingface.co/docs/transformers/model_doc/marian)
 - [Google Cloud Translation API](https://cloud.google.com/translate)
 - [DeepL API](https://www.deepl.com/pro-api)
-- Developed with the support of Claude 3.7 AI model
+- Developed with the support of the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro
+
 
 ## Contributing
 
