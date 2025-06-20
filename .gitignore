@@ -26,6 +26,7 @@ marian_models_cache/
 debug_images/
 *.png
 !screenshots/*.png
+!docs/screenshots/*.png
 googletrans_cache.txt
 deepl_cache.txt
 
