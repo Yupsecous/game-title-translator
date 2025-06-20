@@ -56,8 +56,8 @@ Choose your version:
 ### Need Help?
 
 📖 **Installation Guides:**
-- [English Installation Guide](docs/installation.html)
-- [Polish Installation Guide](docs/installation_pl.html)
+- [English Installation Guide](https://tomkam1702.github.io/OCR-Translator/docs/installation.html)
+- [Polish Installation Guide](https://tomkam1702.github.io/OCR-Translator/docs/installation_pl.html)
 
 The compiled versions include everything you need - no Python installation required!
 
