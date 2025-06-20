@@ -53,7 +53,7 @@ This application was developed or rather vibe-coded with the support of Claude 3
    python main.py
    ```
 
-For detailed installation instructions, see the [Installation Guide](docs/installation.md).
+For detailed installation instructions, see the [Installation Guide](docs/installation.html).
 
 ## Quick Start
 
@@ -64,14 +64,20 @@ For detailed installation instructions, see the [Installation Guide](docs/instal
 5. Click "Start" to begin translation
 6. Press the `~` key to toggle translation on/off
 
-For more detailed usage instructions, see the [User Manual](docs/user-manual.md).
+For more detailed usage instructions, see the [User Manual](docs/user-manual.html).
 
 ## Documentation
 
-- [User Manual](docs/user-manual.md)
-- [Installation Guide](docs/installation.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Developer Guide](docs/developer-guide.md)
+- **User Manual** 
+  - [English](docs/user-manual.html) 
+  - [Polish](docs/user-manual_pl.html)
+- **Installation Guide** 
+  - [English](docs/installation.html) 
+  - [Polish](docs/installation_pl.html)
+- **Troubleshooting** 
+  - [English](docs/troubleshooting.md)
+- **Developer Guide** 
+  - [English](docs/developer-guide.md)
 
 ## Development Status
 
