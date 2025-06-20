@@ -1,0 +1,1018 @@
+import threading
+import time
+import gc
+import re
+import os
+import concurrent.futures
+import traceback
+
+from logger import log_debug
+
+# --- Configuration ---
+ENABLE_PYTORCH_THREAD_LIMITING = False  # Set to False to disable PyTorch thread limiting
+
+# --- For MarianMT Translation with GPU Support ---
+try:
+    from transformers import MarianMTModel, MarianTokenizer
+    import torch
+    
+    # Detailed GPU and CUDA Library Detection
+    # Check if PyTorch was compiled with CUDA support (works for both compiled and Python modes)
+    CUDA_LIBRARIES_AVAILABLE = (hasattr(torch, 'version') and 
+                               hasattr(torch.version, 'cuda') and 
+                               torch.version.cuda is not None)
+    
+    if CUDA_LIBRARIES_AVAILABLE:
+        GPU_HARDWARE_AVAILABLE = torch.cuda.is_available()
+        if GPU_HARDWARE_AVAILABLE:
+            # Scenario 4: GPU-ready app on PC with GPU - USE GPU
+            GPU_AVAILABLE = True
+            GPU_DEVICE = torch.device("cuda:0")
+            try:
+                GPU_NAME = torch.cuda.get_device_name(0)
+                GPU_MEMORY = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                cuda_version = torch.version.cuda if torch.version.cuda else "Unknown"
+                log_debug(f"GPU: found, GPU libraries: found (CUDA {cuda_version}), MarianMT running on GPU.")
+                log_debug(f"GPU detected: {GPU_NAME} ({GPU_MEMORY:.1f} GB VRAM)")
+            except:
+                # Fallback if GPU detection fails
+                GPU_NAME = "Unknown GPU"
+                GPU_MEMORY = 0
+                cuda_version = torch.version.cuda if torch.version.cuda else "Unknown"
+                log_debug(f"GPU: found, GPU libraries: found (CUDA {cuda_version}), MarianMT running on GPU.")
+                log_debug("GPU detected but details unavailable")
+        else:
+            # Scenario 3: GPU-ready app on CPU-only PC - USE CPU
+            GPU_AVAILABLE = False
+            GPU_DEVICE = torch.device("cpu")
+            GPU_NAME = None
+            GPU_MEMORY = 0
+            cuda_version = torch.version.cuda if torch.version.cuda else "Unknown"
+            log_debug(f"GPU: not found, GPU libraries: found (CUDA {cuda_version}), MarianMT running on CPU.")
+    else:
+        # Scenarios 1 & 2: CPU-only app (no CUDA libraries) - USE CPU
+        GPU_AVAILABLE = False
+        GPU_DEVICE = torch.device("cpu")
+        GPU_NAME = None
+        GPU_MEMORY = 0
+        
+        # Try to detect if GPU hardware exists even without CUDA libraries
+        gpu_hardware_detected = False
+        gpu_name_detected = "Unknown"
+        try:
+            # Try alternative GPU detection methods for logging purposes only
+            import subprocess
+            result = subprocess.run(['nvidia-smi', '--query-gpu=name', '--format=csv,noheader,nounits'], 
+                                  capture_output=True, text=True, timeout=3)
+            if result.returncode == 0 and result.stdout.strip():
+                gpu_hardware_detected = True
+                gpu_name_detected = result.stdout.strip().split('\n')[0]
+        except:
+            pass
+        
+        if gpu_hardware_detected:
+            # Scenario 2: CPU-only app on PC with GPU
+            log_debug(f"GPU: found ({gpu_name_detected}), GPU libraries: not found, MarianMT running on CPU.")
+        else:
+            # Scenario 1: CPU-only app on CPU-only PC
+            log_debug("GPU: not found, GPU libraries: not found, MarianMT running on CPU.")
+    
+    MARIANMT_AVAILABLE = True
+    
+except ImportError:
+    MARIANMT_AVAILABLE = False
+    torch = None
+    GPU_AVAILABLE = False
+    GPU_DEVICE = None
+    GPU_NAME = None
+    GPU_MEMORY = 0
+    log_debug("GPU: unknown, GPU libraries: not found, MarianMT not available (transformers/torch not installed).")
+
+class MarianMTTranslator:
+    """GPU-accelerated MarianMT translator with automatic CPU fallback."""
+
+    torch = torch # Class attribute to make torch accessible if imported
+
+    def __init__(self, cache_dir=None, num_beams=2):
+        """
+        Initialize the translator with GPU/CPU device detection.
+
+        Args:
+            cache_dir: Directory to store downloaded models. If None, uses default Hugging Face cache.
+            num_beams: Beam search value for translation quality (1-8)
+        """
+        # Verify imports are available
+        if not MARIANMT_AVAILABLE:
+            raise ImportError("MarianMT modules not available. Make sure transformers is installed.")
+
+        # GPU/CPU Device Configuration - PERMANENT DECISION
+        self.device = GPU_DEVICE if GPU_AVAILABLE else torch.device("cpu")
+        self.gpu_enabled = GPU_AVAILABLE
+        self.gpu_name = GPU_NAME
+        self.gpu_memory = GPU_MEMORY
+        
+        # Store permanent device configuration (never changes after initialization)
+        self.permanent_device = self.device
+        self.permanent_gpu_enabled = self.gpu_enabled
+        
+        # Smart fallback system - allows temporary CPU fallback for GPU OOM
+        self.current_device = self.permanent_device  # Current active device (can temporarily change)
+        self.temporary_cpu_fallback = False  # Flag to track if we're in temporary CPU mode
+        
+        # Flag to track when cache has been cleared and model needs reloading
+        self.cache_cleared_flag = False
+        
+        # Log device configuration with explicit scenario information
+        if self.gpu_enabled:
+            cuda_version = torch.version.cuda if (torch and hasattr(torch, 'version') and torch.version.cuda) else "Unknown"
+            log_debug(f"MarianMT initialized with GPU acceleration (PERMANENT)")
+            log_debug(f"GPU: {self.gpu_name} ({self.gpu_memory:.1f} GB VRAM)")
+            log_debug(f"Scenario 4: GPU-ready application on PC with GPU CUDA support (CUDA {cuda_version})")
+        else:
+            log_debug("MarianMT initialized with CPU processing (PERMANENT)")
+            # Determine which of the first 3 scenarios we're in using improved detection
+            if (torch and hasattr(torch, 'version') and 
+                hasattr(torch.version, 'cuda') and 
+                torch.version.cuda is not None):
+                cuda_version = torch.version.cuda
+                log_debug(f"Scenario 3: GPU-ready application on CPU-only PC (CUDA {cuda_version} available but no GPU)")
+            else:
+                # Check if GPU hardware exists for more specific logging
+                gpu_hardware_detected = False
+                gpu_name = "Unknown"
+                try:
+                    import subprocess
+                    result = subprocess.run(['nvidia-smi', '--query-gpu=name', '--format=csv,noheader,nounits'], 
+                                          capture_output=True, text=True, timeout=3)
+                    if result.returncode == 0 and result.stdout.strip():
+                        gpu_hardware_detected = True
+                        gpu_name = result.stdout.strip().split('\n')[0]
+                        log_debug(f"Scenario 2: CPU-only application on PC with GPU CUDA support (GPU: {gpu_name})")
+                    else:
+                        log_debug("Scenario 1: CPU-only application on CPU-only PC")
+                except:
+                    log_debug("Scenario 1: CPU-only application on CPU-only PC")
+
+        # Add a thread lock for model operations
+        self.model_lock = threading.RLock()
+
+        self.active_model_key = None
+        self.active_tokenizer = None
+        self.active_model = None
+        self.active_pivot = None
+        self.cache_dir = cache_dir
+        self.num_beams = num_beams  # Store beam search value (1-8)
+
+        # Log CPU thread configuration
+        if torch: # Check if torch was imported successfully
+            cpu_count = os.cpu_count() or 2
+            
+            if ENABLE_PYTORCH_THREAD_LIMITING and cpu_count > 2:
+                # Limit PyTorch to half of available CPU cores for better system performance
+                max_torch_threads = max(1, cpu_count // 2)
+                torch.set_num_threads(max_torch_threads)
+                log_debug(f"MarianMT limited PyTorch to {max_torch_threads} threads (out of {cpu_count} CPU cores)")
+            else:
+                if not ENABLE_PYTORCH_THREAD_LIMITING:
+                    log_debug(f"MarianMT PyTorch thread limiting DISABLED - using default {torch.get_num_threads()} threads")
+                else:
+                    log_debug(f"MarianMT initialized with {torch.get_num_threads()} CPU threads (no limiting on {cpu_count} cores)")
+        else:
+            log_debug("MarianMT initialized, but PyTorch not available for thread count.")
+
+        # Define supported language pairs and their model names
+        self.supported_langs = set()  # Will be populated dynamically
+        self.direct_pairs = {
+            ('en', 'pl'): 'Helsinki-NLP/opus-mt-en-pl',  # Use Helsinki-NLP model for consistency
+            ('pl', 'en'): 'Helsinki-NLP/opus-mt-pl-en',
+            ('en', 'de'): 'Helsinki-NLP/opus-mt-en-de',
+            ('de', 'en'): 'Helsinki-NLP/opus-mt-de-en',
+            ('en', 'fr'): 'Helsinki-NLP/opus-mt-en-fr',
+            ('fr', 'en'): 'Helsinki-NLP/opus-mt-fr-en',
+            ('fr', 'de'): 'Helsinki-NLP/opus-mt-fr-de',
+            ('de', 'fr'): 'Helsinki-NLP/opus-mt-de-fr',
+            ('pl', 'de'): 'Helsinki-NLP/opus-mt-pl-de',
+            ('de', 'pl'): 'Helsinki-NLP/opus-mt-de-pl',
+            ('pl', 'fr'): 'Helsinki-NLP/opus-mt-pl-fr',
+            ('fr', 'pl'): 'Helsinki-NLP/opus-mt-fr-pl'
+        }
+
+        # Populate supported languages set
+        for source, target in self.direct_pairs.keys():
+            self.supported_langs.add(source)
+            self.supported_langs.add(target)
+
+        # Define model name to language pair mapping (for explicitly adding models)
+        # This helps when we need to dynamically select specific models
+        self.model_to_langs = {}
+        for (source, target), model in self.direct_pairs.items():
+            self.model_to_langs[model] = (source, target)
+
+        # Initialize thread pool for parallel translation
+        # Reverted to original implementation for better burst performance with subtitles
+        max_workers = max(1, min((os.cpu_count() or 2) // 2, 4))         # Use half of available CPU cores, minimum 1, maximum 4
+        # max_workers = max(1, (os.cpu_count() or 2) - 1)                    # Use all CPU cores minus one (original implementation)
+        self.thread_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers,
+            thread_name_prefix="MarianTranslator"
+        )
+        log_debug(f"Initialized MarianMT thread pool with {max_workers} workers (reverted to original for burst performance)")
+
+    def notify_cache_cleared(self):
+        """
+        Notify the translator that the translation cache has been cleared.
+        This will force the model to be reloaded on next translation to ensure proper state.
+        """
+        with self.model_lock:
+            self.cache_cleared_flag = True
+            device_type = "GPU" if self.permanent_gpu_enabled else "CPU"
+            log_debug(f"MarianMT notified of cache clearing - will force model reload on {device_type}")
+
+    def _translate_sentence_worker(self, sentence, source_lang, target_lang, sentence_index):
+        """Worker function to translate a single sentence in a thread."""
+        try:
+            # Start timing for this individual sentence
+            sentence_start_time = time.monotonic()
+
+            # Get cleaned copy of the sentence
+            clean_sentence = sentence.strip()
+            if not clean_sentence:
+                return {
+                    'index': sentence_index,
+                    'original': sentence,
+                    'translated': '',
+                    'success': True,
+                    'translation_time': 0.0
+                }
+
+            # Log before translation
+            log_debug(f"Sentence {sentence_index+1}: \"{clean_sentence}\" sent to MarianMT for translation")
+
+            # Use existing _translate_batch method for the actual translation
+            result = self._translate_batch(clean_sentence, source_lang, target_lang)
+
+            # Calculate translation time
+            sentence_translation_time = time.monotonic() - sentence_start_time
+
+            # Log success with timing information
+            log_debug(f"Successfully translated sentence {sentence_index+1}: \"{clean_sentence}\" in {sentence_translation_time:.2f}s")
+            log_debug(f"Translation result for sentence {sentence_index+1}: \"{result}\"")
+
+            return {
+                'index': sentence_index,
+                'original': sentence,
+                'translated': result,
+                'success': True,
+                'translation_time': sentence_translation_time
+            }
+        except Exception as e:
+            error_msg = f"Error translating sentence {sentence_index+1}: {str(e)}"
+            log_debug(error_msg)
+            return {
+                'index': sentence_index,
+                'original': sentence,
+                'translated': sentence,  # Fall back to original on error
+                'success': False,
+                'error': str(e),
+                'translation_time': 0.0
+            }
+
+    def _unload_current_model(self):
+        """Unload the current model to free memory (GPU and CPU) while preserving device configuration."""
+        # This method is called from within _try_load_direct_model which already
+        # holds the lock, so we don't need to acquire it again here
+        device_type = "GPU" if self.permanent_gpu_enabled else "CPU"
+        fallback_status = " (temporary CPU fallback)" if self.temporary_cpu_fallback else ""
+        log_debug(f"Unloading current MarianMT model and tokenizer from {device_type}{fallback_status}.")
+        
+        self.active_model_key = None
+        self.active_tokenizer = None
+        self.active_model = None
+        self.active_pivot = None
+        
+        # Reset to permanent device configuration and clear fallback status
+        self.current_device = self.permanent_device
+        self.temporary_cpu_fallback = False
+        
+        # Force garbage collection to release memory
+        gc.collect()
+        
+        # Clear GPU cache if available and we're using GPU permanently
+        if torch and torch.cuda.is_available() and self.permanent_gpu_enabled:
+            torch.cuda.empty_cache()
+            log_debug("GPU cache cleared after model unload.")
+        else:
+            log_debug("CPU memory released after model unload.")
+
+    def _try_load_direct_model(self, source_lang, target_lang):
+        """Try to load a direct translation model for the language pair with thread safety."""
+        model_key = (source_lang, target_lang)
+
+        device_type = "GPU" if self.permanent_gpu_enabled else "CPU"
+        log_debug(f"Attempting to load translation model for language pair: '{source_lang}' to '{target_lang}' on {device_type}")
+
+        # Use a lock to ensure thread safety
+        with self.model_lock:
+            # Check if cache was cleared - if so, force reload even if model seems loaded
+            if self.cache_cleared_flag:
+                log_debug(f"Cache was cleared - forcing model reload on {device_type}")
+                self._unload_current_model()
+                self.cache_cleared_flag = False  # Reset the flag
+                
+            # Check if this model pair is already loaded and cache wasn't cleared
+            elif self.active_model_key == model_key and self.active_model is not None:
+                log_debug(f"Model for '{source_lang}' to '{target_lang}' already loaded and active on {device_type}.")
+                return True
+
+            # Unload existing model to save memory if a different model is active or needs to be loaded
+            if self.active_model_key != model_key or self.active_model is None: # More precise condition for unload
+                log_debug(f"Unloading previous model (if any) before loading {source_lang}->{target_lang} on {device_type}.")
+                self._unload_current_model() # Unconditional unload logic moved into _unload_current_model
+
+            # Try to load direct model based on key or generate a Helsinki name
+            if model_key in self.direct_pairs:
+                model_name = self.direct_pairs[model_key]
+                log_debug(f"Found predefined model '{model_name}' for language pair '{source_lang}' to '{target_lang}'")
+                # Verify it's a Helsinki-NLP model
+                if not model_name.startswith('Helsinki-NLP/opus-mt'):
+                    log_debug(f"Model '{model_name}' is not a Helsinki-NLP/opus-mt model, skipping")
+                    return False
+            else:
+                # Try to dynamically construct a Helsinki-NLP model name
+                model_name = f"Helsinki-NLP/opus-mt-{source_lang}-{target_lang}"
+                log_debug(f"No predefined model, trying to dynamically load: '{model_name}'")
+
+            try:
+                log_debug(f"Attempting to download and load model: {model_name} on {device_type}")
+                start_time = time.time()
+
+                # Load tokenizer (always on CPU)
+                self.active_tokenizer = MarianTokenizer.from_pretrained(model_name, cache_dir=self.cache_dir)
+                
+                # Load model with device-specific configuration
+                self.active_model = MarianMTModel.from_pretrained(
+                    model_name,
+                    cache_dir=self.cache_dir,
+                    low_cpu_mem_usage=True,  # More memory-efficient loading
+                    torch_dtype=torch.float16 if self.permanent_gpu_enabled else torch.float32,  # Use FP16 on GPU
+                )
+
+                # Move model to appropriate device with smart fallback
+                try:
+                    # Always try permanent device first (GPU if configured)
+                    if self.temporary_cpu_fallback and self.permanent_gpu_enabled:
+                        # We were in CPU fallback mode, try to restore GPU
+                        log_debug("Attempting to restore GPU after temporary CPU fallback")
+                        self.current_device = self.permanent_device
+                        self.temporary_cpu_fallback = False
+                    
+                    self.active_model = self.active_model.to(self.current_device)
+                    load_time = time.time() - start_time
+                    
+                    device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+                    log_debug(f"Model {model_name} loaded to {device_name} in {load_time:.2f} seconds")
+                    
+                    if self.current_device.type == 'cuda':
+                        # Log GPU memory usage
+                        if torch.cuda.is_available():
+                            memory_allocated = torch.cuda.memory_allocated(0) / 1024**3
+                            log_debug(f"GPU memory allocated: {memory_allocated:.2f} GB")
+                        
+                        # Reset fallback flag since GPU loading succeeded
+                        if self.temporary_cpu_fallback:
+                            self.temporary_cpu_fallback = False
+                            log_debug("Successfully restored GPU operation after temporary fallback")
+                        
+                except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+                    # Smart fallback: only fall back to CPU if we were configured for GPU
+                    if self.permanent_gpu_enabled and not self.temporary_cpu_fallback:
+                        log_debug(f"GPU loading failed ({e}), implementing temporary CPU fallback")
+                        log_debug("This is a temporary fallback - will attempt GPU again on next model load")
+                        
+                        # Set temporary CPU fallback mode
+                        self.current_device = torch.device("cpu")
+                        self.temporary_cpu_fallback = True
+                        
+                        try:
+                            # Try loading on CPU
+                            self.active_model = self.active_model.to(self.current_device)
+                            load_time = time.time() - start_time
+                            log_debug(f"Model {model_name} loaded to CPU (temporary fallback) in {load_time:.2f} seconds")
+                        except Exception as cpu_error:
+                            log_debug(f"CPU fallback also failed: {cpu_error}")
+                            return False
+                    else:
+                        # We're either permanently CPU-configured or already in fallback mode
+                        if self.permanent_gpu_enabled:
+                            log_debug(f"CPU fallback also failed: {e}")
+                        else:
+                            log_debug(f"CPU loading failed (permanently configured for CPU): {e}")
+                        return False
+
+                self.active_model_key = model_key
+                # Add to supported languages if successful
+                self.supported_langs.add(source_lang)
+                self.supported_langs.add(target_lang)
+                # Add to direct pairs if it wasn't there before
+                if model_key not in self.direct_pairs:
+                    self.direct_pairs[model_key] = model_name
+                    log_debug(f"Added new model to direct_pairs: {model_key} -> {model_name}")
+
+                return True
+            except Exception as e:
+                log_debug(f"Could not load model {model_name}: {e}")
+                # Will continue to pivot translation
+                return False
+
+    # MODIFIED: Removed @lru_cache decorator - caching now handled by unified cache
+    def _translate_text_cached(self, text, model_key, beam_value): # Added beam_value parameter
+        """Perform the actual translation with caching and thread safety."""
+        # Use a lock for thread-safe model access
+        with self.model_lock:
+            # This method assumes the correct model is already loaded
+            if self.active_model_key != model_key or self.active_tokenizer is None or self.active_model is None:
+                log_debug(f"Model key mismatch or model not loaded. Active: {self.active_model_key}, Requested: {model_key}")
+                return f"Error: Model {model_key} not loaded correctly"
+
+        # Tokenize and translate
+        try:
+            # IMPROVED: Handle potential token limits by checking text length
+            total_chars = len(text)
+
+            # For very short text, just translate directly with high quality settings
+            if total_chars < 2:
+                inputs = self.active_tokenizer([text], return_tensors="pt", padding=True)
+                # Move inputs to current device (GPU or CPU, includes fallback handling)
+                inputs = {k: v.to(self.current_device) for k, v in inputs.items()}
+                
+                if torch: # Check torch exists
+                    with torch.no_grad():
+                        try:
+                            if self.current_device.type == 'cuda':
+                                # GPU generation with mixed precision for speed
+                                with torch.cuda.amp.autocast():
+                                    translated = self.active_model.generate(
+                                        **inputs,
+                                        max_length=512,
+                                        num_beams=beam_value,
+                                        length_penalty=1.0,
+                                        no_repeat_ngram_size=2
+                                    )
+                            else:
+                                # CPU generation
+                                translated = self.active_model.generate(
+                                    **inputs,
+                                    max_length=512,
+                                    num_beams=beam_value,
+                                    length_penalty=1.0,
+                                    no_repeat_ngram_size=2
+                                )
+                        except torch.cuda.OutOfMemoryError:
+                            # Smart fallback for GPU OOM during translation
+                            if self.permanent_gpu_enabled and self.current_device.type == 'cuda':
+                                log_debug("GPU out of memory during translation, falling back to CPU temporarily")
+                                
+                                # Move everything to CPU for this translation
+                                inputs_cpu = {k: v.cpu() for k, v in inputs.items()}
+                                model_cpu = self.active_model.cpu()
+                                self.current_device = torch.device("cpu")
+                                self.temporary_cpu_fallback = True
+                                
+                                # Perform translation on CPU
+                                translated = model_cpu.generate(
+                                    **inputs_cpu,
+                                    max_length=512,
+                                    num_beams=beam_value,
+                                    length_penalty=1.0,
+                                    no_repeat_ngram_size=2
+                                )
+                                
+                                # Keep model on CPU for subsequent translations until next model load
+                                self.active_model = model_cpu
+                                log_debug("Translation completed on CPU fallback. GPU will be retried on next model load.")
+                            else:
+                                # Either not GPU-configured or already in CPU mode
+                                log_debug("Out of memory error in CPU mode or non-GPU configuration")
+                                return "Error: Out of memory during translation."
+                    
+                    result = self.active_tokenizer.batch_decode(translated, skip_special_tokens=True)[0]
+                    return result
+                else: # Fallback if torch is not available (should not happen if MARIANMT_AVAILABLE is True)
+                    return "Error: PyTorch not available for translation."
+
+            # For longer text, ensure we don't exceed tokenizer limits
+            # First normalize spacing and punctuation
+            text = re.sub(r'\s+', ' ', text).strip()
+
+            # IMPROVED: Get token count before translation to check limits
+            # This helps diagnose potential truncation issues
+            token_info = self.active_tokenizer.encode(text, add_special_tokens=True)
+            token_count = len(token_info)
+            log_debug(f"Text has {token_count} tokens for {total_chars} characters")
+
+            # IMPROVED: Handle very long text with potential token limit issues
+            if token_count > 450:  # Most models have ~512 token limits
+                log_debug(f"Warning: Text exceeds recommended token limit ({token_count} tokens)")
+
+                if token_count > 900:  # Critical limit, force chunking
+                    log_debug("Critical token limit exceeded, forcing text truncation")
+                    # Get a safely-sized substring
+                    tokens_to_use = token_info[:400]  # Use first ~400 tokens
+                    # Convert tokens back to text to preserve complete sentences
+                    truncated_text = self.active_tokenizer.decode(tokens_to_use, skip_special_tokens=True)
+                    log_debug(f"Truncated text from {total_chars} to {len(truncated_text)} chars")
+                    text = truncated_text
+
+            # Create a clean input for translation with the possibly truncated text
+            inputs = self.active_tokenizer([text], return_tensors="pt", padding=True)
+            # Move inputs to current device (GPU or CPU, includes fallback handling)
+            inputs = {k: v.to(self.current_device) for k, v in inputs.items()}
+
+            # Use no_grad for better memory usage during inference
+            if torch: # Check torch exists
+                with torch.no_grad():
+                    log_debug(f"Using beam search value: {beam_value}")
+
+                    try:
+                        if self.current_device.type == 'cuda':
+                            # GPU generation with mixed precision for speed and memory efficiency
+                            with torch.cuda.amp.autocast():
+                                translated = self.active_model.generate(
+                                    **inputs,
+                                    max_length=512,  # Increased max_length for longer content
+                                    num_beams=beam_value,
+                                    length_penalty=1.0, # Higher penalty = longer outputs
+                                    no_repeat_ngram_size=2,  # Prevent repetition
+                                    min_length=0,
+                                    early_stopping=(beam_value > 1),
+                                    repetition_penalty=1.1  # Further discourage repetition/truncation
+                                )
+                        else:
+                            # CPU generation
+                            translated = self.active_model.generate(
+                                **inputs,
+                                max_length=512,  # Increased max_length for longer content
+                                num_beams=beam_value,
+                                length_penalty=1.0, # Higher penalty = longer outputs
+                                no_repeat_ngram_size=2,  # Prevent repetition
+                                min_length=0,
+                                early_stopping=(beam_value > 1),
+                                repetition_penalty=1.1  # Further discourage repetition/truncation
+                            )
+                    
+                    except torch.cuda.OutOfMemoryError:
+                        # Smart fallback for GPU OOM during longer text translation
+                        if self.permanent_gpu_enabled and self.current_device.type == 'cuda':
+                            log_debug("GPU out of memory during longer text translation, falling back to CPU temporarily")
+                            
+                            # Move everything to CPU for this translation
+                            inputs_cpu = {k: v.cpu() for k, v in inputs.items()}
+                            model_cpu = self.active_model.cpu()
+                            self.current_device = torch.device("cpu")
+                            self.temporary_cpu_fallback = True
+                            
+                            # Perform translation on CPU
+                            translated = model_cpu.generate(
+                                **inputs_cpu,
+                                max_length=512,
+                                num_beams=beam_value,
+                                length_penalty=1.0,
+                                no_repeat_ngram_size=2,
+                                min_length=0,
+                                early_stopping=(beam_value > 1),
+                                repetition_penalty=1.1
+                            )
+                            
+                            # Keep model on CPU for subsequent translations until next model load
+                            self.active_model = model_cpu
+                            log_debug("Longer text translation completed on CPU fallback. GPU will be retried on next model load.")
+                        else:
+                            # Either not GPU-configured or already in CPU mode
+                            log_debug("Out of memory error during longer text translation in CPU mode or non-GPU configuration")
+                            return "Error: Out of memory during translation."
+
+                # Decode the result
+                result = self.active_tokenizer.batch_decode(translated, skip_special_tokens=True)[0]
+
+                # Enhanced logging and validation
+                input_sentences = len(re.findall(r'[.!?]\s+|\n+', text)) + 1
+                output_sentences = len(re.findall(r'[.!?]\s+|\n+', result)) + 1
+                log_ratio = len(result) / max(1, len(text))
+                
+                # Log device used for performance tracking
+                current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+                fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+                log_debug(f"Translation completed on {current_device_name}{fallback_info}: {len(text)} → {len(result)} chars")
+
+                # IMPROVED: Check for potentially incomplete translations
+                if (len(result) < len(text) * 0.7 and len(text) > 50) or \
+                   (output_sentences < input_sentences and input_sentences > 1) or \
+                   (len(result) < 10 and len(text) > 20):
+                    log_debug(f"Warning: Translation may be incomplete. Input: {len(text)} chars ({input_sentences} sentences), Output: {len(result)} chars ({output_sentences} sentences), Ratio: {log_ratio:.2f}")
+                    log_debug(f"Input text: '{text}'")
+                    log_debug(f"Result: '{result}'")
+
+                return result
+            else: # Fallback if torch is not available
+                return "Error: PyTorch not available for translation."
+
+        except Exception as e:
+            # import traceback # Already imported at the top of the file
+            error_details = traceback.format_exc()
+            log_debug(f"Translation error: {e}\n{error_details}")
+            return f"Translation error: {str(e)}"
+
+    def translate(self, text, source_lang, target_lang):
+        """
+        Translate text from source language to target language using parallel processing.
+
+        Args:
+            text: Text to translate
+            source_lang: Source language code
+            target_lang: Target language code
+
+        Returns:
+            Translated text or error message
+        """
+        translation_start_time = time.monotonic()  # Start timing the entire process
+
+        # Basic validation
+        source_lang = source_lang.lower()
+        target_lang = target_lang.lower()
+
+        if source_lang == target_lang:
+            return text  # No translation needed
+
+        # Try to load direct model or dynamically attempt the pair
+        model_key = (source_lang, target_lang)
+        direct_model_loaded = self._try_load_direct_model(source_lang, target_lang)
+
+        if not direct_model_loaded:
+            # If we couldn't load the model, provide a specific error message
+            # Get language names from codes for a more user-friendly message
+            # Use a simple capitalize for names, specific handling for common ones if needed
+            source_lang_name = source_lang.capitalize()
+            target_lang_name = target_lang.capitalize()
+
+            common_lang_map = {
+                'en': 'English', 'pl': 'Polish', 'de': 'German', 'fr': 'French', 
+                'es': 'Spanish', 'it': 'Italian'
+            }
+            source_lang_name = common_lang_map.get(source_lang, source_lang_name)
+            target_lang_name = common_lang_map.get(target_lang, target_lang_name)
+
+            error_msg = f"The {source_lang_name} to {target_lang_name} translation is not supported by MarianMT models. Consider switching to Google Translate."
+            log_debug(error_msg)
+            return error_msg
+
+        # Ensure we're working with a clean string
+        if not text or not isinstance(text, str):
+            return "" if text is None else str(text)
+
+        # Clean up and normalize the text
+        text = re.sub(r'\s+', ' ', text).strip()
+        if not text:
+            return ""
+
+        # Log the text being translated for debugging
+        current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+        fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+        log_debug(f"MarianMT translating on {current_device_name}{fallback_info}: \"{text}\" from {source_lang} to {target_lang}")
+
+        # Split text into sentences
+        sentences = self._split_into_sentences(text)
+
+        # Handle single-sentence case directly
+        if len(sentences) <= 1 or len(text) < 30:
+            log_debug(f"Using direct translation for single sentence or short text: \"{text}\"")
+            result = self._translate_batch(text, source_lang, target_lang)
+
+            # Log completion time
+            translation_time = time.monotonic() - translation_start_time
+            current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+            fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+            log_debug(f"MarianMT translation complete in {translation_time:.3f} seconds on {current_device_name}{fallback_info}")
+            log_debug(f"The completed translation is displayed: \"{result}\"")
+
+            return result
+
+        # Log that we're using parallel translation
+        current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+        fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+        log_debug(f"Translating {len(sentences)} sentences in parallel on {current_device_name}{fallback_info}")
+
+        try:
+            # Submit all sentences to thread pool
+            futures = []
+            for i, sentence in enumerate(sentences):
+                future = self.thread_pool.submit(
+                    self._translate_sentence_worker,
+                    sentence, source_lang, target_lang, i
+                )
+                futures.append(future)
+
+            # Collect results in order
+            results = []
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                results.append(result)
+
+            # Sort results by original sentence index
+            results.sort(key=lambda x: x['index'])
+
+            # Extract translations in correct order
+            translated_sentences = []
+            total_sentence_time = 0.0
+            for result in results:
+                if result['success'] and result['translated']:
+                    log_debug(f"Sentence {result['index']+1}: \"{result['original']}\" has been translated by MarianMT in {result['translation_time']:.2f}s")
+                    translated_sentences.append(result['translated'])
+                    total_sentence_time += result['translation_time']
+                else:
+                    # Fall back to original on failure
+                    log_debug(f"Sentence {result['index']+1}: \"{result['original']}\" failed to translate, using original")
+                    translated_sentences.append(result['original'])
+
+            # Join translated sentences with appropriate spacing
+            result = " ".join(translated_sentences)
+
+            # Calculate and log total time
+            translation_time = time.monotonic() - translation_start_time
+            avg_sentence_time = total_sentence_time / len(translated_sentences) if translated_sentences else 0
+            current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+            fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+            log_debug(f"Parallel translation complete on {current_device_name}{fallback_info}: {len(translated_sentences)} sentences processed in {translation_time:.3f} seconds (avg {avg_sentence_time:.3f}s per sentence)")
+            log_debug(f"The completed subtitle is displayed: \"{result}\"")
+
+            return result
+
+        except Exception as e:
+            error_msg = f"Error in parallel translation: {str(e)}"
+            log_debug(error_msg)
+            log_debug(traceback.format_exc())
+
+            # Fall back to sequential translation on error
+            log_debug("Falling back to sequential translation")
+            return self._sequential_fallback_translate(text, sentences, source_lang, target_lang)
+
+    def _sequential_fallback_translate(self, full_text, sentences, source_lang, target_lang):
+        """Fallback method to translate sequentially if parallel translation fails."""
+        sequential_start_time = time.monotonic()  # Start timing the sequential process
+
+        try:
+            # If sentences list is empty or invalid, translate the full text directly
+            if not sentences:
+                log_debug(f"No sentences to translate, using full text: \"{full_text}\"")
+                result = self._translate_batch(full_text, source_lang, target_lang)
+                log_debug(f"Full text translated in fallback mode: \"{result}\"")
+                return result
+
+            # Process sentences sequentially
+            log_debug(f"Sequential translation of {len(sentences)} sentences:")
+            translated_parts = []
+            for i, sentence in enumerate(sentences):
+                if sentence.strip():
+                    log_debug(f"Sequentially translating sentence {i+1}: \"{sentence}\"")
+                    log_debug(f"Sentence {i+1}: \"{sentence}\" sent to MarianMT for translation")
+
+                    # Track individual sentence translation time
+                    sentence_start_time = time.monotonic()
+                    translated = self._translate_batch(sentence, source_lang, target_lang)
+                    sentence_translation_time = time.monotonic() - sentence_start_time
+
+                    if translated:
+                        log_debug(f"Sentence {i+1}: \"{sentence}\" has been translated by MarianMT in {sentence_translation_time:.2f}s")
+                        log_debug(f"Translation result: \"{translated}\"")
+                        translated_parts.append(translated)
+                    else:
+                        log_debug(f"Sentence {i+1} translation failed, using original: \"{sentence}\"")
+                        translated_parts.append(sentence)
+
+            # Join results
+            if translated_parts:
+                result = " ".join(translated_parts)
+                translation_time = time.monotonic() - sequential_start_time
+                log_debug(f"Sequential translation complete: {len(translated_parts)} sentences processed in {translation_time:.3f} seconds")
+                log_debug(f"The completed subtitle is displayed: \"{result}\"")
+                return result
+            else:
+                # Last resort - translate full text
+                log_debug(f"No translated parts, using full text as last resort: \"{full_text}\"")
+                result = self._translate_batch(full_text, source_lang, target_lang)
+                translation_time = time.monotonic() - sequential_start_time
+                log_debug(f"Full text translated in {translation_time:.3f} seconds: \"{result}\"")
+                return result
+
+        except Exception as e:
+            log_debug(f"Sequential fallback translation failed: {e}")
+            # Return original text in case of complete failure
+            return full_text
+
+    def _translate_batch(self, text, source_lang, target_lang):
+        """Translate a single batch of text using appropriate model. (Pivot translation removed)."""
+        try:
+            log_debug(f"Attempting to translate batch: \"{text}\" from {source_lang} to {target_lang}")
+
+            # --- Direct Translation Attempt Only ---
+            model_key = (source_lang, target_lang)
+
+            # Check if we need to force load the model (if it changed)
+            force_load_needed = (self.active_model_key != model_key or self.active_model is None) # Also check if model is None
+            if force_load_needed:
+                log_debug(f"Model key change or model not loaded: {self.active_model_key} -> {model_key}, Model loaded: {self.active_model is not None}")
+
+            # Try to load the direct model for the requested pair
+            direct_model_loaded = False
+            # Attempt load if needed or if the correct model isn't already active
+            if force_load_needed : # Simplified condition
+                direct_model_loaded = self._try_load_direct_model(source_lang, target_lang)
+            elif self.active_model_key == model_key and self.active_model is not None : # Model is correct and loaded
+                direct_model_loaded = True
+                log_debug(f"Using already loaded model for {source_lang}->{target_lang}")
+            else: # Model key matches but model is None (e.g. previous load failed)
+                direct_model_loaded = self._try_load_direct_model(source_lang, target_lang)
+
+            # --- Perform Translation if Direct Model Loaded ---
+            if direct_model_loaded:
+                log_debug(f"Using direct translation model for {source_lang}->{target_lang}")
+                # Pass self.num_beams as the third argument to the cached function
+                translated = self._translate_text_cached(text, model_key, self.num_beams)
+                log_debug(f"Direct translation result: \"{translated}\"")
+                return translated
+
+            # --- Handle Failure: Direct Model Not Available (No Pivot Fallback) ---
+            else:
+                log_debug(f"Direct model for {source_lang}->{target_lang} failed to load or is not available.")
+
+                # Generate user-friendly language names for the error message
+                source_lang_name = source_lang.capitalize()
+                target_lang_name = target_lang.capitalize()
+                # Add common language names for better messages
+                common_langs = {'en': 'English', 'pl': 'Polish', 'de': 'German', 'fr': 'French', 'es': 'Spanish', 'it': 'Italian'}
+                source_lang_name = common_langs.get(source_lang, source_lang_name)
+                target_lang_name = common_langs.get(target_lang, target_lang_name)
+
+                # Construct the specific error message indicating lack of support
+                error_msg = f"The {source_lang_name} to {target_lang_name} translation is not supported by MarianMT models. Consider switching to Google Translate."
+                log_debug(error_msg) # Log the error
+                return error_msg # Return the error message to the caller
+
+        # --- General Exception Handling ---
+        except Exception as e:
+            # Log any unexpected errors during the process
+            log_debug(f"MarianMT translation error in _translate_batch: {type(e).__name__} - {str(e)}")
+            log_debug(traceback.format_exc())
+            # Return a generic error message
+            return f"Translation error: {type(e).__name__} - {str(e)}"
+
+    def _split_into_sentences(self, text):
+        """Split text into sentences for parallel translation processing."""
+        if not text:
+            return []
+
+        # Normalize whitespace first
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # Log the full text before splitting
+        log_debug(f"Splitting text into sentences: \"{text}\"")
+
+        # Define character ranges for different languages
+        # latin_chars = r'A-ZÀ-ÖØ-ÞÇÉÈÊÂÄÀÔÛÙÏÎŘa-z0-9–—-'
+        # latin_caps = r'A-ZÀ-ÖØ-ÞÇÉÈÊÂÄÀÔÛÙÏÎŘ–—-'
+        latin_chars = r'A-ZÀ-ÖØ-ÞĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮİĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽa-z0-9–—\-¿¡'
+        latin_caps = r'A-ZÀ-ÖØ-ÞĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮİĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽ–—\-¿¡'
+        hiragana_katakana = r'\u3040-\u30FF'  # Hiragana and Katakana ranges
+        cjk_chars = r'\u4E00-\u9FAF'          # Common CJK characters
+
+        # Create patterns for sentence splitting
+        patterns = []
+
+        # Basic Western punctuation with Latin character support
+        patterns.append(r'(?<=\.)(?=\s*[' + latin_chars + r'])')              # Period + space + Latin chars
+        patterns.append(r'(?<=!)(?=\s*[' + latin_chars + r'])')               # Exclamation + space + Latin chars
+        patterns.append(r'(?<=\?)(?=\s*[' + latin_chars + r'])')              # Question + space + Latin chars
+        patterns.append(r'(?<=\.\.\.)(?=\s*[' + latin_caps + r'])')           # Ellipsis + space + Latin capitals
+        patterns.append(r'(?<=\.\.\.)(?=\s*[' + latin_chars + r'])')          # Ellipsis + space + any Latin char (lowercase included)
+        patterns.append(r'(?<=…)(?=\s*[' + latin_caps + r'])')                # Unicode ellipsis + space + Latin capitals
+        patterns.append(r'(?<=…)(?=\s*[' + latin_chars + r'])')               # Unicode ellipsis + space + any Latin char (lowercase included)
+        
+        # Basic Japanese/CJK punctuation (keep separate from Latin patterns)
+        patterns.append(r'(?<=。)(?=[' + hiragana_katakana + cjk_chars + r'])')  # Japanese period + CJK char
+        patterns.append(r'(?<=！)(?=[' + hiragana_katakana + cjk_chars + r'])')  # Japanese exclamation + CJK char
+        patterns.append(r'(?<=？)(?=[' + hiragana_katakana + cjk_chars + r'])')  # Japanese question + CJK char
+        patterns.append(r'(?<=……)(?=[' + hiragana_katakana + cjk_chars + r'])')  # Japanese ellipsis + CJK char
+        
+        # Combined punctuation
+        # Western style with Latin char support
+        patterns.append(r'(?<=!\?)(?=\s*[' + latin_chars + r'])')             # !? + Latin chars
+        patterns.append(r'(?<=\?!)(?=\s*[' + latin_chars + r'])')             # ?! + Latin chars
+        
+        # Japanese style (separate from Latin)
+        patterns.append(r'(?<=！？)(?=[' + hiragana_katakana + cjk_chars + r'])')  # Japanese !? + CJK char
+        patterns.append(r'(?<=？！)(?=[' + hiragana_katakana + cjk_chars + r'])')  # Japanese ?! + CJK char
+        
+        # Common Japanese sentence endings (keep separate from Latin)
+        jp_endings = ['だ', 'ね', 'よ', 'ぞ', 'わ', 'さ', 'な', 'か', 'ます', 'です', 'たい', 'ない']
+        jp_punctuation = ['。', '！', '？']
+        
+        for ending in jp_endings:
+            for punct in jp_punctuation:
+                # Pattern: ending + punctuation + CJK character
+                patterns.append(r'(?<=' + ending + punct + r')(?=[' + hiragana_katakana + cjk_chars + r'])')
+        
+        # Newlines as sentence separators
+        patterns.append(r'(?<=\.)(?=\s*\n)')         # Period + newline
+        patterns.append(r'(?<=!)(?=\s*\n)')          # Exclamation + newline
+        patterns.append(r'(?<=\?)(?=\s*\n)')         # Question + newline
+        patterns.append(r'(?<=。)(?=\s*\n)')          # Japanese period + newline
+        patterns.append(r'(?<=！)(?=\s*\n)')          # Japanese exclamation + newline
+        patterns.append(r'(?<=？)(?=\s*\n)')          # Japanese question + newline
+        
+        # Join all patterns
+        sentence_terminators = '|'.join(patterns)
+        
+        # Split using the pattern
+        try:
+            sentences = re.split(sentence_terminators, text)
+            log_debug(f"Successfully split text using {len(patterns)} patterns")
+        except Exception as e:
+            log_debug(f"Error in sentence splitting: {str(e)}")
+            # Fallback to simple splitting on basic punctuation if regex fails
+            sentences = re.split(r'(?<=\.)\s+|(?<=!)\s+|(?<=\?)\s+|(?<=。)|(?<=！)|(?<=？)', text)
+            log_debug(f"Used fallback sentence splitting")
+
+        # Process and filter the resulting sentences
+        processed_sentences = []
+        for s in sentences:
+            if s is None: continue # re.split can produce None values
+            s_stripped = s.strip()
+            if not s_stripped:
+                continue
+            processed_sentences.append(s_stripped)
+
+        # Handle special cases
+        if not processed_sentences:
+            log_debug(f"No sentences found after splitting, using full text: \"{text}\"")
+            return [text]  # Return original if splitting failed
+
+        # Don't split very short text
+        if len(text) < 30:
+            log_debug(f"Text too short for splitting (<30 chars): \"{text}\"")
+            return [text]
+
+        # Log each sentence found
+        log_debug(f"Splitting into {len(processed_sentences)} sentences:")
+        for i, sentence in enumerate(processed_sentences):
+            log_debug(f"Sentence {i+1}: \"{sentence}\"")
+
+        return processed_sentences
+
+    def get_device_info(self):
+        """Get current device information for debugging."""
+        info = {
+            'permanent_device': str(self.permanent_device),
+            'current_device': str(self.current_device),
+            'permanent_gpu_enabled': self.permanent_gpu_enabled,
+            'temporary_cpu_fallback': self.temporary_cpu_fallback,
+            'gpu_available': torch.cuda.is_available() if torch else False,
+            'gpu_name': self.gpu_name,
+            'gpu_memory_total': self.gpu_memory,
+            'current_model': self.active_model_key,
+            'cache_cleared_flag': self.cache_cleared_flag
+        }
+        
+        if torch and torch.cuda.is_available() and self.current_device.type == 'cuda':
+            try:
+                info['gpu_memory_allocated'] = torch.cuda.memory_allocated(0) / 1024**3
+                info['gpu_memory_cached'] = torch.cuda.memory_reserved(0) / 1024**3
+            except:
+                info['gpu_memory_allocated'] = 0
+                info['gpu_memory_cached'] = 0
+        
+        return info
+
+    def get_scenario_description(self):
+        """Get a human-readable description of the current scenario."""
+        if self.permanent_gpu_enabled:
+            cuda_version = torch.version.cuda if (torch and hasattr(torch, 'version') and torch.version.cuda) else "Unknown"
+            return f"Scenario 4: GPU-ready application on PC with GPU CUDA support (CUDA {cuda_version}) → MarianMT using GPU"
+        else:
+            # Use improved detection logic for CPU scenarios
+            if (torch and hasattr(torch, 'version') and 
+                hasattr(torch.version, 'cuda') and 
+                torch.version.cuda is not None):
+                cuda_version = torch.version.cuda
+                return f"Scenario 3: GPU-ready application on CPU-only PC (CUDA {cuda_version} available) → MarianMT using CPU"
+            else:
+                # Try to detect GPU hardware for distinction between scenarios 1 and 2
+                try:
+                    import subprocess
+                    result = subprocess.run(['nvidia-smi', '--query-gpu=name', '--format=csv,noheader,nounits'], 
+                                          capture_output=True, text=True, timeout=3)
+                    if result.returncode == 0 and result.stdout.strip():
+                        gpu_name = result.stdout.strip().split('\n')[0]
+                        return f"Scenario 2: CPU-only application on PC with GPU CUDA support (GPU: {gpu_name}) → MarianMT using CPU"
+                    else:
+                        return "Scenario 1: CPU-only application on CPU-only PC → MarianMT using CPU"
+                except:
+                    return "Scenario 1: CPU-only application on CPU-only PC → MarianMT using CPU"

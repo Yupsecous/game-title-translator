@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Tomasz Kamiński" />
+    <title>OCR Translator User Manual</title>
+    <style type="text/css">
+        /* Base styling */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+            
+        /* Avoid page breaks inside the most common attributes, especially for exports (i.e. PDF) */
+        td, h1, h2, h3, h4, h5, p, ul, ol, li {
+            page-break-inside: avoid; 
+        }
+
+        /* Make all images responsive - fit within browser window width */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 0 20px 0; /* Left-aligned with bottom margin */
+        }
+        
+        /* Set main screenshot to 75% of browser window width */
+        img[src="screenshots/screenshot2_eng_deepl.jpg"] {
+            width: 75vw;
+            height: auto;
+        }
+
+        /* Heading styles */
+        h1, h2, h3, h4, h5 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            color: #111;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow: auto;
+        }
+        
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        
+        table th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        
+        table tr:nth-child(2n) {
+            background-color: #f8f8f8;
+        }
+
+        /* List styling */
+        ol, ul {
+            padding-left: 2em;
+        }
+        
+        li {
+            margin: 0.3em 0;
+        }
+
+        /* Code styling */
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 0.9em;
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+        }
+
+        /* Link styling */
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Blockquote styling */
+        blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin: 0 0 16px 0;
+        }
+
+        /* Flag styling */
+        .flag-container {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .flag-container img {
+            width: 48px;
+            height: auto;
+            display: block;
+            margin: 0;
+        }
+
+        /* Gaming note style */
+        .gaming-note {
+            background-color: #f3e5f5;
+            border: 2px solid #9c27b0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 100%;
+        }
+        
+        .gaming-note-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .gaming-note-content {
+            flex: 1;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="flag-container">
+      <img src="screenshots/united-kingdom-flag-icon.svg" alt="British Flag" title="English" />
+    </div>
+    <h1 id="ocr-translator-user-manual">OCR Translator User Manual</h1>
+    <p>Copyright © 2025 Tomasz Kamiński<br>
+    <em>Last Updated: 9 June 2025</em></p>
+    <p>
+      <img src="screenshots/screenshot2_eng_deepl.jpg" alt="OCR Translator Main Interface" class="logo-image" />
+    </p>
+    <h2 id="table-of-contents">Table of Contents</h2>
+    <ol>
+      <li>
+        <a href="#introduction">Introduction</a>
+      </li>
+      <li>
+        <a href="#getting-started">Getting Started</a>
+      </li>
+      <li>
+        <a href="#main-interface">Main Interface</a>
+      </li>
+      <li>
+        <a href="#setting-up-translation-areas">Setting Up Translation Areas</a>
+      </li>
+      <li>
+        <a href="#settings-configuration">Settings Configuration</a>
+      </li>
+      <li>
+        <a href="#translation-methods">Translation Methods</a>
+      </li>
+      <li>
+        <a href="#keyboard-shortcuts">Keyboard Shortcuts</a>
+      </li>
+      <li>
+        <a href="#troubleshooting">Troubleshooting</a>
+      </li>
+      <li>
+        <a href="#tips-and-best-practices">Tips and Best Practices</a>
+      </li>
+    </ol>
+    <h2 id="introduction">Introduction</h2>
+    <p><strong>OCR Translator</strong>  is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. With its floating overlay windows, you can position the translation anywhere on your screen, making it perfect for translating games, videos, PDFs, or any application with text that you can't easily copy and paste.</p>
+    <h2 id="getting-started">Getting Started</h2>
+    <h3 id="requirements">Requirements</h3>
+    <p>Before using <strong>OCR Translator</strong> , ensure you have:</p>
+    <ul>
+      <li>Windows operating system.</li>
+      <li>
+        <a href="https://github.com/UB-Mannheim/tesseract/wiki">Tesseract OCR</a> installed.</li>
+      <li>The application installed according to the <a href="installation.html">Installation Guide</a>.</li>
+    </ul>
+    <h3 id="first-run">First Run</h3>
+    <ol>
+      <li>Launch <strong>OCR Translator</strong> by running the <code>main.py</code> script or the executable if you're using a compiled version.</li>
+      <li>On first startup, the application loads with default settings and both source and target areas are hidden.</li>
+      <li>Before starting translation, you need to:
+        <ul>
+          <li>Verify the Tesseract path in the <strong>Settings</strong> tab.</li>
+          <li>Select source and target areas.</li>
+          <li>Configure your preferred translation method.</li>
+        </ul>
+      </li>
+      <li>When you click <strong>Start</strong>, the <strong>translation window</strong> will automatically be shown.</li>
+      <li>When you click <strong>Stop</strong>, the <strong>translation window</strong> will automatically be hidden.</li>
+      <li>You can manually toggle the visibility of the <strong>translation window</strong> using  <strong>Alt+2</strong>  at any time.</li>
+    </ol>
+    <h2 id="main-interface">Main Interface</h2>
+    <p>The main interface is organised into four tabs:</p>
+    <h3 id="main-tab">Home Tab</h3>
+    <p>
+      <img src="screenshots/Home_en.png" alt="Home Tab" />
+    </p>
+    <ol>
+      <li>
+        <strong>Select Source Area (OCR)</strong> – Define the area where text will be captured.</li>
+      <li>
+        <strong>Select Target Area (Translation)</strong> – Define where the translated text will appear.</li>
+      <li>
+        <strong>Start/Stop</strong> – Toggle the translation process on/off.</li>
+      <li>
+        <strong>Hide/Show Source Window</strong> – Toggle visibility of the source capture area.</li>
+      <li>
+        <strong>Hide/Show Target Window</strong> – Toggle visibility of the translation target area.</li>
+      <li>
+        <strong>Clear Translation Cache</strong> – Clear translations stored in memory to force retranslation.</li>
+      <li>
+        <strong>Clear Debug Log</strong> – Clear the application log.</li>
+      <li>
+        <strong>Enable/Disable Debug Log</strong> – Disable debug logging for improved performance.</li>
+      <li>
+        <strong>Keyboard Shortcuts</strong> – List of available hotkeys.</li>
+      <li>
+        <strong>Status</strong> – Current application status.</li>
+    </ol>
+    <h3 id="settings-tab">Settings Tab</h3>
+    <p>
+      <img src="screenshots/Settings_en.png" alt="Settings Tab" />
+    </p>
+    <p>Here you can configure:</p>
+    <ol>
+      <li>
+        <strong>Translation Model</strong> – Select between different translation providers.</li>
+      <li>
+        <strong>Source Language</strong> – The language to detect with OCR and translate from (DeepL and Google Translate only).</li>
+      <li>
+        <strong>Target Language</strong> – The language to translate into (DeepL and Google Translate only).</li>
+      <li>
+        <strong>API Key</strong> – For DeepL or Google Translate.</li>
+      <li>
+        <strong>Quality</strong> – Choose between <strong>Classic</strong> (faster) or <strong>Next-gen</strong> (potentially better quality) models (DeepL only).</li>
+      <li>
+        <strong>MarianMT Options</strong> – For offline neural translation (MarianMT-specific).</li>
+      <li>
+        <strong>Tesseract Path</strong> – Path to the Tesseract OCR executable.</li>
+      <li>
+        <strong>Scan Interval (ms)</strong> – How frequently to capture the screen.</li>
+      <li>
+        <strong>Clear Translation Timeout (s)</strong> – Time before clearing translations when source text disappears.</li>
+      <li>
+        <strong>Text Stability Threshold</strong> – How many consistent readings needed before translation.</li>
+      <li>
+        <strong>OCR Confidence Threshold</strong> – Minimum confidence for OCR text detection.</li>
+      <li>
+        <strong>Image Preprocessing Mode</strong> – How to process images for OCR.</li>
+      <li>
+        <strong>OCR Debugging</strong> – Option to show debug images and text in the Debugging tab.</li>
+      <li>
+        <strong>Preview</strong> button – Opens OCR Preview window.</li>
+      <li>
+        <strong>Remove Trailing Garbage</strong> – Option to remove text after the last punctuation mark.</li>
+      <li>
+        <strong>Appearance Options</strong> – Colours and font sizes for overlays.</li>
+      <li>
+        <strong>File Caching Options</strong> – Settings to enable/disable caching for DeepL and Google Translate.</li>
+    </ol>
+    <h3 id="ocr-preview">OCR Preview</h3>
+    <p>
+      <img src="screenshots/OCR_Preview_en.png" alt="OCR Preview" />
+    </p>
+    <p>Clicking the <strong>Preview</strong> button on the <strong>Settings</strong> tab opens a separate <strong>OCR Preview</strong> window. This window displays:</p>
+    <ol>
+      <li>
+        <strong>Processed Image (1:1 scale)</strong> – The preprocessed image being used for OCR recognition.</li>
+      <li>
+        <strong>Recognized Text</strong> – The text currently being recognised by the OCR engine.</li>
+    </ol>
+    <p>This preview window is particularly useful for fine-tuning OCR settings and understanding why certain text might not be recognised properly. It can be moved and resized independently of the <strong>main application window</strong>.</p>
+    <h3 id="debug-tab">Debugging Tab</h3>
+    <p>
+      <img src="screenshots/Debugging_en.png" alt="Debugging Tab" />
+    </p>
+    <p>This tab shows:</p>
+    <ol>
+      <li>
+        <strong>Original Image</strong> – The raw captured image.</li>
+      <li>
+        <strong>Processed Image</strong> – The image after preprocessing for OCR.</li>
+      <li>
+        <strong>OCR Results</strong> – Text detected by OCR.</li>
+      <li>
+        <strong>Application Log</strong> – Running log of application events.</li>
+      <li>
+        <strong>Save OCR Images</strong> and <strong>Refresh Log</strong> – Buttons to save debug images and refresh the log.</li>
+    </ol>    
+    <h3 id="about-tab">About Tab</h3>
+    <p>This tab provides basic information about the application.</p>
+    <h2 id="setting-up-translation-areas">Setting Up Translation Areas</h2>
+    <h3 id="selecting-the-source-area">Selecting the Source Area</h3>
+    <ol>
+      <li>Click <strong>Select Source Area (OCR)</strong> button.</li>
+      <li>Your screen will dim, and you'll see see a black cross.</li>
+      <li>Click and drag to select the area containing text you want to translate.</li>
+      <li>After selection, a semi-transparent overlay window appears at the selected location.</li>
+      <li>This overlay are hidden by default when the application starts.</li>
+      <li>This overlay can be:
+        <ul>
+          <li><strong>Moved</strong>: Drag from the title bar.</li>
+          <li><strong>Resized</strong>: Drag from any edge or corner.</li>
+          <li><strong>Hidden/Shown</strong>: Use the <strong>Hide/Show Source Window</strong> button or  <strong>Alt+1</strong>  hotkey.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="selecting-the-target-area">Selecting the Target Area</h3>
+    <ol>
+      <li>Click <strong>Select Target Area (Translation)</strong> button.</li>
+      <li>Your screen will dim, and you'll see a black cross.</li>
+      <li>Click and drag to select where you want translations to appear.</li>
+      <li>After selection, a semi-transparent overlay window appears at the selected location.</li>
+      <li>This overlay are hidden by default when the application starts.</li>
+      <li>This overlay can be:
+        <ul>
+          <li><strong>Moved</strong>: Drag from the title bar.</li>
+          <li><strong>Resized</strong>: Drag from any edge or corner.</li>
+          <li><strong>Hidden/Shown</strong>: Use the <strong>Hide/Show Target Window</strong> button or  <strong>Alt+2</strong>  hotkey.</li>
+        </ul>
+      </li>
+    </ol>
+    <h2 id="settings-configuration">Settings Configuration</h2>
+    <h3 id="translation-configuration">Translation Configuration</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Translation Model</strong>:</p>
+        <ul>
+          <li>
+            <strong>MarianMT (offline and free)</strong> – No API key needed, downloads models on first use, works offline.</li>
+          <li>
+            <strong>DeepL API</strong> – Requires API key, high-quality translations.</li>
+          <li>
+            <strong>Google Translate API</strong> – Requires API key, supports many languages.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Source Language</strong>:</p>
+        <ul>
+          <li>Language to translate from.</li>
+          <li>The OCR engine will use this language for text recognition to improve accuracy.</li>
+          <li>When you change the source language for translation, the OCR language is updated accordingly.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Target Language</strong>:</p>
+        <ul>
+          <li>Language to translate into.</li>
+          <li>Note that not all language pairs are supported by all translation methods.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="ocr-configuration">OCR Configuration</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Tesseract Path</strong>:</p>
+        <ul>
+          <li>Should point to your Tesseract installation (e.g., <code>C:\Program Files\Tesseract-OCR\tesseract.exe</code>).</li>
+          <li>Use the <strong>Browse</strong> button to locate it if needed.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Image Preprocessing Mode</strong>:</p>
+        <ul>
+          <li>
+            <strong>None</strong> – No preprocessing, good for clear text.</li>
+          <li>
+            <strong>Binary</strong> – Black and white conversion, good for high contrast text.</li>
+          <li>
+            <strong>Binary Inverted</strong> – Inverted binary, good for white text on dark backgrounds.</li>
+          <li>
+            <strong>Adaptive</strong> – Advanced adaptive thresholding for challenging environments.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Adaptive Mode</strong>:</p>
+        <p>When you select <strong>Adaptive</strong> preprocessing mode, the system unlocks sophisticated adaptive thresholding capabilities that excel in challenging visual environments. This mode is particularly valuable when dealing with difficult conditions such as small subtitle text overlaid on dynamic, flickering backgrounds with constantly changing colours and lighting.</p>
+        <p>Unlike the three standard preprocessing modes, Adaptive mode provides two adjustable parameters that allow you to fine-tune the OCR recognition process:</p>
+        <ul>
+          <li><strong>Block Size</strong> – Controls the size of the neighbourhood area used for calculating the threshold value. Larger values (e.g., 15–25) work better for text with gradual lighting changes, whilst smaller values (e.g., 7–13) are more effective for text with sharp contrast variations.</li>
+          <li><strong>C Value</strong> – Acts as a constant subtracted from the mean threshold. Positive values make the thresholding more conservative (less text detected but higher accuracy), whilst negative values make it more aggressive (more text detected but potentially more noise).</li>
+        </ul>
+        <p>This mode proves invaluable when standard preprocessing fails to produce reliable results. By experimenting with these two parameters, you can often achieve superior OCR recognition compared to the ready-to-use modes, particularly in scenarios where backgrounds contain moving elements, varying illumination, or complex visual patterns that would otherwise interfere with text detection.</p>
+        <p>For optimal results, start with moderate values (<strong>Block Size</strong>: 11, <strong>C Value</strong>: 2) and adjust based on your specific content. Increase <strong>Block Size</strong> for larger text or gradual lighting changes, and adjust <strong>C Value</strong> to balance between capturing all text and reducing false positives.</p>
+      </li>
+      <li>
+        <p>
+          <strong>OCR Confidence Threshold</strong>:</p>
+        <ul>
+          <li>Higher values (e.g., 80) give fewer but more accurate results.</li>
+          <li>Lower values (e.g., 40) catch more text but may include errors.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Text Stability Threshold</strong>:</p>
+        <ul>
+          <li>How many identical OCR readings needed before translation.</li>
+          <li>Higher values reduce flickering but increase delay.</li>
+          <li>Set to 0 for instant translation (may cause flickering).</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>OCR Debugging</strong>:</p>
+        <ul>
+          <li>When enabled, shows captured images and OCR results in the <strong>Debugging</strong> tab.</li>
+          <li>Useful for troubleshooting recognition issues.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Remove Trailing Garbage</strong>:</p>
+        <ul>
+          <li>When enabled, removes any text that appears after the last punctuation mark (period, exclamation point, or question mark).</li>
+          <li>Useful for cleaning up OCR errors that often appear at the end of recognised text.</li>
+          <li>Helps improve translation quality by removing random characters or partial words.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="performance-settings">Performance Settings</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Scan Interval (ms)</strong>:</p>
+        <ul>
+          <li>Time in milliseconds between screen captures.</li>
+          <li>Lower values (e.g., 50ms) give faster response but use more CPU.</li>
+          <li>Higher values (e.g., 500ms) use less CPU but respond slower.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Clear Translation Timeout (s)</strong>:</p>
+        <ul>
+          <li>Time in seconds before clearing the translation when source text disappears.</li>
+          <li>If the source area still contains text after the timeout period, the translation will remain visible.</li>
+          <li>Only clears the translation when no text is detected in the source area.</li>
+          <li>Set to 0 to keep translations visible indefinitely.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Clear Translation Cache</strong>:</p>
+        <ul>
+          <li>This button clears translations that are temporarily stored in the application's memory.</li>
+          <li>The memory cache stores recent translations to avoid re-translating identical text immediately.</li>
+          <li>Clearing this cache forces the application to retranslate all text, even if it was recently processed.</li>
+          <li>This is different from file caching – it only affects translations stored in RAM during the current session.</li>
+          <li>Useful when you want to see fresh translations or if cached results seem incorrect.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>File Caching Options (API Translation Services Only)</strong>:</p>
+        <ul>
+          <li>
+            <strong>Enable Google Translate file cache</strong> – Uses the same caching system as DeepL (see DeepL section for detailed explanation).</li>
+          <li>
+            <strong>Enable DeepL file cache</strong> – Saves DeepL translations to disk files to reduce API calls.</li>
+          <li>These options help reduce API usage and costs for paid services.</li>
+          <li>The <strong>Clear File Caches</strong> button removes all cached translations stored in files.</li>
+          <li>These settings do not apply to MarianMT since it works offline.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Debug Logging</strong>:</p>
+        <ul>
+          <li>
+            <strong>Disable Debug Log</strong> – Permanently disables debug logging to improve application performance.</li>
+          <li>Once disabled, debug information will no longer be written to the log file.</li>
+          <li>This can provide a noticeable performance improvement in resource-constrained environments.</li>
+          <li>The setting persists between application sessions.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="appearance-settings">Appearance Settings</h3>
+    <ol>
+      <li>
+        <strong>Source Area Colour</strong> – Background colour of the source capture overlay (customisable).</li>
+      <li>
+        <strong>Target Area Colour</strong> – Background colour of the translation overlay (customisable).</li>
+      <li>
+        <strong>Target Text Colour</strong> – Colour of the translated text (customisable).</li>
+      <li>
+        <strong>Target Window Font Size</strong> – Size of the translated text.</li>
+    </ol>
+    <h2 id="translation-methods">Translation Methods</h2>
+    <h3 id="marianmt-offline-and-free">MarianMT (offline and free)</h3>
+    <ol>
+      <li>No API key required – completely free to use.</li>
+      <li>Works entirely offline once models are downloaded.</li>
+      <li>Models are downloaded automatically when first used (~500MB per language pair).</li>
+      <li>Configure by:
+        <ul>
+          <li>Selecting <strong>MarianMT (offline and free)</strong> as Translation Model.</li>
+          <li>Selecting a language pair from the <strong>MarianMT Model</strong> dropdown.</li>
+          <li>Adjusting the <strong>Translation Beam Size (MarianMT)</strong> (higher values = better quality but slower).</li>
+        </ul>
+      </li>
+    </ol>
+    <p>MarianMT models are open-source neural machine translation systems that offer quite good translation quality. Whilst not quite reaching the standards of premium services like DeepL, they provide remarkably solid translations without any cost or internet requirement after the initial model download.</p>
+    <p>These models were originally designed for translating short, single sentences and would typically truncate longer passages. However, <strong>OCR Translator</strong> implements a clever workaround to this limitation. The application automatically splits longer texts into individual sentences and processes them in parallel using separate threads. These translated segments are then seamlessly stitched back together, ensuring you receive complete translations regardless of text length.</p>
+    <p>This approach offers several practical advantages:</p>
+    <ul>
+      <li>Complete privacy – your text never leaves your computer.</li>
+      <li>No usage limits or subscription costs.</li>
+      <li>Continues working during internet outages.</li>
+      <li>No API latency – translations happen at the speed of your computer.</li>
+    </ul>
+    <p>The <strong>Translation Beam Size (MarianMT)</strong> setting allows you to balance between speed and quality. Higher values (8–12) produce more refined translations but require more processing time, whilst lower values (1–4) prioritise speed over perfect phrasing.</p>
+    <h3 id="deepl-api">DeepL API</h3>
+    <ol>
+      <li>Requires a DeepL account and API key.</li>
+      <li>Offers premium-quality translations but supports fewer languages.</li>
+      <li>Regarded by many as the industry leader in translation quality.</li>
+      <li>The DeepL API Free plan allows for the translation of 500,000 characters per month free of charge (as at May, 2025).</li>
+      <li>Configure by:
+        <ul>
+          <li>Selecting <strong>DeepL API</strong> as Translation Model.</li>
+          <li>Entering your API key in the <strong>Settings</strong> tab (DeepL-specific setting).</li>
+          <li>Choosing your preferred <strong>Quality</strong> option:
+            <ul>
+              <li><strong>Classic</strong> – Faster processing with excellent quality</li>
+              <li><strong>Next-gen</strong> – Slightly slower but potentially even better quality for some content</li>
+            </ul>
+          </li>
+          <li>If you don't have an API key, see the <a href="installation.html">Installation Guide</a>.</li>
+        </ul>
+      </li>
+    </ol>
+    
+    <p><strong>Quality Options</strong></p>
+    <p>DeepL offers two quality modes to suit different needs. The <strong>Classic</strong> model provides fast, high-quality translations that work with all supported language pairs. The <strong>Next-gen</strong> model uses DeepL's latest translation technology, which can deliver even better results for certain types of content, though it processes slightly slower and may not support all language pairs.</p>
+    <p>If you select <strong>Next-gen</strong> and your chosen language pair isn't supported, the application will automatically fall back to <strong>Classic</strong> mode to ensure your translation continues working seamlessly. Both options deliver top-quality results that DeepL is renowned for.</p>
+    
+    <p><strong>DeepL File Caching System</strong></p>
+    <p><strong>OCR Translator</strong>  implements a caching system for DeepL translations. Once a text segment has been translated, it's stored in the application's local cache (<code>deepl_cache.txt</code>). When the same text appears again, the application retrieves the translation from the cache instead of sending another API request.</p>
+    <p>It's important to understand that this caching mechanism relies entirely on OCR quality. For a cache match to occur, the OCR'd text must be identical – down to the last character – with what is stored in the cache. Even a single character difference will result in a new API call and translation. This means the actual efficiency of the cache depends heavily on consistent OCR results.</p>
+    <p>The cache can be helpful for gamers in specific scenarios. For instance, if you're playing a game where static menu options or repeated dialogue appear in exactly the same font, size, and screen position, the OCR is more likely to produce identical results each time. However, if text appears with different backgrounds, lighting, or slight position shifts, OCR variations will likely trigger new translations.</p>
+    <p>For example, a game's <strong>Save Game</strong> button might consistently be recognised identically and benefit from caching, while dynamic dialogue with changing characters or backgrounds might produce slightly different OCR results each time, limiting cache effectiveness.</p>
+    <p>The cache persists between application sessions, but its practical benefit should be viewed as a helpful bonus rather than a major API-saving feature. The more consistent and clear the text presentation, the more likely you are to benefit from the caching system.</p>
+    <h3 id="google-translate-api">Google Translate API</h3>
+    <ol>
+      <li>Requires a Google Cloud account and API key.</li>
+      <li>Supports the widest range of languages.</li>
+      <li>Good for general purpose translation with broad language coverage.</li>
+      <li>Configure by:
+        <ul>
+          <li>Selecting <strong>Google Translate API</strong> as Translation Model.</li>
+          <li>Entering your API key in the <strong>Settings</strong> tab (Google Translate-specific setting).</li>
+          <li>If you don't have an API key, see the <a href="installation.md">Installation Guide</a>.</li>
+        </ul>
+      </li>
+    </ol>
+    <p>Google Translate uses the same file caching system as DeepL. Please refer to the DeepL API section above for a detailed explanation of how the caching mechanism works, its dependencies on OCR quality, and its practical benefits and limitations. All the same considerations and notes apply to Google Translate's caching functionality.</p>
+    <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+    <p>These keyboard shortcuts are available:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Shortcut</th>
+          <th>Function</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>~</code> (tilde)</td>
+          <td>Start/Stop Translation</td>
+        </tr>
+        <tr>
+          <td><code>Alt+1</code></td>
+          <td>Toggle Source Window Visibility</td>
+        </tr>
+        <tr>
+          <td><code>Alt+2</code></td>
+          <td>Toggle Translation Window Visibility</td>
+        </tr>
+        <tr>
+          <td><code>Alt+S</code></td>
+          <td>Save Settings</td>
+        </tr>
+        <tr>
+          <td><code>Alt+C</code></td>
+          <td>Clear Translation Cache</td>
+        </tr>
+        <tr>
+          <td><code>Alt+L</code></td>
+          <td>Clear Debug Log</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Note</strong>: When the application is stopped (translation inactive), the <strong>translation window</strong> will be hidden automatically. When the application is started, the <strong>translation window</strong> will appear automatically. You can manually override this behaviour using the  <strong>Alt+2</strong>  shortcut at any time.</p>
+    <h2 id="troubleshooting">Troubleshooting</h2>
+    <p>If you encounter issues:</p>
+    <ol>
+      <li>Check the <strong>Debugging</strong> tab for error messages and the application log.</li>
+      <li>Enable <strong>OCR Debugging</strong> in <strong>Settings</strong> to see what's being captured and recognised in the <strong>Debugging</strong> tab. Also view the <strong>OCR Preview</strong> window (accessible in the <strong>Settings</strong> tab via the <strong>Preview</strong> button).</li>
+      <li>Adjust settings as needed:
+        <ul>
+          <li>Try different preprocessing modes, including <strong>Adaptive mode</strong> for challenging environments.</li>
+          <li>Adjust confidence and stability thresholds.</li>
+          <li>Verify source language is correct.</li>
+          <li>Enable <strong>Remove Trailing Garbage</strong> to clean up OCR errors.</li>
+          <li>Fine-tune <strong>Adaptive mode</strong> parameters if using challenging backgrounds.</li>
+        </ul>
+      </li>
+      <li>Consult the <a href="troubleshooting.md">Troubleshooting Guide</a> for common issues and solutions.</li>
+    </ol>
+    <h2 id="tips-and-best-practices">Tips and Best Practices</h2>
+    <h3 id="ocr-accuracy">OCR Accuracy</h3>
+    <p>For best OCR results:</p>
+    <ol>
+      <li>Capture clean, high-contrast text.</li>
+      <li>Select appropriate source language.</li>
+      <li>Adjust preprocessing mode to match text appearance – try <strong>Adaptive mode</strong> for difficult backgrounds.</li>
+      <li>Resize the capture area to frame text closely but completely.</li>
+      <li>Use a larger source area for more context if OCR is struggling.</li>
+      <li>Enable <strong>Remove Trailing Garbage</strong> to clean up recognition artefacts.</li>
+      <li>Adjust the confidence threshold to balance between capturing all text (lower values) and reducing errors (higher values).</li>
+      <li>For small subtitles on changing backgrounds, experiment with <strong>Adaptive mode</strong>'s <strong>Block Size</strong> and <strong>C Value</strong> parameters.</li>
+    </ol>
+    <h3 id="performance-optimization">Performance Optimisation</h3>
+    <ol>
+      <li>Use a smaller source capture area.</li>
+      <li>Click <strong>Disable Debug Log</strong> in the <strong>Home</strong> tab.</li>
+      <li>Increase <strong>Scan Interval</strong> in the <strong>Settings</strong> tab to reduce CPU usage.</li>
+      <li>Disable <strong>OCR Debugging</strong> in the <strong>Settings</strong> tab.</li>
+      <li>Set the <strong>Image Preprocessing Mode</strong> to <strong>None</strong> in the <strong>Settings</strong> tab.</li>
+      <li>For MarianMT:
+        <ul>
+          <li>Lower <strong>Translation Beam Size (MarianMT)</strong> for faster translation.</li>
+        </ul>
+      </li>
+      <li>For DeepL or Google Translate:
+        <ul>
+          <li>Enable file caching to improve performance with repetitive text.</li>
+        </ul>
+      </li>
+    </ol>
+    <h3 id="practical-applications">Practical Applications</h3>
+    <ol>
+      <li>
+        <p>
+          <strong>Games</strong>:
+        </p>
+        <div class="gaming-note">
+          <div class="gaming-note-icon">🎮</div>
+          <div class="gaming-note-content">
+            <strong>NOTE:</strong> OCR Translator may not work correctly with some games in fullscreen mode.<br>We recommend using <strong>borderless windowed mode</strong>, which is supported by most modern games.
+          </div>
+        </div>
+        <ul>
+          <li>Position source overlay over game subtitles or dialogue.</li>
+          <li>Place target overlay in a less intrusive area.</li>
+          <li>Use the <strong>Clear Translation Timeout</strong> to keep translations visible as long as text is present on screen.</li>
+          <li>Enable <strong>Remove Trailing Garbage</strong> to clean up OCR errors common in game text.</li>
+          <li>For games with challenging subtitle backgrounds, experiment with <strong>Adaptive mode</strong> settings.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Videos</strong>:
+        </p>
+        <ul>
+          <li>Capture subtitle area.</li>
+          <li>Adjust preprocessing if subtitles are embedded – <strong>Adaptive mode</strong> often works well for varying video backgrounds.</li>
+          <li>For streaming content, set stability threshold lower (0–1) for faster response.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Documents & PDFs</strong>:
+        </p>
+        <ul>
+          <li>Resize source window to capture paragraphs.</li>
+          <li>Use stability threshold of 1–2 to reduce flickering when scrolling.</li>
+          <li>For scientific or technical documents, increase confidence threshold to reduce errors.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Applications</strong>:
+        </p>
+        <ul>
+          <li>Position overlays to avoid covering important UI elements.</li>
+          <li>Use hotkeys to quickly toggle translation when needed.</li>
+          <li>For applications with changing content, adjust the scan interval for optimal performance.</li>
+        </ul>
+      </li>
+    </ol>
+  </body>
+</html>
