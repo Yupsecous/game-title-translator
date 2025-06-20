@@ -11,6 +11,9 @@ This project was inspired by a family member who was learning French by playing 
 
 This application was developed or rather vibe-coded with the support of the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
 
+## OCR Translator Gallery
+  - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
+  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
 
 ## Key Features
 
