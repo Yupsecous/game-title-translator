@@ -53,7 +53,7 @@ This application was developed or rather vibe-coded with the support of Claude 3
    python main.py
    ```
 
-For detailed installation instructions, see the [Installation Guide](docs/installation.html).
+For detailed installation instructions, see the [Installation Guide](https://tomkam1702.github.io/OCR-Translator/docs/installation.html).
 
 ## Quick Start
 
@@ -64,16 +64,16 @@ For detailed installation instructions, see the [Installation Guide](docs/instal
 5. Click "Start" to begin translation
 6. Press the `~` key to toggle translation on/off
 
-For more detailed usage instructions, see the [User Manual](docs/user-manual.html).
+For more detailed usage instructions, see the [User Manual](https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html).
 
 ## Documentation
 
 - **User Manual** 
-  - [English](docs/user-manual.html) 
-  - [Polish](docs/user-manual_pl.html)
+  - [English](https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html) 
+  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/user-manual_pl.html)
 - **Installation Guide** 
-  - [English](docs/installation.html) 
-  - [Polish](docs/installation_pl.html)
+  - [English](https://tomkam1702.github.io/OCR-Translator/docs/installation.html) 
+  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/installation_pl.html)
 - **Troubleshooting** 
   - [English](docs/troubleshooting.md)
 - **Developer Guide** 
