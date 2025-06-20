@@ -1,5 +1,5 @@
 # OCR Translator
-Copyright (C) 2025 Tomasz Kamiński
+Copyright © 2025 Tomasz Kamiński
 
 ![OCR Translator Logo](docs/screenshots/readme_screen.jpg)
 
