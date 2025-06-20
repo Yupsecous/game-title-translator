@@ -142,3 +142,9 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 ## Contributing
 
 Please note that this project is considered feature-complete. If you wish to make substantial changes, please consider forking the repository instead.
+
+> **⚠️ FORKING NOTICE**: This project requires attribution to the original author. Please read [ATTRIBUTION.md](ATTRIBUTION.md) before forking or using this code.
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Attribution Required](https://img.shields.io/badge/Attribution-Required-red.svg)](ATTRIBUTION.md)
+[![Original Author](https://img.shields.io/badge/Original%20Author-Tomasz%20Kamiński-green.svg)](https://github.com/tomkam1702)
