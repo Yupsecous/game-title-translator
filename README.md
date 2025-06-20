@@ -74,6 +74,9 @@ For more detailed usage instructions, see the [User Manual](https://tomkam1702.g
 - **Installation Guide** 
   - [English](https://tomkam1702.github.io/OCR-Translator/docs/installation.html) 
   - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/installation_pl.html)
+- **OCR Translator Gallery**
+  - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
+  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
 - **Troubleshooting** 
   - [English](docs/troubleshooting.md)
 - **Developer Guide** 
