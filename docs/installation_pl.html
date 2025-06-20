@@ -194,37 +194,48 @@
     <h3 id="choose-your-version">Wybór wersji</h3>
     <p><strong>OCR Translator</strong> dostępny jest w dwóch wariantach skompilowanych:</p>
 
-    <h4 id="gpu-supported-version-4gb"><strong>Wersja z obsługą GPU</strong> (ok. 4 GB)</h4>
+    <h4 id="gpu-supported-version-134gb"><strong>Wersja z obsługą GPU</strong> (ok. 1,34 GB)</h4>
     <ul>
       <li><strong>Najlepsza dla</strong>: użytkowników z kartami graficznymi NVIDIA, którym zależy na szybszym tłumaczeniu za pomocą modeli MarianMT</li>
       <li><strong>Wymagania</strong>: karta graficzna NVIDIA z obsługą CUDA</li>
       <li><strong>Zalety</strong>: znacznie szybsze działanie tłumaczeń neuronowych offline</li>
-      <li><strong>Rozmiar pliku do pobrania</strong>: ok. 4 GB</li>
+      <li><strong>Rozmiar pliku do pobrania</strong>: ok. 1,34 GB (3 pliki)</li>
     </ul>
 
-    <h4 id="cpu-only-version-700mb"><strong>Wersja wyłącznie CPU</strong> (ok. 700 MB)</h4>
+    <h4 id="cpu-only-version-182mb"><strong>Wersja wyłącznie CPU</strong> (ok. 182 MB)</h4>
     <ul>
       <li><strong>Najlepsza dla</strong>: użytkowników bez dedykowanych kart graficznych lub preferujących mniejszy plik do pobierania</li>
       <li><strong>Wymagania</strong>: dowolny nowoczesny procesor</li>
       <li><strong>Zalety</strong>: mniejszy plik do pobrania, działa na wszystkich systemach</li>
-      <li><strong>Rozmiar pliku do pobrania</strong>: ok. 300 MB</li>
+      <li><strong>Rozmiar pliku do pobrania</strong>: ok. 182 MB (2 pliki)</li>
     </ul>
 
     <h3 id="installation-steps">Kroki instalacji</h3>
     <ol>
       <li>
-        <p><strong>Pobierz odpowiednie archiwum .7z</strong> dla swojego systemu:</p>
+        <p><strong>Pobierz wymagane pliki</strong> wybranej wersji:</p>
         <ul>
-          <li><code>OCR_Translator_GPU.7z</code> – dla systemów z kartami graficznymi NVIDIA</li>
-          <li><code>OCR_Translator_CPU.7z</code> – dla systemów bez dedykowanych kart graficznych</li>
+          <li><strong>Wersja GPU:</strong> pobierz WSZYSTKIE 3 pliki:
+            <ul>
+              <li><code>OCRTranslator_GPU-enabled.7z.001</code></li>
+              <li><code>OCRTranslator_GPU-enabled.7z.002</code></li>
+              <li><code>OCRTranslator_GPU-enabled.exe</code></li>
+            </ul>
+          </li>
+          <li><strong>Wersja CPU:</strong> pobierz OBA pliki:
+            <ul>
+              <li><code>OCRTranslator_CPU-only.7z.001</code></li>
+              <li><code>OCRTranslator_CPU-only.exe</code></li>
+            </ul>
+          </li>
         </ul>
       </li>
       <li>
-        <p><strong>Rozpakuj archiwum</strong>:</p>
+        <p><strong>Uruchom instalator</strong>:</p>
         <ul>
-          <li>Użyj programu 7-Zip, WinRAR lub wbudowanej funkcji wypakowywania Windows.</li>
-          <li>Rozpakuj do wybranego folderu (np. <code>C:\OCR_Translator\</code>).</li>
-          <li>W wyniku rozpakowania zostanie utworzony folder <code>OCRTranslator</code> zawierający wszystkie niezbędne pliki.</li>
+          <li>Kliknij dwukrotnie pobrany plik <code>.exe</code>.</li>
+          <li>Wybierz katalog instalacji.</li>
+          <li>Instalator automatycznie wypakuje wszystkie niezbędne pliki.</li>
         </ul>
       </li>
       <li>
@@ -402,8 +413,8 @@ cd ocr-translator</code></pre>
         </tr>
         <tr>
           <td><strong>Pliki do pobrania</strong></td>
-          <td>~4 GB</td>
-          <td>~300 MB</td>
+          <td>~1,34 GB</td>
+          <td>~182 MB</td>
           <td>~50 MB</td>
         </tr>
         <tr>
