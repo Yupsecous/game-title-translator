@@ -64,6 +64,7 @@ build_and_copy_resources.*
 compile_app.bat
 Language_Names_Localized.md
 github_plan.html
+sync_to_github.bat
 
 # Configuration files (user-generated)
 ocr_translator_config.ini
