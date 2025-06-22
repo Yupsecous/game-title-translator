@@ -72,3 +72,7 @@ upload_to_github.bat
 
 # Configuration files (user-generated)
 ocr_translator_config.ini
+
+# Download statistics files
+downloads.py
+downloads.html
