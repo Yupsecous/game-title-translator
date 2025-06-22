@@ -29,8 +29,6 @@ This application was developed or rather vibe-coded with the support of the foll
 - **Image Preprocessing**: Various modes to improve OCR accuracy
 - **Hotkey Support**: Control the application without switching windows
 - **Translation Caching**: Reduce API calls and improve performance
-- **Polish Language Support**: Proper alphabetical sorting and language selection for Polish users
-- **Improved Organization**: All configuration files and language resources are now organized in the `resources/` directory for better structure and maintainability
 
 ## Ready-to-Use Compiled Version
 
