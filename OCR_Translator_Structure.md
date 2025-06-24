@@ -21,6 +21,7 @@
 ### Core Functionality Modules
 - **worker_threads.py** - Background thread operations for capture, OCR, and translation
 - **marian_mt_translator.py** - Local translation using MarianMT neural network models
+- **convert_marian.py** - HuggingFace's conversion script for converting Tatoeba models to MarianMT format (used for English-to-Polish model)
 - **unified_translation_cache.py** - Unified LRU cache system for all translation providers (Google, DeepL, MarianMT)
 - **ocr_utils.py** - OCR processing utilities and text extraction
 - **translation_utils.py** - Translation-related helper functions
