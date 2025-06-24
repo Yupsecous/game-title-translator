@@ -63,7 +63,7 @@ class ConfigurationHandler:
                 log_debug(f"MarianMT models file not found: {models_file}. Using minimal defaults.")
                 default_models = {
                     "French to English": "Helsinki-NLP/opus-mt-fr-en",
-                    "English to Polish": "Helsinki-NLP/opus-mt-en-pl",
+                    "English to Polish": "Tatoeba/opus-en-pl-official",
                 }
                 # Localize default models if requested
                 if localize_names and hasattr(self.app, 'language_manager'):

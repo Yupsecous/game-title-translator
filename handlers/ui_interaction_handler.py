@@ -453,6 +453,15 @@ class UIInteractionHandler:
 
 
     def parse_marian_model_for_langs(self, model_path_or_display_name):
+        """Parse MarianMT model path or display name to extract source and target language codes."""
+        if not model_path_or_display_name:
+            return None
+        
+        # Special case for English-to-Polish Tatoeba model
+        if model_path_or_display_name == "Tatoeba/opus-en-pl-official":
+            log_debug("Detected special English-to-Polish Tatoeba model")
+            return 'en', 'pl'
+        
         match_model_langs = re.match(r'Helsinki-NLP/opus-mt-([a-z]{2,3}(?:_[a-z]+)?(?:-[a-z]{2,3}(?:_[a-z]+)?)?)-([a-z]{2,3}(?:_[a-z]+)?(?:-[a-z]{2,3}(?:_[a-z]+)?)?)', model_path_or_display_name)
         if match_model_langs:
             source_code = match_model_langs.group(1).replace('_', '-') 
@@ -474,6 +483,20 @@ class UIInteractionHandler:
             if source_iso and target_iso:
                 log_debug(f"Parsed MarianMT langs from display name '{model_path_or_display_name}': {source_iso} -> {target_iso}")
                 return source_iso, target_iso
+        
+        # Additional patterns for English-to-Polish in different languages
+        english_polish_patterns = [
+            r'english.*polish',
+            r'angielski.*polski', 
+            r'en.*pl\b',
+            r'inglés.*polaco',
+            r'anglais.*polonais'
+        ]
+        
+        for pattern in english_polish_patterns:
+            if re.search(pattern, model_path_or_display_name, re.IGNORECASE):
+                log_debug(f"Detected English-to-Polish model by pattern: '{model_path_or_display_name}'")
+                return 'en', 'pl'
         
         log_debug(f"Could not parse languages from MarianMT model string: {model_path_or_display_name}")
         return None
@@ -572,6 +595,8 @@ class UIInteractionHandler:
             
             current_marian_path_from_app_var = self.app.marian_model_var.get() 
             marian_display_name_to_set_in_ui = self.app.marian_model_display_var.get() # Current UI value
+            
+            log_debug(f"MarianMT model restoration: stored path='{current_marian_path_from_app_var}', current UI display='{marian_display_name_to_set_in_ui}'")
 
             # If the UI display var isn't correctly reflecting the config path, fix it.
             # This happens if app_logic.py correctly initialized marian_model_display_var,
@@ -585,9 +610,33 @@ class UIInteractionHandler:
                     if path_c == current_marian_path_from_app_var:
                         temp_display_name_for_config_path = disp_n
                         break
+                
+                # Special handling for English-to-Polish Tatoeba model that may not be in cache yet
+                if not temp_display_name_for_config_path and current_marian_path_from_app_var == "Tatoeba/opus-en-pl-official":
+                    # Look for the English to Polish display name in the models dict
+                    for disp_n, path_c in self.app.marian_models_dict.items():
+                        if path_c == "Tatoeba/opus-en-pl-official":
+                            temp_display_name_for_config_path = disp_n
+                            break
+                    
+                    # If still not found, check if the display name contains English to Polish pattern
+                    if not temp_display_name_for_config_path:
+                        for disp_n in self.app.marian_models_dict.keys():
+                            # Check for English to Polish patterns in different languages
+                            disp_n_lower = disp_n.lower()
+                            if (("english" in disp_n_lower and "polish" in disp_n_lower) or 
+                                ("angielski" in disp_n_lower and "polski" in disp_n_lower) or
+                                ("en-pl" in disp_n_lower)):
+                                temp_display_name_for_config_path = disp_n
+                                log_debug(f"Found English-to-Polish model by pattern matching: {disp_n}")
+                                break
+                
                 if temp_display_name_for_config_path:
                     marian_display_name_to_set_in_ui = temp_display_name_for_config_path
                     self.app.marian_model_display_var.set(marian_display_name_to_set_in_ui)
+                    log_debug(f"Successfully restored MarianMT model selection: '{temp_display_name_for_config_path}' for path '{current_marian_path_from_app_var}'")
+                else:
+                    log_debug(f"Could not find display name for stored MarianMT path: '{current_marian_path_from_app_var}'")
                 # If config path still not found, marian_model_display_var (and thus selected_display_name in
                 # on_marian_model_selection_changed) will use the fallback from app_logic init.
             

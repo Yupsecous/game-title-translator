@@ -44,6 +44,7 @@ Desktop.ini
 # Archives
 *.7z
 *.zip
+*.bak
 
 # Test files and temporary documentation (development)
 test_*.py

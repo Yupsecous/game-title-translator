@@ -5,6 +5,12 @@ import re
 import os
 import concurrent.futures
 import traceback
+import shutil
+import subprocess
+import hashlib
+import zipfile
+import urllib.request
+from pathlib import Path
 
 from logger import log_debug
 
@@ -183,7 +189,7 @@ class MarianMTTranslator:
         # Define supported language pairs and their model names
         self.supported_langs = set()  # Will be populated dynamically
         self.direct_pairs = {
-            ('en', 'pl'): 'Helsinki-NLP/opus-mt-en-pl',  # Use Helsinki-NLP model for consistency
+            # Note: No ('en', 'pl') entry here as it uses special handling
             ('pl', 'en'): 'Helsinki-NLP/opus-mt-pl-en',
             ('en', 'de'): 'Helsinki-NLP/opus-mt-en-de',
             ('de', 'en'): 'Helsinki-NLP/opus-mt-de-en',
@@ -201,6 +207,10 @@ class MarianMTTranslator:
         for source, target in self.direct_pairs.keys():
             self.supported_langs.add(source)
             self.supported_langs.add(target)
+        
+        # Add special support for English to Polish (handled separately)
+        self.supported_langs.add('en')
+        self.supported_langs.add('pl')
 
         # Define model name to language pair mapping (for explicitly adding models)
         # This helps when we need to dynamically select specific models
@@ -329,8 +339,17 @@ class MarianMTTranslator:
                 log_debug(f"Unloading previous model (if any) before loading {source_lang}->{target_lang} on {device_type}.")
                 self._unload_current_model() # Unconditional unload logic moved into _unload_current_model
 
-            # Try to load direct model based on key or generate a Helsinki name
-            if model_key in self.direct_pairs:
+            # Special handling for English to Polish model
+            if source_lang == 'en' and target_lang == 'pl':
+                special_model_path = self._ensure_special_en_pl_model()
+                if special_model_path:
+                    model_name = special_model_path
+                    log_debug(f"Using special English to Polish model from: {model_name}")
+                else:
+                    log_debug("Special English to Polish model not available, no fallback exists")
+                    return False
+            # Regular model loading logic for all other language pairs
+            elif model_key in self.direct_pairs:
                 model_name = self.direct_pairs[model_key]
                 log_debug(f"Found predefined model '{model_name}' for language pair '{source_lang}' to '{target_lang}'")
                 # Verify it's a Helsinki-NLP model
@@ -990,6 +1009,251 @@ class MarianMTTranslator:
                 info['gpu_memory_cached'] = 0
         
         return info
+
+    def _ensure_special_en_pl_model(self):
+        """
+        Ensure the special English-to-Polish model is available.
+        Downloads, converts, and sets up the model if needed.
+        Returns the path to the model or None if failed.
+        """
+        try:
+            # Define paths
+            cache_base = Path(self.cache_dir) if self.cache_dir else Path("marian_models_cache")
+            special_model_dir = cache_base / "models--Tatoeba--opus-en-pl-official"
+            
+            # Check if model already exists
+            if self._is_special_model_ready(special_model_dir):
+                snapshot_path = self._get_model_snapshot_path(special_model_dir)
+                if snapshot_path:
+                    log_debug(f"Special EN-PL model already available at: {snapshot_path}")
+                    return str(snapshot_path)
+            
+            log_debug("Special EN-PL model not found, starting download and conversion process")
+            
+            # Create necessary directories
+            download_dir = cache_base / "download"
+            converted_dir = cache_base / "converted"
+            
+            # Clean up any existing temp directories
+            if download_dir.exists():
+                shutil.rmtree(download_dir)
+            if converted_dir.exists():
+                shutil.rmtree(converted_dir)
+            
+            download_dir.mkdir(parents=True, exist_ok=True)
+            converted_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Step 1: Download the model
+            if not self._download_tatoeba_model(download_dir):
+                log_debug("Failed to download Tatoeba model")
+                return None
+            
+            # Step 2: Convert the model
+            if not self._convert_tatoeba_model(download_dir, converted_dir):
+                log_debug("Failed to convert Tatoeba model")
+                return None
+            
+            # Step 3: Set up HuggingFace-compatible cache structure
+            snapshot_path = self._setup_hf_cache_structure(converted_dir, special_model_dir)
+            if not snapshot_path:
+                log_debug("Failed to set up HuggingFace cache structure")
+                return None
+            
+            # Step 4: Clean up temporary directories
+            if download_dir.exists():
+                shutil.rmtree(download_dir)
+            if converted_dir.exists():
+                shutil.rmtree(converted_dir)
+            
+            log_debug(f"Special EN-PL model successfully set up at: {snapshot_path}")
+            return str(snapshot_path)
+            
+        except Exception as e:
+            log_debug(f"Error setting up special EN-PL model: {e}")
+            log_debug(traceback.format_exc())
+            return None
+
+    def _is_special_model_ready(self, model_dir):
+        """Check if the special model is already set up and ready to use."""
+        try:
+            if not model_dir.exists():
+                return False
+            
+            snapshot_path = self._get_model_snapshot_path(model_dir)
+            if not snapshot_path:
+                return False
+            
+            # Check if required files exist
+            required_files = ['config.json', 'model.safetensors', 'tokenizer_config.json', 'vocab.json']
+            for file_name in required_files:
+                if not (snapshot_path / file_name).exists():
+                    return False
+            
+            return True
+        except Exception as e:
+            log_debug(f"Error checking special model readiness: {e}")
+            return False
+
+    def _get_model_snapshot_path(self, model_dir):
+        """Get the snapshot path for the model."""
+        try:
+            snapshots_dir = model_dir / "snapshots"
+            if not snapshots_dir.exists():
+                return None
+            
+            # Find the first (and should be only) snapshot directory
+            snapshot_dirs = [d for d in snapshots_dir.iterdir() if d.is_dir()]
+            if not snapshot_dirs:
+                return None
+            
+            return snapshot_dirs[0]
+        except Exception as e:
+            log_debug(f"Error getting snapshot path: {e}")
+            return None
+
+    def _download_tatoeba_model(self, download_dir):
+        """Download the Tatoeba model from the specified URL."""
+        try:
+            url = "https://object.pouta.csc.fi/Tatoeba-MT-models/eng-pol/opus+bt-2021-04-14.zip"
+            zip_path = download_dir / "opus+bt-2021-04-14.zip"
+            
+            log_debug(f"Downloading Tatoeba model from: {url}")
+            
+            # Download with progress (simple version)
+            urllib.request.urlretrieve(url, zip_path)
+            
+            if not zip_path.exists():
+                log_debug("Downloaded file not found")
+                return False
+            
+            log_debug(f"Download complete, extracting to: {download_dir}")
+            
+            # Extract the zip file
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(download_dir)
+            
+            # Remove the zip file
+            zip_path.unlink()
+            
+            log_debug("Extraction complete")
+            return True
+            
+        except Exception as e:
+            log_debug(f"Error downloading Tatoeba model: {e}")
+            return False
+
+    def _convert_tatoeba_model(self, download_dir, converted_dir):
+        """Convert the downloaded Tatoeba model using the convert_marian.py script."""
+        try:
+            # The model files are extracted directly to download_dir, not in a subdirectory
+            source_model_dir = download_dir
+            log_debug(f"Using source model directory: {source_model_dir}")
+            
+            # Debug: List all files in the source directory
+            log_debug("Contents of source model directory:")
+            for item in source_model_dir.rglob("*"):
+                if item.is_file():
+                    log_debug(f"  File: {item.relative_to(source_model_dir)} (size: {item.stat().st_size} bytes)")
+                elif item.is_dir():
+                    log_debug(f"  Directory: {item.relative_to(source_model_dir)}/")
+            
+            # Check for required files
+            npz_files = list(source_model_dir.glob("*.npz"))
+            yml_files = list(source_model_dir.glob("*.yml"))
+            decoder_yml = source_model_dir / "decoder.yml"
+            
+            log_debug(f"Found .npz files: {[f.name for f in npz_files]}")
+            log_debug(f"Found .yml files: {[f.name for f in yml_files]}")
+            log_debug(f"decoder.yml exists: {decoder_yml.exists()}")
+            
+            if not npz_files:
+                log_debug("No .npz model files found in source directory")
+                return False
+            
+            if not decoder_yml.exists():
+                log_debug("decoder.yml file not found in source directory")
+                return False
+            
+            # Path to the conversion script
+            script_dir = Path(__file__).parent
+            convert_script = script_dir / "convert_marian.py"
+            
+            if not convert_script.exists():
+                log_debug(f"Conversion script not found at: {convert_script}")
+                return False
+            
+            log_debug(f"Running conversion script: {convert_script}")
+            
+            # Run the conversion script
+            cmd = [
+                "python", 
+                str(convert_script),
+                "--src", str(source_model_dir),
+                "--dest", str(converted_dir)
+            ]
+            
+            log_debug(f"Conversion command: {' '.join(cmd)}")
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            
+            log_debug(f"Conversion script return code: {result.returncode}")
+            if result.stdout:
+                log_debug(f"Conversion stdout: {result.stdout}")
+            if result.stderr:
+                log_debug(f"Conversion stderr: {result.stderr}")
+            
+            if result.returncode != 0:
+                log_debug(f"Conversion script failed with return code: {result.returncode}")
+                return False
+            
+            # Verify converted files exist
+            converted_files = list(converted_dir.glob("*"))
+            log_debug(f"Files in converted directory: {[f.name for f in converted_files]}")
+            
+            if not converted_files:
+                log_debug("No files found in converted directory after conversion")
+                return False
+            
+            log_debug("Model conversion completed successfully")
+            return True
+            
+        except Exception as e:
+            log_debug(f"Error converting Tatoeba model: {e}")
+            log_debug(traceback.format_exc())
+            return False
+
+    def _setup_hf_cache_structure(self, converted_dir, target_model_dir):
+        """Set up HuggingFace-compatible cache structure."""
+        try:
+            # Create the target directory structure
+            target_model_dir.mkdir(parents=True, exist_ok=True)
+            refs_dir = target_model_dir / "refs"
+            snapshots_dir = target_model_dir / "snapshots"
+            refs_dir.mkdir(exist_ok=True)
+            snapshots_dir.mkdir(exist_ok=True)
+            
+            # Generate a hash for the snapshot directory
+            snapshot_hash = hashlib.sha1(b"tatoeba-opus-en-pl-official").hexdigest()
+            snapshot_dir = snapshots_dir / snapshot_hash
+            snapshot_dir.mkdir(exist_ok=True)
+            
+            # Copy all files from converted directory to snapshot directory
+            for item in converted_dir.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, snapshot_dir / item.name)
+            
+            # Create the refs/main file pointing to our snapshot
+            main_ref = refs_dir / "main"
+            main_ref.write_text(snapshot_hash)
+            
+            log_debug(f"HuggingFace cache structure created at: {target_model_dir}")
+            log_debug(f"Snapshot directory: {snapshot_dir}")
+            
+            return snapshot_dir
+            
+        except Exception as e:
+            log_debug(f"Error setting up HuggingFace cache structure: {e}")
+            return None
 
     def get_scenario_description(self):
         """Get a human-readable description of the current scenario."""
