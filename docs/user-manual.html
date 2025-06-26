@@ -190,7 +190,7 @@
     </div>
     <h1 id="ocr-translator-user-manual">OCR Translator User Manual</h1>
     <p>Copyright © 2025 Tomasz Kamiński<br>
-    <em>Last Updated: 9 June 2025</em></p>
+    <em>Last Updated: 26 June 2025</em></p>
     <p>
       <img src="screenshots/screenshot2_eng_deepl.jpg" alt="OCR Translator Main Interface" class="logo-image" />
     </p>
@@ -568,7 +568,7 @@
       </li>
     </ol>
     <p>MarianMT models are open-source neural machine translation systems that offer quite good translation quality. Whilst not quite reaching the standards of premium services like DeepL, they provide remarkably solid translations without any cost or internet requirement after the initial model download.</p>
-    <p>These models were originally designed for translating short, single sentences and would typically truncate longer passages. However, <strong>OCR Translator</strong> implements a clever workaround to this limitation. The application automatically splits longer texts into individual sentences and processes them in parallel using separate threads. These translated segments are then seamlessly stitched back together, ensuring you receive complete translations regardless of text length.</p>
+    <p>These models were originally designed for translating short, single sentences and would typically truncate longer passages. However, <strong>OCR Translator</strong> implements a clever workaround to this limitation. The application automatically splits longer texts into individual sentences and processes them efficiently using batch translation. All sentences are processed together in a single, optimized model inference call, then seamlessly stitched back together, ensuring you receive complete translations regardless of text length.</p>
     <p>This approach offers several practical advantages:</p>
     <ul>
       <li>Complete privacy – your text never leaves your computer.</li>
