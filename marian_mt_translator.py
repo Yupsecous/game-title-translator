@@ -3,7 +3,6 @@ import time
 import gc
 import re
 import os
-import concurrent.futures
 import traceback
 import shutil
 import subprocess
@@ -218,16 +217,6 @@ class MarianMTTranslator:
         for (source, target), model in self.direct_pairs.items():
             self.model_to_langs[model] = (source, target)
 
-        # Initialize thread pool for parallel translation
-        # Reverted to original implementation for better burst performance with subtitles
-        max_workers = max(1, min((os.cpu_count() or 2) // 2, 4))         # Use half of available CPU cores, minimum 1, maximum 4
-        # max_workers = max(1, (os.cpu_count() or 2) - 1)                    # Use all CPU cores minus one (original implementation)
-        self.thread_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers,
-            thread_name_prefix="MarianTranslator"
-        )
-        log_debug(f"Initialized MarianMT thread pool with {max_workers} workers (reverted to original for burst performance)")
-
     def notify_cache_cleared(self):
         """
         Notify the translator that the translation cache has been cleared.
@@ -238,54 +227,64 @@ class MarianMTTranslator:
             device_type = "GPU" if self.permanent_gpu_enabled else "CPU"
             log_debug(f"MarianMT notified of cache clearing - will force model reload on {device_type}")
 
-    def _translate_sentence_worker(self, sentence, source_lang, target_lang, sentence_index):
-        """Worker function to translate a single sentence in a thread."""
+    def _translate_batch_sentences(self, sentences, source_lang, target_lang):
+        """
+        Translate multiple sentences in a single batch operation.
+        
+        Args:
+            sentences: List of sentences to translate
+            source_lang: Source language code
+            target_lang: Target language code
+            
+        Returns:
+            List of translated sentences
+        """
         try:
-            # Start timing for this individual sentence
-            sentence_start_time = time.monotonic()
-
-            # Get cleaned copy of the sentence
-            clean_sentence = sentence.strip()
-            if not clean_sentence:
-                return {
-                    'index': sentence_index,
-                    'original': sentence,
-                    'translated': '',
-                    'success': True,
-                    'translation_time': 0.0
-                }
-
-            # Log before translation
-            log_debug(f"Sentence {sentence_index+1}: \"{clean_sentence}\" sent to MarianMT for translation")
-
-            # Use existing _translate_batch method for the actual translation
-            result = self._translate_batch(clean_sentence, source_lang, target_lang)
-
-            # Calculate translation time
-            sentence_translation_time = time.monotonic() - sentence_start_time
-
-            # Log success with timing information
-            log_debug(f"Successfully translated sentence {sentence_index+1}: \"{clean_sentence}\" in {sentence_translation_time:.2f}s")
-            log_debug(f"Translation result for sentence {sentence_index+1}: \"{result}\"")
-
-            return {
-                'index': sentence_index,
-                'original': sentence,
-                'translated': result,
-                'success': True,
-                'translation_time': sentence_translation_time
-            }
+            batch_start_time = time.monotonic()
+            
+            # Filter out empty sentences but keep track of indices
+            non_empty_sentences = []
+            sentence_indices = []
+            for i, sentence in enumerate(sentences):
+                clean_sentence = sentence.strip()
+                if clean_sentence:
+                    non_empty_sentences.append(clean_sentence)
+                    sentence_indices.append(i)
+            
+            if not non_empty_sentences:
+                return [""] * len(sentences)
+            
+            log_debug(f"Batch translating {len(non_empty_sentences)} non-empty sentences from {len(sentences)} total")
+            
+            # Use the enhanced _translate_text_cached method with batch input
+            model_key = (source_lang, target_lang)
+            translated_batch = self._translate_text_cached(non_empty_sentences, model_key, self.num_beams)
+            
+            # Handle case where translation failed
+            if isinstance(translated_batch, str):
+                # Single string error message - apply to all sentences
+                log_debug(f"Batch translation failed with error: {translated_batch}")
+                return [translated_batch] * len(sentences)
+            
+            # Reconstruct full results list including empty sentences
+            results = [""] * len(sentences)
+            for i, translated in enumerate(translated_batch):
+                original_index = sentence_indices[i]
+                results[original_index] = translated
+            
+            batch_time = time.monotonic() - batch_start_time
+            current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+            fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+            log_debug(f"Batch translation complete on {current_device_name}{fallback_info}: {len(non_empty_sentences)} sentences in {batch_time:.3f} seconds")
+            
+            return results
+            
         except Exception as e:
-            error_msg = f"Error translating sentence {sentence_index+1}: {str(e)}"
+            error_msg = f"Error in batch translation: {str(e)}"
             log_debug(error_msg)
-            return {
-                'index': sentence_index,
-                'original': sentence,
-                'translated': sentence,  # Fall back to original on error
-                'success': False,
-                'error': str(e),
-                'translation_time': 0.0
-            }
+            log_debug(traceback.format_exc())
+            # Return original sentences on error
+            return sentences
 
     def _unload_current_model(self):
         """Unload the current model to free memory (GPU and CPU) while preserving device configuration."""
@@ -445,7 +444,7 @@ class MarianMTTranslator:
 
     # MODIFIED: Removed @lru_cache decorator - caching now handled by unified cache
     def _translate_text_cached(self, text, model_key, beam_value): # Added beam_value parameter
-        """Perform the actual translation with caching and thread safety."""
+        """Perform the actual translation with caching and thread safety. Supports both single text and batch input."""
         # Use a lock for thread-safe model access
         with self.model_lock:
             # This method assumes the correct model is already loaded
@@ -453,7 +452,16 @@ class MarianMTTranslator:
                 log_debug(f"Model key mismatch or model not loaded. Active: {self.active_model_key}, Requested: {model_key}")
                 return f"Error: Model {model_key} not loaded correctly"
 
-        # Tokenize and translate
+        # Determine if this is batch input (list) or single input (string)
+        is_batch_input = isinstance(text, list)
+        
+        if is_batch_input:
+            return self._translate_batch_input(text, beam_value)
+        else:
+            return self._translate_single_input(text, beam_value)
+
+    def _translate_single_input(self, text, beam_value):
+        """Handle single text input translation."""
         try:
             # IMPROVED: Handle potential token limits by checking text length
             total_chars = len(text)
@@ -641,9 +649,105 @@ class MarianMTTranslator:
             log_debug(f"Translation error: {e}\n{error_details}")
             return f"Translation error: {str(e)}"
 
+    def _translate_batch_input(self, text_list, beam_value):
+        """Handle batch text input translation."""
+        try:
+            if not text_list:
+                return []
+
+            # Log batch processing start
+            batch_size = len(text_list)
+            log_debug(f"Processing batch of {batch_size} sentences for translation")
+
+            # Prepare inputs for batch processing
+            inputs = self.active_tokenizer(text_list, return_tensors="pt", padding=True, truncation=True, max_length=450)
+            # Move inputs to current device (GPU or CPU, includes fallback handling)
+            inputs = {k: v.to(self.current_device) for k, v in inputs.items()}
+
+            # Use no_grad for better memory usage during inference
+            if torch: # Check torch exists
+                with torch.no_grad():
+                    log_debug(f"Using beam search value: {beam_value} for batch translation")
+
+                    try:
+                        if self.current_device.type == 'cuda':
+                            # GPU generation with mixed precision for speed and memory efficiency
+                            with torch.cuda.amp.autocast():
+                                translated = self.active_model.generate(
+                                    **inputs,
+                                    max_length=512,  # Increased max_length for longer content
+                                    num_beams=beam_value,
+                                    length_penalty=1.0, # Higher penalty = longer outputs
+                                    no_repeat_ngram_size=2,  # Prevent repetition
+                                    min_length=0,
+                                    early_stopping=(beam_value > 1),
+                                    repetition_penalty=1.1  # Further discourage repetition/truncation
+                                )
+                        else:
+                            # CPU generation
+                            translated = self.active_model.generate(
+                                **inputs,
+                                max_length=512,  # Increased max_length for longer content
+                                num_beams=beam_value,
+                                length_penalty=1.0, # Higher penalty = longer outputs
+                                no_repeat_ngram_size=2,  # Prevent repetition
+                                min_length=0,
+                                early_stopping=(beam_value > 1),
+                                repetition_penalty=1.1  # Further discourage repetition/truncation
+                            )
+                    
+                    except torch.cuda.OutOfMemoryError:
+                        # Smart fallback for GPU OOM during batch translation
+                        if self.permanent_gpu_enabled and self.current_device.type == 'cuda':
+                            log_debug("GPU out of memory during batch translation, falling back to CPU temporarily")
+                            
+                            # Move everything to CPU for this translation
+                            inputs_cpu = {k: v.cpu() for k, v in inputs.items()}
+                            model_cpu = self.active_model.cpu()
+                            self.current_device = torch.device("cpu")
+                            self.temporary_cpu_fallback = True
+                            
+                            # Perform translation on CPU
+                            translated = model_cpu.generate(
+                                **inputs_cpu,
+                                max_length=512,
+                                num_beams=beam_value,
+                                length_penalty=1.0,
+                                no_repeat_ngram_size=2,
+                                min_length=0,
+                                early_stopping=(beam_value > 1),
+                                repetition_penalty=1.1
+                            )
+                            
+                            # Keep model on CPU for subsequent translations until next model load
+                            self.active_model = model_cpu
+                            log_debug("Batch translation completed on CPU fallback. GPU will be retried on next model load.")
+                        else:
+                            # Either not GPU-configured or already in CPU mode
+                            log_debug("Out of memory error during batch translation in CPU mode or non-GPU configuration")
+                            return ["Error: Out of memory during translation."] * batch_size
+
+                # Decode all results at once
+                results = self.active_tokenizer.batch_decode(translated, skip_special_tokens=True)
+
+                # Log device used for performance tracking
+                current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
+                fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
+                log_debug(f"Batch translation completed on {current_device_name}{fallback_info}: {batch_size} sentences processed")
+
+                return results
+            else: # Fallback if torch is not available
+                return ["Error: PyTorch not available for translation."] * batch_size
+
+        except Exception as e:
+            # import traceback # Already imported at the top of the file
+            error_details = traceback.format_exc()
+            log_debug(f"Batch translation error: {e}\n{error_details}")
+            return [f"Translation error: {str(e)}"] * len(text_list)
+
     def translate(self, text, source_lang, target_lang):
         """
-        Translate text from source language to target language using parallel processing.
+        Translate text from source language to target language using batch processing.
 
         Args:
             text: Text to translate
@@ -715,58 +819,29 @@ class MarianMTTranslator:
 
             return result
 
-        # Log that we're using parallel translation
+        # Log that we're using batch translation
         current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
         fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
-        log_debug(f"Translating {len(sentences)} sentences in parallel on {current_device_name}{fallback_info}")
+        log_debug(f"Translating {len(sentences)} sentences in batch mode on {current_device_name}{fallback_info}")
 
         try:
-            # Submit all sentences to thread pool
-            futures = []
-            for i, sentence in enumerate(sentences):
-                future = self.thread_pool.submit(
-                    self._translate_sentence_worker,
-                    sentence, source_lang, target_lang, i
-                )
-                futures.append(future)
-
-            # Collect results in order
-            results = []
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                results.append(result)
-
-            # Sort results by original sentence index
-            results.sort(key=lambda x: x['index'])
-
-            # Extract translations in correct order
-            translated_sentences = []
-            total_sentence_time = 0.0
-            for result in results:
-                if result['success'] and result['translated']:
-                    log_debug(f"Sentence {result['index']+1}: \"{result['original']}\" has been translated by MarianMT in {result['translation_time']:.2f}s")
-                    translated_sentences.append(result['translated'])
-                    total_sentence_time += result['translation_time']
-                else:
-                    # Fall back to original on failure
-                    log_debug(f"Sentence {result['index']+1}: \"{result['original']}\" failed to translate, using original")
-                    translated_sentences.append(result['original'])
+            # Use batch translation for multiple sentences
+            translated_sentences = self._translate_batch_sentences(sentences, source_lang, target_lang)
 
             # Join translated sentences with appropriate spacing
             result = " ".join(translated_sentences)
 
             # Calculate and log total time
             translation_time = time.monotonic() - translation_start_time
-            avg_sentence_time = total_sentence_time / len(translated_sentences) if translated_sentences else 0
             current_device_name = "GPU" if (self.current_device.type == 'cuda') else "CPU"
             fallback_info = " (temporary fallback)" if self.temporary_cpu_fallback else ""
-            log_debug(f"Parallel translation complete on {current_device_name}{fallback_info}: {len(translated_sentences)} sentences processed in {translation_time:.3f} seconds (avg {avg_sentence_time:.3f}s per sentence)")
+            log_debug(f"Batch translation complete on {current_device_name}{fallback_info}: {len(translated_sentences)} sentences processed in {translation_time:.3f} seconds")
             log_debug(f"The completed subtitle is displayed: \"{result}\"")
 
             return result
 
         except Exception as e:
-            error_msg = f"Error in parallel translation: {str(e)}"
+            error_msg = f"Error in batch translation: {str(e)}"
             log_debug(error_msg)
             log_debug(traceback.format_exc())
 
@@ -775,7 +850,7 @@ class MarianMTTranslator:
             return self._sequential_fallback_translate(text, sentences, source_lang, target_lang)
 
     def _sequential_fallback_translate(self, full_text, sentences, source_lang, target_lang):
-        """Fallback method to translate sequentially if parallel translation fails."""
+        """Fallback method to translate sequentially if batch translation fails."""
         sequential_start_time = time.monotonic()  # Start timing the sequential process
 
         try:
@@ -786,26 +861,28 @@ class MarianMTTranslator:
                 log_debug(f"Full text translated in fallback mode: \"{result}\"")
                 return result
 
-            # Process sentences sequentially
+            # Process sentences sequentially using the single input method
             log_debug(f"Sequential translation of {len(sentences)} sentences:")
             translated_parts = []
             for i, sentence in enumerate(sentences):
                 if sentence.strip():
                     log_debug(f"Sequentially translating sentence {i+1}: \"{sentence}\"")
-                    log_debug(f"Sentence {i+1}: \"{sentence}\" sent to MarianMT for translation")
 
                     # Track individual sentence translation time
                     sentence_start_time = time.monotonic()
                     translated = self._translate_batch(sentence, source_lang, target_lang)
                     sentence_translation_time = time.monotonic() - sentence_start_time
 
-                    if translated:
+                    if translated and not self._is_error_message(translated):
                         log_debug(f"Sentence {i+1}: \"{sentence}\" has been translated by MarianMT in {sentence_translation_time:.2f}s")
                         log_debug(f"Translation result: \"{translated}\"")
                         translated_parts.append(translated)
                     else:
                         log_debug(f"Sentence {i+1} translation failed, using original: \"{sentence}\"")
                         translated_parts.append(sentence)
+                else:
+                    # Add empty sentence as-is
+                    translated_parts.append(sentence)
 
             # Join results
             if translated_parts:
@@ -826,6 +903,17 @@ class MarianMTTranslator:
             log_debug(f"Sequential fallback translation failed: {e}")
             # Return original text in case of complete failure
             return full_text
+
+    def _is_error_message(self, text):
+        """Check if a translation result is an error message."""
+        if not isinstance(text, str):
+            return True
+        error_indicators = [
+            "error:", "translation error", "not initialized", "missing", "failed",
+            "not available", "not supported", "invalid result", "empty result"
+        ]
+        text_lower = text.lower()
+        return any(indicator in text_lower for indicator in error_indicators)
 
     def _translate_batch(self, text, source_lang, target_lang):
         """Translate a single batch of text using appropriate model. (Pivot translation removed)."""
