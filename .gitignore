@@ -70,6 +70,9 @@ github_plan.html
 sync_to_github.bat
 github_upload.bat
 upload_to_github.bat
+verify_sync.bat
+force_update.bat
+sync_to_github_fixed.bat
 
 # Configuration files (user-generated)
 ocr_translator_config.ini
