@@ -77,8 +77,7 @@ mk,google,Macedonian,macedoński
 no,google,Norwegian,norweski
 pl,google,Polish,polski
 pt-BR,google,Portuguese (Brazil),portugalski (brazylijski)
-pt-PT,google,Portuguese (Portugal),portugalski (portugalski)
-pt,google,Portuguese,portugalski
+pt-PT,google,Portuguese (Portugal),portugalski (portugalski)pt,google,Portuguese,portugalski
 ro,google,Romanian,rumuński
 ru,google,Russian,rosyjski
 gd,google,Scots Gaelic,szkocki gaelicki
@@ -93,6 +92,61 @@ tr,google,Turkish,turecki
 uk,google,Ukrainian,ukraiński
 vi,google,Vietnamese,wietnamski
 cy,google,Welsh,walijski
+af,gemini,Afrikaans,afrikaans
+sq,gemini,Albanian,albański
+ar,gemini,Arabic,arabski
+hy,gemini,Armenian,ormiański
+az,gemini,Azerbaijani,azerbejdżański
+eu,gemini,Basque,baskijski
+be,gemini,Belarusian,białoruski
+bs,gemini,Bosnian,bośniacki
+br,gemini,Breton,bretoński
+bg,gemini,Bulgarian,bułgarski
+ca,gemini,Catalan,kataloński
+zh-CN,gemini,Chinese (Simplified),chiński (uproszczony)
+zh-TW,gemini,Chinese (Traditional),chiński (tradycyjny)
+hr,gemini,Croatian,chorwacki
+cs,gemini,Czech,czeski
+da,gemini,Danish,duński
+nl,gemini,Dutch,holenderski
+en,gemini,English,angielski
+et,gemini,Estonian,estoński
+fi,gemini,Finnish,fiński
+fr,gemini,French,francuski
+ka,gemini,Georgian,gruziński
+de,gemini,German,niemiecki
+el,gemini,Greek,grecki
+he,gemini,Hebrew,hebrajski
+hu,gemini,Hungarian,węgierski
+is,gemini,Icelandic,islandzki
+id,gemini,Indonesian,indonezyjski
+ga,gemini,Irish,irlandzki
+it,gemini,Italian,włoski
+ja,gemini,Japanese,japoński
+ko,gemini,Korean,koreański
+lv,gemini,Latvian,łotewski
+lt,gemini,Lithuanian,litewski
+lb,gemini,Luxembourgish,luksemburski
+mk,gemini,Macedonian,macedoński
+no,gemini,Norwegian,norweski
+pl,gemini,Polish,polski
+pt-BR,gemini,Portuguese (Brazil),portugalski (brazylijski)
+pt-PT,gemini,Portuguese (Portugal),portugalski (portugalski)
+pt,gemini,Portuguese,portugalski
+ro,gemini,Romanian,rumuński
+ru,gemini,Russian,rosyjski
+gd,gemini,Scots Gaelic,szkocki gaelicki
+sr,gemini,Serbian,serbski
+sk,gemini,Slovak,słowacki
+sl,gemini,Slovenian,słoweński
+es,gemini,Spanish,hiszpański
+sw,gemini,Swahili,suahili
+sv,gemini,Swedish,szwedzki
+th,gemini,Thai,tajski
+tr,gemini,Turkish,turecki
+uk,gemini,Ukrainian,ukraiński
+vi,gemini,Vietnamese,wietnamski
+cy,gemini,Welsh,walijski
 Albanian,marianmt,Albanian,albański
 Arabic,marianmt,Arabic,arabski
 Belarusian,marianmt,Belarusian,białoruski

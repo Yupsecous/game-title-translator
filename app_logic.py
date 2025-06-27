@@ -63,6 +63,13 @@ try:
 except ImportError:
     pass
 
+GEMINI_API_AVAILABLE = False
+try:
+    import google.generativeai as genai
+    GEMINI_API_AVAILABLE = True
+except ImportError:
+    pass
+
 MARIANMT_AVAILABLE = MARIANMT_LIB_AVAILABLE
 
 class OCRTranslator:
@@ -78,11 +85,13 @@ class OCRTranslator:
         self.KEYBOARD_AVAILABLE = KEYBOARD_AVAILABLE
         self.GOOGLE_TRANSLATE_API_AVAILABLE = GOOGLE_TRANSLATE_API_AVAILABLE
         self.DEEPL_API_AVAILABLE = DEEPL_API_AVAILABLE
+        self.GEMINI_API_AVAILABLE = GEMINI_API_AVAILABLE
         self.MARIANMT_AVAILABLE = MARIANMT_AVAILABLE
         
         if not KEYBOARD_AVAILABLE: log_debug("Keyboard library not available. Hotkeys disabled.")
         if not GOOGLE_TRANSLATE_API_AVAILABLE: log_debug("Google Translate API libraries not available.")
         if not DEEPL_API_AVAILABLE: log_debug("DeepL API libraries not available.")
+        if not GEMINI_API_AVAILABLE: log_debug("Gemini API libraries not available.")
         if not MARIANMT_AVAILABLE: log_debug("MarianMT libraries not available.")
 
         # Process-Level CPU Affinity: Limit application to exactly 3 cores
@@ -151,23 +160,33 @@ class OCRTranslator:
         
         self.google_api_key_var = tk.StringVar(value=self.config['Settings'].get('google_translate_api_key', ''))
         self.deepl_api_key_var = tk.StringVar(value=self.config['Settings'].get('deepl_api_key', ''))
+        self.gemini_api_key_var = tk.StringVar(value=self.config['Settings'].get('gemini_api_key', ''))
         self.deepl_model_type_var = tk.StringVar(value=self.config['Settings'].get('deepl_model_type', 'latency_optimized'))
         
-        translation_model_val = self.config['Settings'].get('translation_model', 'google_api')
+        translation_model_val = self.config['Settings'].get('translation_model', 'gemini_api')
         # Fallback logic if configured model's library is not available
-        if translation_model_val == 'marianmt' and not self.MARIANMT_AVAILABLE:
-            log_debug("Configured MarianMT but library not available. Falling back...")
+        if translation_model_val == 'gemini_api' and not self.GEMINI_API_AVAILABLE:
+            log_debug("Configured Gemini API but library not available. Falling back...")
             if self.GOOGLE_TRANSLATE_API_AVAILABLE: translation_model_val = 'google_api'
+            elif self.DEEPL_API_AVAILABLE: translation_model_val = 'deepl_api'
+            elif self.MARIANMT_AVAILABLE: translation_model_val = 'marianmt'
+            else: log_debug("No other translation libraries available for Gemini API fallback.")
+        elif translation_model_val == 'marianmt' and not self.MARIANMT_AVAILABLE:
+            log_debug("Configured MarianMT but library not available. Falling back...")
+            if self.GEMINI_API_AVAILABLE: translation_model_val = 'gemini_api'
+            elif self.GOOGLE_TRANSLATE_API_AVAILABLE: translation_model_val = 'google_api'
             elif self.DEEPL_API_AVAILABLE: translation_model_val = 'deepl_api'
             else: log_debug("No other translation libraries available, MarianMT will show error if selected.")
         elif translation_model_val == 'google_api' and not self.GOOGLE_TRANSLATE_API_AVAILABLE:
             log_debug("Configured Google API but library not available. Falling back...")
-            if self.DEEPL_API_AVAILABLE: translation_model_val = 'deepl_api'
+            if self.GEMINI_API_AVAILABLE: translation_model_val = 'gemini_api'
+            elif self.DEEPL_API_AVAILABLE: translation_model_val = 'deepl_api'
             elif self.MARIANMT_AVAILABLE: translation_model_val = 'marianmt'
             else: log_debug("No other translation libraries available for Google API fallback.")
         elif translation_model_val == 'deepl_api' and not self.DEEPL_API_AVAILABLE:
             log_debug("Configured DeepL API but library not available. Falling back...")
-            if self.GOOGLE_TRANSLATE_API_AVAILABLE: translation_model_val = 'google_api'
+            if self.GEMINI_API_AVAILABLE: translation_model_val = 'gemini_api'
+            elif self.GOOGLE_TRANSLATE_API_AVAILABLE: translation_model_val = 'google_api'
             elif self.MARIANMT_AVAILABLE: translation_model_val = 'marianmt'
             else: log_debug("No other translation libraries available for DeepL API fallback.")
         self.translation_model_var = tk.StringVar(value=translation_model_val)
@@ -175,6 +194,7 @@ class OCRTranslator:
         # Define translation model names and values earlier
         # Initialize with default values, will be updated with localized versions
         self.translation_model_names = {
+            'gemini_api': 'Gemini 2.5 Flash Lite',
             'google_api': 'Google Translate API',
             'deepl_api': 'DeepL API',
             'marianmt': 'MarianMT (offline and free)'
@@ -189,6 +209,9 @@ class OCRTranslator:
         
         self.google_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'google_file_cache', fallback=True))
         self.deepl_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'deepl_file_cache', fallback=True))
+        self.gemini_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_file_cache', fallback=True))
+        self.gemini_fuzzy_detection_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_fuzzy_detection', fallback=True))
+        self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
 
         tesseract_path_from_config = self.config['Settings'].get('tesseract_path', r'C:\Program Files\Tesseract-OCR\tesseract.exe')
         self.tesseract_path_var = tk.StringVar(value=tesseract_path_from_config)
@@ -263,6 +286,7 @@ class OCRTranslator:
         self.deepl_api_client = None
         self.google_api_key_visible = False
         self.deepl_api_key_visible = False
+        self.gemini_api_key_visible = False
         self.marian_translator = None
         self.marian_source_lang = None 
         self.marian_target_lang = None 
@@ -271,6 +295,8 @@ class OCRTranslator:
         self.google_target_lang = self.config['Settings'].get('google_target_lang', 'en')
         self.deepl_source_lang = self.config['Settings'].get('deepl_source_lang', 'auto')
         self.deepl_target_lang = self.config['Settings'].get('deepl_target_lang', 'EN-GB')
+        self.gemini_source_lang = self.config['Settings'].get('gemini_source_lang', 'auto')
+        self.gemini_target_lang = self.config['Settings'].get('gemini_target_lang', 'en')
         
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             base_dir = os.path.dirname(sys.executable)
@@ -279,10 +305,12 @@ class OCRTranslator:
         
         self.google_cache_file = os.path.join(base_dir, "googletrans_cache.txt")
         self.deepl_cache_file = os.path.join(base_dir, "deepl_cache.txt")
-        log_debug(f"Cache file paths: Google: {self.google_cache_file}, DeepL: {self.deepl_cache_file}")
+        self.gemini_cache_file = os.path.join(base_dir, "gemini_cache.txt")
+        log_debug(f"Cache file paths: Google: {self.google_cache_file}, DeepL: {self.deepl_cache_file}, Gemini: {self.gemini_cache_file}")
         
         self.google_file_cache = {}
         self.deepl_file_cache = {}
+        self.gemini_file_cache = {}
         self.translation_cache = {}
 
         pytesseract.pytesseract.tesseract_cmd = self.tesseract_path_var.get()
@@ -971,6 +999,11 @@ For more information, see the user manual."""
         if self.is_running:
             log_debug("Stopping translation process requested by user.")
             self.is_running = False
+            
+            # Reset Gemini session when translation is stopped
+            if hasattr(self.translation_handler, '_reset_gemini_session'):
+                self.translation_handler._reset_gemini_session()
+                
             self.start_stop_btn.config(text="Start", state=tk.DISABLED)
             self.status_label.config(text="Status: Stopping...")
             self.root.update_idletasks()
@@ -1121,6 +1154,7 @@ For more information, see the user manual."""
     def update_translation_model_names(self):
         """Update translation model names with localized strings from CSV files."""
         self.translation_model_names = {
+            'gemini_api': 'Gemini 2.5 Flash Lite',  # Keep English as these are API names
             'google_api': 'Google Translate API',  # Keep English as these are API names
             'deepl_api': 'DeepL API',  # Keep English as these are API names
             'marianmt': self.ui_lang.get_label('translation_model_marianmt_offline', 'MarianMT (offline and free)')

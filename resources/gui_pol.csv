@@ -32,7 +32,9 @@ target_lang_label,Język docelowy:
 marian_model_label,Model MarianMT:
 google_api_key_label,Klucz API Google Translate:
 deepl_api_key_label,Klucz API DeepL:
+gemini_api_key_label,Klucz API Gemini:
 deepl_model_type_label,Jakość:
+gemini_context_window_label,Okno kontekstu:
 deepl_classic_model,Klasyczna
 deepl_nextgen_model,Nowej generacji
 models_file_label,Lista modeli MarianMT:
@@ -58,6 +60,8 @@ file_cache_frame_title,Opcje buforowania do plików
 file_cache_description,"Buforowanie do plików zapisuje tłumaczenia na dysk, aby zmniejszyć koszty API i poprawić wydajność."
 google_cache_checkbox,"Włącz bufor Google Translate (zapisuje na dysk, zmniejsza wywołania API)"
 deepl_cache_checkbox,"Włącz bufor DeepL (zapisuje na dysk, zmniejsza wywołania API)"
+gemini_file_cache_checkbox,"Włącz bufor Gemini"
+gemini_fuzzy_detection_checkbox,"Włącz inteligentną detekcję duplikatów (redukuje koszty API o 60-70%)"
 cache_files_label,Pliki buforów:
 clear_caches_btn,Wyczyść pliki buforów
 save_settings_btn,Zapisz ustawienia

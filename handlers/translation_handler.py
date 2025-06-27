@@ -181,6 +181,256 @@ class TranslationHandler:
         except Exception as e_cmm:
             return f"MarianMT translation error: {type(e_cmm).__name__} - {str(e_cmm)}"
 
+    def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
+        """Gemini API call with session management and fuzzy duplicate detection."""
+        log_debug(f"Gemini API call for: {text_to_translate_gm}")
+        
+        api_key_gemini = self.app.gemini_api_key_var.get().strip()
+        if not api_key_gemini:
+            return "Gemini API key missing"
+        
+        # Check file cache if enabled
+        if self.app.gemini_file_cache_var.get():
+            cache_key_gm = f"gemini:{source_lang_gm}:{target_lang_gm}:{text_to_translate_gm}"
+            file_cached_gm = self.app.cache_manager.check_file_cache('gemini', cache_key_gm)
+            if file_cached_gm:
+                log_debug(f"Found in Gemini file cache: {text_to_translate_gm}")
+                return file_cached_gm
+        
+        try:
+            import google.generativeai as genai
+            
+            # Initialize or get existing chat session
+            if not hasattr(self, 'gemini_chat_session') or self.gemini_chat_session is None:
+                self._initialize_gemini_session(source_lang_gm, target_lang_gm)
+            
+            # Check if session needs reset due to language change
+            if (hasattr(self, 'gemini_session_source_lang') and hasattr(self, 'gemini_session_target_lang') and
+                (self.gemini_session_source_lang != source_lang_gm or self.gemini_session_target_lang != target_lang_gm)):
+                log_debug(f"Language changed from {self.gemini_session_source_lang}->{self.gemini_session_target_lang} to {source_lang_gm}->{target_lang_gm}, resetting session")
+                self._reset_gemini_session()
+                self._initialize_gemini_session(source_lang_gm, target_lang_gm)
+            
+            if self.gemini_chat_session is None:
+                return "Gemini session initialization failed"
+            
+            # Prepare context from sliding window
+            context_window = self._build_context_window(source_lang_gm, target_lang_gm)
+            
+            # Build final message with context + new text
+            if context_window and self.app.gemini_fuzzy_detection_var.get():
+                message_content = f"{context_window}\n{text_to_translate_gm}:=:"
+            elif self.app.gemini_fuzzy_detection_var.get():
+                # First translation with fuzzy detection enabled
+                if hasattr(self, 'gemini_last_translation') and self.gemini_last_translation:
+                    message_content = f"{self.gemini_last_source}:=:{self.gemini_last_translation}\n{text_to_translate_gm}:=:"
+                else:
+                    message_content = f"{text_to_translate_gm}:=:"
+            else:
+                # No fuzzy detection, simple translation
+                message_content = text_to_translate_gm
+            
+            if context_window and self.app.gemini_fuzzy_detection_var.get():
+                log_debug(f"Sending to Gemini with context: Previous=[{context_window.replace('\n', ' | ')}] Current=[{text_to_translate_gm}]")
+            elif self.app.gemini_fuzzy_detection_var.get():
+                log_debug(f"Sending to Gemini with fuzzy detection: [{text_to_translate_gm}]")
+            else:
+                log_debug(f"Sending to Gemini (no context): [{text_to_translate_gm}]")
+            
+            api_call_start_time = time.time()
+            response = self.gemini_chat_session.send_message(message_content)
+            log_debug(f"Gemini API call took {time.time() - api_call_start_time:.3f}s")
+            
+            translation_result = response.text.strip()
+            log_debug(f"Gemini response: {translation_result}")
+            
+            # Handle SKIP responses
+            if translation_result == "<SKIP>":
+                # Get last valid translation from memory
+                last_translation = self._get_last_valid_translation()
+                if last_translation:
+                    log_debug(f"SKIP detected, reusing last translation: {last_translation}")
+                    # Store the SKIP->actual translation mapping in cache
+                    if self.app.gemini_file_cache_var.get():
+                        self.app.cache_manager.save_to_file_cache('gemini', cache_key_gm, last_translation)
+                    return last_translation
+                else:
+                    log_debug("SKIP received but no previous translation available")
+                    return "Translation not available"
+            
+            # Store successful translation in file cache
+            if self.app.gemini_file_cache_var.get():
+                self.app.cache_manager.save_to_file_cache('gemini', cache_key_gm, translation_result)
+            
+            # Update sliding window memory
+            self._update_sliding_window(text_to_translate_gm, translation_result, source_lang_gm, target_lang_gm)
+            
+            return translation_result
+            
+        except Exception as e_gm:
+            log_debug(f"Gemini API error: {type(e_gm).__name__} - {str(e_gm)}")
+            return f"Gemini API error: {str(e_gm)}"
+
+    def _initialize_gemini_session(self, source_lang, target_lang):
+        """Initialize new Gemini chat session with system instructions."""
+        try:
+            import google.generativeai as genai
+            
+            genai.configure(api_key=self.app.gemini_api_key_var.get().strip())
+            
+            # Get language names for system instructions
+            source_name = self._get_language_display_name(source_lang, 'gemini')
+            target_name = self._get_language_display_name(target_lang, 'gemini')
+            
+            # Build system instructions
+            system_instructions = self._build_system_instructions(source_name, target_name)
+            
+            # Optimal generation configuration for translation
+            generation_config = {
+                "temperature": 0.8,              # Natural, creative translations for dialogue
+                "max_output_tokens": 1024,       # Sufficient for subtitle translations
+                "candidate_count": 1,            # Single response needed
+                "top_p": 0.95,                   # Slightly constrain token selection
+                "top_k": 40,                     # Limit candidate tokens
+                "response_mime_type": "text/plain"
+            }
+            
+            # Gaming-appropriate safety settings
+            from google.generativeai.types import HarmCategory, HarmBlockThreshold
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            }
+            
+            # Create model with optimized settings (cost-efficient, low latency)
+            model = genai.GenerativeModel(
+                model_name="gemini-2.5-flash-lite-preview-06-17",  # Most cost-efficient, real-time optimized
+                generation_config=generation_config,
+                safety_settings=safety_settings,
+                system_instruction=system_instructions
+            )
+            
+            # Start chat session
+            self.gemini_chat_session = model.start_chat(history=[])
+            
+            # Initialize sliding window memory
+            self.gemini_context_window = []
+            self.gemini_session_source_lang = source_lang
+            self.gemini_session_target_lang = target_lang
+            self.gemini_last_translation = None
+            self.gemini_last_source = None
+            
+            log_debug(f"Gemini session initialized for {source_name} → {target_name}")
+            
+        except Exception as e:
+            log_debug(f"Failed to initialize Gemini session: {e}")
+            self.gemini_chat_session = None
+
+    def _reset_gemini_session(self):
+        """Reset Gemini session and context."""
+        self.gemini_chat_session = None
+        self.gemini_context_window = []
+        self.gemini_last_translation = None
+        self.gemini_last_source = None
+        log_debug("Gemini session reset")
+
+    def _build_system_instructions(self, source_name, target_name):
+        """Build system instructions for Gemini based on fuzzy detection setting."""
+        if self.app.gemini_fuzzy_detection_var.get():
+            return f"""You are a professional translator from {source_name} to {target_name}. You will receive text to translate in each API call. It may include previous translations for context in this format (English and Polish are used as example):
+
+Where's my book?:=:Gdzie moja książka?
+I've put it on the table:=:
+
+The lines with both languages are for context. The last line with the source language only is for translation. Here the correct translation would be:
+
+Położyłem ją na stole.
+
+With the context of the first line, it is obvious that "it" should be translated as "ją".
+Send only the translation of the last line. Don't add any extra comments.
+
+DUPLICATE DETECTION: If the input text to translate is essentially the same as the immediately previous subtitle (accounting for minor OCR errors, typos, punctuation differences, or spacing issues), respond with exactly: "<SKIP>"
+
+Examples that should trigger "<SKIP>" response:
+- Previous: "Watch out!" → Current: "Watch out! " (spacing)
+- Previous: "She is beautiful" → Current: "She is beutiful" (typo)
+- Previous: "Hello there" → Current: "Hello there." (punctuation)
+- Previous: "Amazing view" → Current: "Amazing vlew" (OCR error)
+
+Only respond with "<SKIP>" if you're confident the meaning is identical to the previous subtitle."""
+        else:
+            return f"""You are a professional translator from {source_name} to {target_name}. You will receive text to translate in each API call. It may include previous translations for context in this format (English and Polish are used as example):
+
+Where's my book?:=:Gdzie moja książka?
+I've put it on the table:=:
+
+The lines with both languages are for context. The last line with the source language only is for translation. Here the correct translation would be:
+
+Położyłem ją na stole.
+
+With the context of the first line, it is obvious that "it" should be translated as "ją".
+Send only the translation of the last line. Don't add any extra comments."""
+
+    def _build_context_window(self, source_lang, target_lang):
+        """Build context window from previous translations."""
+        if not hasattr(self, 'gemini_context_window'):
+            self.gemini_context_window = []
+        
+        context_size = self.app.gemini_context_window_var.get()
+        if context_size == 0 or not self.gemini_context_window:
+            return ""
+        
+        # Get last N context pairs
+        context_pairs = self.gemini_context_window[-context_size:]
+        context_lines = []
+        
+        for source_text, target_text in context_pairs:
+            context_lines.append(f"{source_text}:=:{target_text}")
+        
+        return "\n".join(context_lines)
+
+    def _update_sliding_window(self, source_text, target_text, source_lang, target_lang):
+        """Update sliding window with new translation pair."""
+        if not hasattr(self, 'gemini_context_window'):
+            self.gemini_context_window = []
+        
+        # Add new pair
+        self.gemini_context_window.append((source_text, target_text))
+        
+        # Keep only last 5 pairs (more than the max context window setting)
+        self.gemini_context_window = self.gemini_context_window[-5:]
+        
+        # Update last translation for SKIP functionality
+        self.gemini_last_translation = target_text
+        self.gemini_last_source = source_text
+
+    def _get_last_valid_translation(self):
+        """Get the last valid translation for SKIP responses."""
+        if hasattr(self, 'gemini_last_translation') and self.gemini_last_translation:
+            return self.gemini_last_translation
+        return None
+
+    def _get_language_display_name(self, lang_code, provider):
+        """Get display name for language code from language_display_names.csv."""
+        try:
+            import csv
+            from resource_handler import get_resource_path
+            
+            language_display_file = get_resource_path("language_display_names.csv")
+            with open(language_display_file, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    if row['code'] == lang_code and row['provider'] == provider:
+                        return row['english_name']
+            
+            # Fallback to the code itself if not found
+            return lang_code.title()
+        except Exception as e:
+            log_debug(f"Error getting language display name: {e}")
+            return lang_code.title()
+
     def translate_text(self, text_content_main):
         cleaned_text_main = text_content_main.strip() if text_content_main else ""
         if not cleaned_text_main or len(cleaned_text_main) < 1: return None 
@@ -240,6 +490,24 @@ class TranslationHandler:
             log_debug(f"DeepL translation request with model_type={model_type}, {source_lang}->{target_lang}")
             extra_params = {"model_type": model_type}
         
+        elif selected_translation_model == 'gemini_api':
+            if not self.app.GEMINI_API_AVAILABLE:
+                return "Gemini API libraries not available."
+            
+            api_key_gemini = self.app.gemini_api_key_var.get().strip()
+            if not api_key_gemini:
+                return "Gemini API key missing."
+            
+            source_lang = self.app.gemini_source_lang
+            target_lang = self.app.gemini_target_lang
+            context_window = self.app.gemini_context_window_var.get()
+            fuzzy_detection = self.app.gemini_fuzzy_detection_var.get()
+            extra_params = {
+                "context_window": context_window,
+                "fuzzy_detection": fuzzy_detection
+            }
+            log_debug(f"Gemini translation request with context_window={context_window}, fuzzy_detection={fuzzy_detection}, {source_lang}->{target_lang}")
+        
         else:
             return f"Error: Unknown translation model '{selected_translation_model}'"
         
@@ -265,6 +533,13 @@ class TranslationHandler:
                 and self.app.google_file_cache_var.get()):
                 cache_key_google = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
                 self.app.cache_manager.save_to_file_cache('google', cache_key_google, translated_api_text)
+        elif selected_translation_model == 'gemini_api':
+            translated_api_text = self._gemini_translate(cleaned_text_main, source_lang, target_lang)
+            # Save to file cache if successful and file caching enabled
+            if (not self._is_error_message(translated_api_text) 
+                and self.app.gemini_file_cache_var.get()):
+                cache_key_gemini = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('gemini', cache_key_gemini, translated_api_text)
         elif selected_translation_model == 'deepl_api':
             translated_api_text = self._deepl_translate(cleaned_text_main, source_lang, target_lang)
             # File cache is handled inside _deepl_translate method to include model_type

@@ -148,6 +148,11 @@ class CacheManager:
             memory_cache = self.app.deepl_file_cache
             enabled_tk_var = self.app.deepl_file_cache_var
             service_name = "DeepL"
+        elif cache_type == 'gemini':
+            cache_file_path = self.app.gemini_cache_file
+            memory_cache = self.app.gemini_file_cache
+            enabled_tk_var = self.app.gemini_file_cache_var
+            service_name = "Gemini"
         
         if not cache_file_path or not enabled_tk_var.get():
             return False
@@ -234,6 +239,9 @@ class CacheManager:
         elif cache_type == 'deepl':
             memory_cache = self.app.deepl_file_cache
             enabled_tk_var = self.app.deepl_file_cache_var
+        elif cache_type == 'gemini':
+            memory_cache = self.app.gemini_file_cache
+            enabled_tk_var = self.app.gemini_file_cache_var
         
         if memory_cache is not None and enabled_tk_var.get(): # Check if caching for this type is enabled
             return memory_cache.get(cache_key) # Return from in-memory cache
@@ -257,6 +265,14 @@ class CacheManager:
                     f.write("# DeepL Cache File\n")
                     f.write("# Format: DeepL(SOURCE-TARGET,TIMESTAMP):text:==:translation\n")
                     f.write("# Example: DeepL(EN-PL,2025-05-13 22:43:12):Hello world:==:Witaj świecie\n")
+            
+            # Clear Gemini file cache
+            self.app.gemini_file_cache.clear() # Clear in-memory
+            if os.path.exists(self.app.gemini_cache_file):
+                with open(self.app.gemini_cache_file, 'w', encoding='utf-8') as f: # Truncate file
+                    f.write("# Gemini Cache File\n")
+                    f.write("# Format: Gemini(SOURCE-TARGET,TIMESTAMP):text:==:translation\n")
+                    f.write("# Example: Gemini(EN-PL,2025-05-13 22:43:12):Hello world:==:Witaj świecie\n")
             
             log_debug("Cleared all translation file caches (in-memory and on disk).")
         except Exception as e_cfc: # Use distinct variable name

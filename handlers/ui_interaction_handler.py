@@ -73,6 +73,8 @@ class UIInteractionHandler:
             target_entry, target_button, visibility_flag_attr = self.app.google_api_key_entry, self.app.google_api_key_button, "google_api_key_visible"
         elif api_type_toggle == "deepl":
             target_entry, target_button, visibility_flag_attr = self.app.deepl_api_key_entry, self.app.deepl_api_key_button, "deepl_api_key_visible"
+        elif api_type_toggle == "gemini":
+            target_entry, target_button, visibility_flag_attr = self.app.gemini_api_key_entry, self.app.gemini_api_key_button, "gemini_api_key_visible"
         
         if target_entry and target_button:
             current_visibility = getattr(self.app, visibility_flag_attr, False)
@@ -109,8 +111,9 @@ class UIInteractionHandler:
         
         is_google = (selected_model_ui_code == 'google_api')
         is_deepl = (selected_model_ui_code == 'deepl_api')
+        is_gemini = (selected_model_ui_code == 'gemini_api')
         is_marian = (selected_model_ui_code == 'marianmt')
-        is_api_model = is_google or is_deepl
+        is_api_model = is_google or is_deepl or is_gemini
 
         manage_grid(self.app.source_lang_label, show=is_api_model)
         manage_grid(self.app.source_lang_combobox, show=is_api_model)
@@ -124,6 +127,21 @@ class UIInteractionHandler:
         manage_grid(self.app.deepl_api_key_label, show=is_deepl)
         manage_grid(self.app.deepl_api_key_entry, show=is_deepl)
         manage_grid(self.app.deepl_api_key_button, show=is_deepl)
+        
+        # Gemini API components visibility
+        manage_grid(self.app.gemini_api_key_label, show=is_gemini)
+        manage_grid(self.app.gemini_api_key_entry, show=is_gemini)
+        manage_grid(self.app.gemini_api_key_button, show=is_gemini)
+        
+        # Gemini settings visibility
+        if hasattr(self.app, 'gemini_context_window_label'):
+            manage_grid(self.app.gemini_context_window_label, show=is_gemini)
+        if hasattr(self.app, 'gemini_context_window_combobox'):
+            manage_grid(self.app.gemini_context_window_combobox, show=is_gemini)
+        if hasattr(self.app, 'gemini_fuzzy_detection_frame'):
+            manage_grid(self.app.gemini_fuzzy_detection_frame, show=is_gemini)
+        if hasattr(self.app, 'gemini_file_cache_frame'):
+            manage_grid(self.app.gemini_file_cache_frame, show=is_gemini)
         
         # DeepL Model Type visibility
         if hasattr(self.app, 'deepl_model_type_label'):
@@ -334,11 +352,46 @@ class UIInteractionHandler:
                     source_names_list.sort()
             
             current_source_api_code_from_app = self.app.deepl_source_lang
+        elif active_model_code == 'gemini_api':
+            # Get raw API codes
+            source_codes = [code for _, code in lm.gemini_source_languages]
+            # Convert to localized names and create code mapping
+            source_name_to_code = {}
+            source_names_list = []
+            for code in source_codes:
+                # Use 'gemini' as provider for language_display_names.csv lookup
+                localized_name = lm.get_localized_language_name(code, 'gemini', ui_language_for_lookup)
+                source_names_list.append(localized_name)
+                source_name_to_code[localized_name] = code
+            
+            # Sort alphabetically, but keep "Auto" at the top if present
+            if "Auto" in source_names_list:
+                source_names_list.remove("Auto")
+                if ui_language_for_lookup == 'polish':
+                    source_names_list = self.app.language_manager.sort_polish_names(source_names_list)
+                else:
+                    source_names_list.sort()
+                source_names_list.insert(0, "Auto")
+            else:
+                if ui_language_for_lookup == 'polish':
+                    source_names_list = self.app.language_manager.sort_polish_names(source_names_list)
+                else:
+                    source_names_list.sort()
+            
+            current_source_api_code_from_app = self.app.gemini_source_lang
         
         if hasattr(self.app, 'source_lang_combobox') and self.app.source_lang_combobox.winfo_exists():
             self.app.source_lang_combobox['values'] = source_names_list
             # Get localized display name for current API code
-            provider_for_display = 'google' if active_model_code == 'google_api' else 'deepl'
+            if active_model_code == 'google_api':
+                provider_for_display = 'google'
+            elif active_model_code == 'deepl_api':
+                provider_for_display = 'deepl'
+            elif active_model_code == 'gemini_api':
+                provider_for_display = 'gemini'
+            else:
+                provider_for_display = 'google'  # fallback
+                
             display_name_src_to_set = lm.get_localized_language_name(
                 current_source_api_code_from_app, provider_for_display, ui_language_for_lookup)
             
@@ -359,6 +412,14 @@ class UIInteractionHandler:
                     for name, code in lm.deepl_source_languages:
                         if code == current_source_api_code_from_app:
                             localized_fallback = lm.get_localized_language_name(code, 'deepl', ui_language_for_lookup)
+                            if localized_fallback in source_names_list:
+                                self.app.source_display_var.set(localized_fallback)
+                                fallback_found = True
+                                break
+                elif active_model_code == 'gemini_api':
+                    for name, code in lm.gemini_source_languages:
+                        if code == current_source_api_code_from_app:
+                            localized_fallback = lm.get_localized_language_name(code, 'gemini', ui_language_for_lookup)
                             if localized_fallback in source_names_list:
                                 self.app.source_display_var.set(localized_fallback)
                                 fallback_found = True
@@ -413,11 +474,38 @@ class UIInteractionHandler:
                 target_names_list.sort()
             
             current_target_api_code_from_app = self.app.deepl_target_lang
+        elif active_model_code == 'gemini_api':
+            # Get raw API codes
+            target_codes = [code for _, code in lm.gemini_target_languages]
+            # Convert to localized names and create code mapping
+            target_name_to_code = {}
+            target_names_list = []
+            for code in target_codes:
+                # Use 'gemini' as provider for language_display_names.csv lookup
+                localized_name = lm.get_localized_language_name(code, 'gemini', ui_language_for_lookup)
+                target_names_list.append(localized_name)
+                target_name_to_code[localized_name] = code
+            
+            # Sort alphabetically
+            if ui_language_for_lookup == 'polish':
+                target_names_list = self.app.language_manager.sort_polish_names(target_names_list)
+            else:
+                target_names_list.sort()
+            
+            current_target_api_code_from_app = self.app.gemini_target_lang
 
         if hasattr(self.app, 'target_lang_combobox') and self.app.target_lang_combobox.winfo_exists():
             self.app.target_lang_combobox['values'] = target_names_list
             # Get localized display name for current API code
-            provider_for_display = 'google' if active_model_code == 'google_api' else 'deepl'
+            if active_model_code == 'google_api':
+                provider_for_display = 'google'
+            elif active_model_code == 'deepl_api':
+                provider_for_display = 'deepl'
+            elif active_model_code == 'gemini_api':
+                provider_for_display = 'gemini'
+            else:
+                provider_for_display = 'google'  # fallback
+                
             display_name_tgt_to_set = lm.get_localized_language_name(
                 current_target_api_code_from_app, provider_for_display, ui_language_for_lookup)
 
@@ -438,6 +526,14 @@ class UIInteractionHandler:
                     for name, code in lm.deepl_target_languages:
                         if code == current_target_api_code_from_app:
                             localized_fallback = lm.get_localized_language_name(code, 'deepl', ui_language_for_lookup)
+                            if localized_fallback in target_names_list:
+                                self.app.target_display_var.set(localized_fallback)
+                                fallback_found = True
+                                break
+                elif active_model_code == 'gemini_api':
+                    for name, code in lm.gemini_target_languages:
+                        if code == current_target_api_code_from_app:
+                            localized_fallback = lm.get_localized_language_name(code, 'gemini', ui_language_for_lookup)
                             if localized_fallback in target_names_list:
                                 self.app.target_display_var.set(localized_fallback)
                                 fallback_found = True
@@ -581,7 +677,7 @@ class UIInteractionHandler:
         
         self.update_translation_model_ui() 
 
-        if model_to_configure_for == 'google_api' or model_to_configure_for == 'deepl_api':
+        if model_to_configure_for == 'google_api' or model_to_configure_for == 'deepl_api' or model_to_configure_for == 'gemini_api':
             self._update_language_dropdowns_for_model(model_to_configure_for)
             if model_to_configure_for == 'google_api':
                 self.app.source_lang_var.set(self.app.google_source_lang)
@@ -589,6 +685,12 @@ class UIInteractionHandler:
             elif model_to_configure_for == 'deepl_api':
                 self.app.source_lang_var.set(self.app.deepl_source_lang)
                 self.app.target_lang_var.set(self.app.deepl_target_lang)
+            elif model_to_configure_for == 'gemini_api':
+                self.app.source_lang_var.set(self.app.gemini_source_lang)
+                self.app.target_lang_var.set(self.app.gemini_target_lang)
+                # Reset Gemini session when translation model changes to Gemini
+                if hasattr(self.app, 'translation_handler') and hasattr(self.app.translation_handler, '_reset_gemini_session'):
+                    self.app.translation_handler._reset_gemini_session()
         elif model_to_configure_for == 'marianmt':
             if self.app.MARIANMT_AVAILABLE and self.app.marian_translator is None and (preload or not initial_setup):
                 self.app.translation_handler.initialize_marian_translator()
@@ -726,6 +828,8 @@ class UIInteractionHandler:
             google_target = self.app.google_target_lang
             deepl_source = self.app.deepl_source_lang
             deepl_target = self.app.deepl_target_lang
+            gemini_source = self.app.gemini_source_lang
+            gemini_target = self.app.gemini_target_lang
             
             # Basic validation: codes should be short and not contain spaces
             def is_valid_code(code):
@@ -766,6 +870,18 @@ class UIInteractionHandler:
                 log_debug(f"Saving DeepL target lang: {deepl_target}")
             else:
                 log_debug(f"ERROR: Invalid DeepL target lang code '{deepl_target}' - not saving")
+                
+            if is_valid_code(gemini_source):
+                cfg['gemini_source_lang'] = gemini_source
+                log_debug(f"Saving Gemini source lang: {gemini_source}")
+            else:
+                log_debug(f"ERROR: Invalid Gemini source lang code '{gemini_source}' - not saving")
+                
+            if is_valid_code(gemini_target):
+                cfg['gemini_target_lang'] = gemini_target
+                log_debug(f"Saving Gemini target lang: {gemini_target}")
+            else:
+                log_debug(f"ERROR: Invalid Gemini target lang code '{gemini_target}' - not saving")
             
             cfg['marian_model'] = self.app.marian_model_var.get() 
 
@@ -789,8 +905,12 @@ class UIInteractionHandler:
             cfg['google_translate_api_key'] = self.app.google_api_key_var.get()
             cfg['deepl_api_key'] = self.app.deepl_api_key_var.get()
             cfg['deepl_model_type'] = self.app.deepl_model_type_var.get()
+            cfg['gemini_api_key'] = self.app.gemini_api_key_var.get()
+            cfg['gemini_context_window'] = str(self.app.gemini_context_window_var.get())
+            cfg['gemini_fuzzy_detection'] = str(self.app.gemini_fuzzy_detection_var.get())
             cfg['google_file_cache'] = str(self.app.google_file_cache_var.get())
             cfg['deepl_file_cache'] = str(self.app.deepl_file_cache_var.get())
+            cfg['gemini_file_cache'] = str(self.app.gemini_file_cache_var.get())
             cfg['marian_models_file'] = self.app.models_file_var.get()
             try: 
                 beam_val = int(self.app.num_beams_var.get())
