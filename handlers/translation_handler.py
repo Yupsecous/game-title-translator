@@ -225,7 +225,8 @@ class TranslationHandler:
                 if hasattr(self, 'gemini_last_translation') and self.gemini_last_translation:
                     message_content = f"{self.gemini_last_source}:=:{self.gemini_last_translation}\n{text_to_translate_gm}:=:"
                 else:
-                    message_content = f"{text_to_translate_gm}:=:"
+                    # No previous translation yet, just send the text directly
+                    message_content = text_to_translate_gm
             else:
                 # No fuzzy detection, simple translation
                 message_content = text_to_translate_gm

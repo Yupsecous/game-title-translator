@@ -140,8 +140,7 @@ class UIInteractionHandler:
             manage_grid(self.app.gemini_context_window_combobox, show=is_gemini)
         if hasattr(self.app, 'gemini_fuzzy_detection_frame'):
             manage_grid(self.app.gemini_fuzzy_detection_frame, show=is_gemini)
-        if hasattr(self.app, 'gemini_file_cache_frame'):
-            manage_grid(self.app.gemini_file_cache_frame, show=is_gemini)
+        # Note: gemini_file_cache_checkbox is now permanently visible in the cache section
         
         # DeepL Model Type visibility
         if hasattr(self.app, 'deepl_model_type_label'):
