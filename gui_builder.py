@@ -377,23 +377,9 @@ def create_settings_tab(app):
     )
     app.gemini_fuzzy_detection_checkbox.pack(anchor="w")
 
-    # Gemini File Cache Checkbox (only visible when Gemini is selected)
-    app.gemini_file_cache_frame = ttk.Frame(frame)
-    app.gemini_file_cache_frame.grid(row=9, column=0, columnspan=2, padx=5, pady=5, sticky="w")
-    app.gemini_file_cache_checkbox = ttk.Checkbutton(
-        app.gemini_file_cache_frame, 
-        text=app.ui_lang.get_label("gemini_file_cache_checkbox", "Enable Gemini file cache"),
-        variable=app.gemini_file_cache_var,
-        command=lambda: [
-            log_debug(f"Gemini file cache toggled: {app.gemini_file_cache_var.get()}"),
-            app._fully_initialized and app.save_settings()
-        ]
-    )
-    app.gemini_file_cache_checkbox.pack(anchor="w")
-
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
-    app.deepl_model_type_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_model_type_label.grid(row=9, column=0, padx=5, pady=5, sticky="w")
     
     # Create model type options with user-friendly names
     deepl_model_options = [
@@ -415,7 +401,7 @@ def create_settings_tab(app):
     app.deepl_model_type_combobox = ttk.Combobox(frame, textvariable=app.deepl_model_display_var,
                                                values=[display for _, display in deepl_model_options], 
                                                width=25, state='readonly')
-    app.deepl_model_type_combobox.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_model_type_combobox.grid(row=9, column=1, padx=5, pady=5, sticky="ew")
     
     def on_deepl_model_type_changed(event):
         selected_display = app.deepl_model_display_var.get()
@@ -735,8 +721,21 @@ def create_settings_tab(app):
     ttk.Label(file_cache_frame_outer, text=app.ui_lang.get_label("file_cache_description"), wraplength=400).grid(row=0, column=0, columnspan=2, padx=5, pady=2, sticky="w")
     ttk.Checkbutton(file_cache_frame_outer, text=app.ui_lang.get_label("google_cache_checkbox"), variable=app.google_file_cache_var).grid(row=1, column=0, padx=5, pady=2, sticky="w")
     ttk.Checkbutton(file_cache_frame_outer, text=app.ui_lang.get_label("deepl_cache_checkbox"), variable=app.deepl_file_cache_var).grid(row=2, column=0, padx=5, pady=2, sticky="w")
-    ttk.Label(file_cache_frame_outer, text=f"{app.ui_lang.get_label('cache_files_label')} {os.path.basename(app.google_cache_file)}, {os.path.basename(app.deepl_cache_file)}", wraplength=400).grid(row=3, column=0, columnspan=2, padx=5, pady=2, sticky="w")
-    ttk.Button(file_cache_frame_outer, text=app.ui_lang.get_label("clear_caches_btn"), command=app.clear_file_caches).grid(row=4, column=0, padx=5, pady=5, sticky="w")
+    
+    # Gemini file cache checkbox (always visible here, not just when Gemini is selected)
+    app.gemini_file_cache_checkbox = ttk.Checkbutton(
+        file_cache_frame_outer, 
+        text=app.ui_lang.get_label("gemini_file_cache_checkbox", "Enable Gemini file cache"),
+        variable=app.gemini_file_cache_var,
+        command=lambda: [
+            log_debug(f"Gemini file cache toggled: {app.gemini_file_cache_var.get()}"),
+            app._fully_initialized and app.save_settings()
+        ]
+    )
+    app.gemini_file_cache_checkbox.grid(row=3, column=0, padx=5, pady=2, sticky="w")
+    
+    ttk.Label(file_cache_frame_outer, text=f"{app.ui_lang.get_label('cache_files_label')} {os.path.basename(app.google_cache_file)}, {os.path.basename(app.deepl_cache_file)}, {os.path.basename(app.gemini_cache_file)}", wraplength=400).grid(row=4, column=0, columnspan=2, padx=5, pady=2, sticky="w")
+    ttk.Button(file_cache_frame_outer, text=app.ui_lang.get_label("clear_caches_btn"), command=app.clear_file_caches).grid(row=5, column=0, padx=5, pady=5, sticky="w")
     current_row += 1
     
     button_frame_outer = ttk.Frame(frame)

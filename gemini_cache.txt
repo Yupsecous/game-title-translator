@@ -1,15 +1,73 @@
-Gemini(FR-PL,2025-06-27 18:08:30):Sa glorieuse Majesté, le Maître immortel et Protecteur de Zakel : l'Empereur Valkorion.:==:Jej Prześwietna Wysokość, Nieśmiertelny Władca i Obrońca Zakel: Cesarz Valkorion.:=
-Gemini(FR-PL,2025-06-27 18:09:13):Bienvenue.:==:Witamy.
-Gemini(FR-PL,2025-06-27 18:09:14):Un nouveau nom, un nouveau visage... Mais il en faut plus pour nous échapper.:==:Nowe imię, nowa twarz... Ale potrzeba czegoś więcej, by nam uciec.
-Gemini(FR-PL,2025-06-27 18:09:22):L'Empereur Sith... Votre aura est reconnaissable entre toutes.:==:Imperator Sithów... Twój urok jest nie do pomylenia z żadnym innym.
-Gemini(FR-PL,2025-06-27 18:09:26):Oh, une erreur a bien été commise... mais par qui ?:==:Och, popełniono błąd... ale kto go popełnił?
-Gemini(FR-PL,2025-06-27 18:09:28):Oh, une erreur a bien été commise... mais par qui ? 6, ) =.:==:Och, popełniono błąd... ale kto go popełnił?
-Gemini(FR-PL,2025-06-27 18:09:30):4 Oh, une erreur a bien été commise... mais par qui ?:==:Och, popełniono błąd... ale kto go popełnił?
-Gemini(FR-PL,2025-06-27 18:09:32):Lé Oh, une erreur a bien été commise... mais par qui ? sont pas L Comment ?:==:Och, popełniono błąd... ale kto go popełnił?
-Gemini(FR-PL,2025-06-27 18:09:33):Oh, une erreur a bien été commise... mais par qui ? # pas aù Comment ?:==:Och, popełniono błąd... ale kto go popełnił?
-Gemini(FR-PL,2025-06-27 18:09:35):Ces gens ont-ils une idée de votre identité réelle ? Des choses dont vous êtes capable ?:==:Czy ci ludzie mają pojęcie, kim naprawdę jesteś? Co potrafisz?
-Gemini(FR-PL,2025-06-27 18:09:40):= Et vous ? | à \ ?:==:Czy ci ludzie mają pojęcie, kim naprawdę jesteś? Co potrafisz?
-Gemini(FR-PL,2025-06-27 18:09:40):Votre silence perpétuel au cours de notre histoire... C'est à cela que vous étiez occupé ?:==:Twoja nieustająca cisza podczas naszej historii... Tym właśnie się zajmowałeś?
-Gemini(FR-PL,2025-06-27 18:09:48):C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à mes fins.:==:Taki był mój cel. Reszta... była tylko środkiem do jego osiągnięcia.
-Gemini(FR-PL,2025-06-27 18:21:40):Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici. Que voulez-vous ? La justice, Des réponses.:==:Mówisz, że przebyłeś całą tę drogę, żeby mnie znaleźć. Jestem tutaj. Czego chcesz? Sprawiedliwości, odpowiedzi.:=:
-Gemini(FR-PL,2025-06-27 18:21:41):Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.:==:Manipulowałeś całymi cywilizacjami, wywołałeś dekady wojen, zniszczyłeś Ziost... i uciekłeś. Powiesz mi dlaczego.:=:
+# Gemini Cache File
+# Format: Gemini(SOURCE-TARGET,TIMESTAMP):text:==:translation
+# Example: Gemini(EN-PL,2025-05-13 22:43:12):Hello world:==:Witaj świecie
+Gemini(CS-PL,2025-06-27 19:41:25):Dvorské mravy, vysoká politika, rytířská klání — v tom jsme oba opravdu mistři!:==:Dworska etykieta, wysoka polityka, rycerskie pojedynki — w tym obaj jesteśmy prawdziwymi mistrzami!
+Gemini(CS-PL,2025-06-27 19:41:40):Takže určitě chápeš, že nějaký pytle s moukou... to není nic pro nás.:==:Zatem na pewno rozumiesz, że jakieś worki z mąką... to nie jest coś dla nas.
+Gemini(CS-PL,2025-06-27 19:41:47):Co vy ste za šlechtu? z Nemanic? To bys mě rozesmál.:==:Co wy za szlachta? Z Nemanic? Rozbawiłbyś mnie.
+Gemini(CS-PL,2025-06-27 19:41:48):Co vy ste za šlechtu? Trhani z Nemanic? To bys mě rozesmál.:==:Co wy za szlachta? Z Nemanic? Rozbawiłbyś mnie.
+Gemini(CS-PL,2025-06-27 19:41:52):Ať už je to, jak chce, dlužíte mi, peníze nemáte, tak budete makat.:==:Cokolwiek to jest, jesteś mi winien, pieniędzy nie masz, więc będziesz pracować.
+Gemini(CS-PL,2025-06-27 19:41:57):Je to jasný?:==:Czy to jasne?
+Gemini(CS-PL,2025-06-27 19:41:58):Jasný, dem na to.:==:Jasne, zabieram się do tego.
+Gemini(CS-PL,2025-06-27 19:42:00):To ráda slyším. Aspoň nemáš nosánek nahoru jako ten druhej.:==:To chętnie słyszę. Przynajmniej nie masz zadartego noska jak ten drugi.
+Gemini(CS-PL,2025-06-27 19:42:05):Odkudpak vůbec jste, jestli se můžu zeptat?:==:Skąd w ogóle jesteś, jeśli mogę zapytać?
+Gemini(CS-PL,2025-06-27 19:42:10):Zdaleka.:==:Z daleka.
+Gemini(CS-PL,2025-06-27 19:42:11):Já v životě nebyla dál než na Nebákově.:==:Ja w życiu nie byłam dalej niż w Nebákowie.
+Gemini(CS-PL,2025-06-27 19:42:15):Zato tady kolem znám každej šutr.:==:Za to tutaj znam każdy kamyk.
+Gemini(CS-PL,2025-06-27 19:42:21):Kam že máme nanosit ty pytle?:==:Gdzie mamy zanieść te worki?
+Gemini(CS-PL,2025-06-27 19:42:24):Do spižírny. To jsou ty druhý dveře tady vevnitř.:==:Do spiżarni. To są te drugie drzwi tutaj w środku.
+Gemini(CS-PL,2025-06-27 19:42:28):Ale bejt tebou, tak se vo práci rozdělim s kamarádem. Ať se nestrháš, mladej. Je to taky jeho dluh, ne?:==:Ale gdybym była tobą, podzieliłabym pracę z przyjacielem. Żebyś się nie przemęczył, młody. To też jego dług, nie?
+Gemini(CS-PL,2025-06-27 19:42:37):Jak se vám tady vůbec žije?:==:Jak wam się tutaj w ogóle żyje?
+Gemini(CS-PL,2025-06-27 19:42:39):Teď už líp, když jste se ty a ten tvůj kamarád konečně umyli. Haha!:==:Teraz już lepiej, kiedy wy i ten wasz przyjaciel w końcu się umyliście. Haha!
+Gemini(CS-PL,2025-06-27 19:42:43):Ale popravdě, bejvalo to lepší. Válka je sice daleko, ale i od nás víc a víc mladejch chlapů vodchází na bojiště.:==:Ale szczerze mówiąc, bywało lepiej. Wojna jest niby daleko, ale i od nas coraz więcej młodych mężczyzn wyjeżdża na pole bitwy.
+Gemini(CS-PL,2025-06-27 19:42:54):Jenže pak chyběj v kraji. Nemá tady kdo pracovat. Jsme na to sami, a to je velká potíž.:==:Tylko że potem brakuje ich w kraju. Nie ma tutaj kto pracować. Jesteśmy w tym sami, a to jest duży problem.
+Gemini(CS-PL,2025-06-27 19:43:02):Bergov nabírá muže do zbraně?:==:Bergow rekrutuje ludzi do broni?
+Gemini(CS-PL,2025-06-27 19:43:05):To ne. Bergov, ten s tim nemá nic společnýho.:==:Nie. Bergow, ten, nie ma z tym nic wspólnego.
+Gemini(CS-PL,2025-06-27 19:43:09):Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:==:Idą sami z siebie. Po prostu nudzi ich zwykła praca, więc szukają szczęścia gdzie indziej.
+Gemini(CS-EN,2025-06-27 19:43:32):Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:==:Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:=:They go off on their own. They're simply fed up with ordinary work, so they're looking for happiness elsewhere.
+Gemini(CS-EN,2025-06-27 19:43:46):Vůbec jim nedochází, že se nemusej vrátit.:==:Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:=:They go off on their own. They're simply fed up with ordinary work, so they're looking for happiness elsewhere.
+Gemini(CS-EN,2025-06-27 19:43:50):Viděj jenom snadný groše. A starý pak musej dřít místo nich na poli!:==:Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:=:They go off on their own. They're simply fed up with ordinary work, so they're looking for happiness elsewhere.
+Gemini(CS-EN,2025-06-27 19:43:57):Kde se tady v kraji dá sehnat nějaká práce?:==:Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:=:They go off on their own. They're simply fed up with ordinary work, so they're looking for happiness elsewhere.
+Gemini(CS-EN,2025-06-27 19:43:59):No ty máš hlavně nejdřív nosit pytle tady u mě, tak se nerozhlížej jinde!:==:Voni jdou sami vod sebe. Prostě se jim zajídá vobyčejná práce, tak hledaj štěstí jinde.:=:They go off on their own. They're simply fed up with ordinary work, so they're looking for happiness elsewhere.
+Gemini(CS-EN,2025-06-27 19:44:14):Ale jinak je práce všude možně, stačí se pořádně koukat a nebejt línej votevřít hubu.:==:But otherwise, there's work everywhere, you just have to look properly and not be lazy to open your mouth.
+Gemini(CS-EN,2025-06-27 19:44:25):Zkus to třeba u kováře Radovana. Je to sice divnej pavouk, ale na groš za pomoc skoupej neni.:==:Try it with the blacksmith Radovan, for example. He's a strange spider, but he's not stingy with a groš for help.
+Gemini(CS-EN,2025-06-27 19:44:32):Vostatně... támhle za rohem zrovna sedí, kdyby ses ho chtěl voptat co a jak.:==:Actually... he's sitting right there around the corner, if you wanted to ask him what's what.
+Gemini(CS-EN,2025-06-27 19:44:36):A ten chlap vedle něj je mlynář Krejzl, ten taky vobčas shání pomocníky.:==:And the guy next to him is Krejzl the miller, he also sometimes looks for helpers.
+Gemini(CS-EN,2025-06-27 19:44:43):Víš, co se říká vo mlynářích!:==:You know what they say about millers!
+Gemini(CS-EN,2025-06-27 19:44:45):Hm, něco jsem zaslech.:==:Hm, I heard something.
+Gemini(CS-EN,2025-06-27 19:44:47):Takže prostě... bud vopatrnej...:==:So just... be careful...
+Gemini(CS-EN,2025-06-27 19:44:50):Tohle je tady jediná hospoda?:==:Is this the only pub here?
+Gemini(CS-EN,2025-06-27 19:44:53):V Troskovicích jo.:==:In Troskovice, yes.
+Gemini(CS-EN,2025-06-27 19:44:54):Tak to se ti docela daří, ne?:==:So you're doing pretty well, aren't you?
+Gemini(CS-EN,2025-06-27 19:44:56):Kdyby všichni měli na zaplacení, tak by to bylo vo dost lepší.:==:If everyone had something to pay with, it would be a lot better.
+Gemini(CS-EN,2025-06-27 19:45:02):Kde že je ta spíž?:==:Where is the pantry?
+Gemini(CS-EN,2025-06-27 19:45:03):Druhý dveře vevnitř v hospodě. To nemůžeš minout.:==:The second door inside the pub. You can't miss it.
+Gemini(CS-EN,2025-06-27 19:45:07):Zaslech jsem nějaký řeči o svatbě, co se tady chystá...:==:I overheard some talk about a wedding being prepared here...
+Gemini(CS-EN,2025-06-27 19:45:11):Jo jo. Vo ničem jiným se už kolem ani nemluví.:==:Yeah, yeah. They aren't talking about anything else around here anymore.
+Gemini(CS-EN,2025-06-27 19:45:13):Mladej pán ze Semína, Oldřich, si bere dceru našeho troskovickýho rychtáře Drozda, Anežku. A bude to pořádně velký.:==:The young lord from Semín, Oldřich, is marrying the daughter of our Troskovice reeve, Drozd, Anežka. And it's going to be a really big one.
+Gemini(CS-EN,2025-06-27 19:45:23):Vono taky když se berou bohatý, je to jiná veselka, než když si nějakej koželuh namluví špindíru vodněkad z hnoje...:==:And when the rich get married, it's a different kind of wedding than when some tanner talks some dirty girl from the dung heap into marrying him...
+Gemini(CS-EN,2025-06-27 19:45:31):Bude na svatbě taky pan Bergov?:==:Will Lord Bergov also be at the wedding?
+Gemini(CS-EN,2025-06-27 19:45:33):Vim já, co má pán za lubem? Ale nejspíš by tam bejt měl. Semín je jeho vazal.:==:Do I know what the lord intends? But he should probably be there. Semín is his vassal.
+Gemini(CS-EN,2025-06-27 19:45:41):Kdo je ten... Semín?:==:Who is this... Semín?
+Gemini(CS-EN,2025-06-27 19:45:44):To nepoznáš už podle jména? Pán ze Semína! Jeho rodu tady patří tvrz a vesnice.:==:Don't you know from the name? The Lord of Semín! His lineage owns the fortress and the village here.
+Gemini(CS-EN,2025-06-27 19:45:50):Starej Jan Semín je hlava rodu a jeho syn se jmenuje Oldřich. A právě ten se bude ženit.:==:Old Jan Semín is the head of the family and his son is named Oldřich. And he's the one getting married.
+Gemini(CS-EN,2025-06-27 19:45:56):Bejval to bohatej rod. Tedka už to s nima tak slavný neni, ale pořád maj nějakej vliv.:==:It used to be a rich family. Now it's not so glorious with them, but they still have some influence.
+Gemini(CS-EN,2025-06-27 19:46:01):Kde bude ta svatba?:==:Where will the wedding be?
+Gemini(CS-EN,2025-06-27 19:46:04):No na Semíně, kde jinde. Počítám, že starej pán Jan a náš rychtář se budou předhánět, aby ukázali svý bohatství...:==:Well, at Semín, where else. I reckon old Lord Jan and our reeve will compete to show off their wealth...
+Gemini(CS-EN,2025-06-27 19:46:13):Moh bych se na ni nějak dostat?:==:Could I somehow get to it?
+Gemini(CS-EN,2025-06-27 19:46:15):No tak to ti nevim, hochu. Je to jenom pro ty pozvaný, VÍŠ.:==:Well, I don't know about that, boy. It's only for those who are invited, YOU KNOW.
+Gemini(CS-EN,2025-06-27 19:46:18):Hm... zdá se, že to je naše jediná šance...:==:Hm... it seems this is our only chance...
+Gemini(CS-PL,2025-06-27 19:46:31):Hm... zdá se, že to je naše jediná šance...:==:Hm... wydaje się, że to nasza jedyna szansa...
+Gemini(CS-PL,2025-06-27 19:46:38):Cože?:==:Co proszę?
+Gemini(CS-PL,2025-06-27 19:46:39):Ale nic...:==:Ale nic...
+Gemini(CS-PL,2025-06-27 19:46:41):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Jeśli chcesz dowiedzieć się więcej, kilku przyszłych weselników siedzi tu właśnie przy piwie.
+Gemini(CS-DE,2025-06-27 19:46:49):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Wenn du mehr erfahren möchtest, ein paar zukünftige Hochzeitsgäste sitzen gerade hier und trinken Bier.
+Gemini(CS-NL,2025-06-27 19:47:01):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Als je meer wilt weten, een paar toekomstige bruiloftsgasten zitten hier net bier te drinken.
+Gemini(CS-FI,2025-06-27 19:47:06):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Jos haluat tietää lisää, muutamat tulevat häävieraat istuvat tässä juuri oluella.
+Gemini(CS-JA,2025-06-27 19:47:13):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:もしもっと知りたいなら、ここにいる未来の花嫁花婿さんが数人、ビールを飲みながら座っていますよ。
+Gemini(CS-UK,2025-06-27 19:47:22):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Якщо хочеш дізнатися більше, кілька майбутніх весільних гостей зараз сидять тут за пивом.
+Gemini(CS-AR,2025-06-27 19:47:36):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:إذا كنت تريد معرفة المزيد، فإن بعض الضيوف المستقبليين هنا يجلسون حاليًا ويشربون البيرة.
+Gemini(CS-EU,2025-06-27 19:47:45):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Edo, norbait gehiago jakin nahi baduzu, hemengo etorkizuneko ezkongai batzuk daude garagardo bat hartzen.
+Gemini(CS-GD,2025-06-27 19:47:55):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Hedzyś, jak chcesz wiedzieć więcej, to paru przyszłych weselników siedzi tu właśnie i pije piwo.
+Gemini(CS-RU,2025-06-27 19:48:07):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Если хотите узнать больше, несколько будущих молодоженов как раз сидят здесь за пивом.
+Gemini(CS-CY,2025-06-27 19:48:19):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Αν θες να μάθεις περισσότερα, μερικοί μελλοντικοί καλεσμένοι εδώ κάθονται και πίνουν μπίρα.
+Gemini(CS-GA,2025-06-27 19:48:45):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Másu chealbhach, tá roinnt daoine atá ag pósadh amach anseo ina suí anseo ag ól beoir.
