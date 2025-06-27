@@ -331,11 +331,24 @@ class TranslationHandler:
 
     def _reset_gemini_session(self):
         """Reset Gemini session and context."""
+        try:
+            if hasattr(self, 'gemini_chat_session'):
+                self.gemini_chat_session = None
+            if hasattr(self, 'gemini_context_window'):
+                self.gemini_context_window = []
+            if hasattr(self, 'gemini_last_translation'):
+                self.gemini_last_translation = None
+            if hasattr(self, 'gemini_last_source'):
+                self.gemini_last_source = None
+            if hasattr(self, 'gemini_session_source_lang'):
+                self.gemini_session_source_lang = None
+            if hasattr(self, 'gemini_session_target_lang'):
+                self.gemini_session_target_lang = None
+            log_debug("Gemini session reset completed")
+        except Exception as e:
+            log_debug(f"Error resetting Gemini session: {e}")
+        # Always set session to None to force reinitialization
         self.gemini_chat_session = None
-        self.gemini_context_window = []
-        self.gemini_last_translation = None
-        self.gemini_last_source = None
-        log_debug("Gemini session reset")
 
     def _build_system_instructions(self, source_name, target_name):
         """Build system instructions for Gemini based on fuzzy detection setting."""
@@ -414,22 +427,25 @@ Send only the translation of the last line. Don't add any extra comments."""
         return None
 
     def _get_language_display_name(self, lang_code, provider):
-        """Get display name for language code from language_display_names.csv."""
+        """Get display name for language code using the language manager."""
         try:
-            import csv
-            from resource_handler import get_resource_path
+            # Use the language manager's existing functionality
+            display_name = self.app.language_manager.get_localized_language_name(lang_code, provider, 'english')
             
-            language_display_file = get_resource_path("language_display_names.csv")
-            with open(language_display_file, 'r', encoding='utf-8') as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    if row['code'] == lang_code and row['provider'] == provider:
-                        return row['english_name']
+            # If not found, try fallback logic
+            if display_name == lang_code:
+                # Special case for 'auto'
+                if lang_code.lower() == 'auto':
+                    return 'Auto'
+                # Fallback to title case
+                return lang_code.title()
             
-            # Fallback to the code itself if not found
-            return lang_code.title()
+            return display_name
         except Exception as e:
-            log_debug(f"Error getting language display name: {e}")
+            log_debug(f"Error getting language display name for {lang_code}/{provider}: {e}")
+            # Special case for 'auto'
+            if lang_code.lower() == 'auto':
+                return 'Auto'
             return lang_code.title()
 
     def translate_text(self, text_content_main):

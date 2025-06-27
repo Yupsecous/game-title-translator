@@ -35,6 +35,9 @@ deepl_api_key_label,Klucz API DeepL:
 gemini_api_key_label,Klucz API Gemini:
 deepl_model_type_label,Jakość:
 gemini_context_window_label,Okno kontekstu:
+gemini_context_window_0,0 (Wyłączone)
+gemini_context_window_1,1 (Ostatni napis)
+gemini_context_window_2,2 (Dwa napisy)
 deepl_classic_model,Klasyczna
 deepl_nextgen_model,Nowej generacji
 models_file_label,Lista modeli MarianMT:

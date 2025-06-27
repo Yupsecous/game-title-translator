@@ -208,6 +208,13 @@ def create_settings_tab(app):
                 # Reset Gemini session when source language changes
                 if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
                     app.translation_handler._reset_gemini_session()
+                    # Force immediate reinitialization with new languages
+                    if hasattr(app.translation_handler, '_initialize_gemini_session'):
+                        try:
+                            app.translation_handler._initialize_gemini_session(api_code, app.gemini_target_lang)
+                            log_debug(f"Gemini session reinitialized with new source language: {api_code}")
+                        except Exception as e:
+                            log_debug(f"Error reinitializing Gemini session: {e}")
             
             app.source_lang_var.set(api_code) 
             log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -256,6 +263,13 @@ def create_settings_tab(app):
                 # Reset Gemini session when target language changes
                 if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
                     app.translation_handler._reset_gemini_session()
+                    # Force immediate reinitialization with new languages
+                    if hasattr(app.translation_handler, '_initialize_gemini_session'):
+                        try:
+                            app.translation_handler._initialize_gemini_session(app.gemini_source_lang, api_code)
+                            log_debug(f"Gemini session reinitialized with new target language: {api_code}")
+                        except Exception as e:
+                            log_debug(f"Error reinitializing Gemini session: {e}")
             
             app.target_lang_var.set(api_code)
             log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -322,9 +336,9 @@ def create_settings_tab(app):
     app.gemini_context_window_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
     
     context_window_options = [
-        (0, "0 (Disabled)"),
-        (1, "1 (Last subtitle)"),
-        (2, "2 (Two subtitles)")
+        (0, app.ui_lang.get_label("gemini_context_window_0", "0 (Disabled)")),
+        (1, app.ui_lang.get_label("gemini_context_window_1", "1 (Last subtitle)")),
+        (2, app.ui_lang.get_label("gemini_context_window_2", "2 (Two subtitles)"))
     ]
     
     app.gemini_context_window_display_var = tk.StringVar()
@@ -353,6 +367,14 @@ def create_settings_tab(app):
                 # Reset Gemini session when context window changes
                 if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
                     app.translation_handler._reset_gemini_session()
+                    # Reinitialize session with new context window setting
+                    if hasattr(app.translation_handler, '_initialize_gemini_session'):
+                        try:
+                            app.translation_handler._initialize_gemini_session(
+                                app.gemini_source_lang, app.gemini_target_lang)
+                            log_debug(f"Gemini session reinitialized with new context window: {value}")
+                        except Exception as e:
+                            log_debug(f"Error reinitializing Gemini session: {e}")
                 if app._fully_initialized:
                     app.save_settings()
                 break
@@ -369,9 +391,11 @@ def create_settings_tab(app):
         variable=app.gemini_fuzzy_detection_var,
         command=lambda: [
             log_debug(f"Gemini fuzzy detection toggled: {app.gemini_fuzzy_detection_var.get()}"),
-            # Reset Gemini session when fuzzy detection setting changes
+            # Reset and reinitialize Gemini session when fuzzy detection setting changes
             (hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session') 
              and app.translation_handler._reset_gemini_session()),
+            (hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_initialize_gemini_session')
+             and app.translation_handler._initialize_gemini_session(app.gemini_source_lang, app.gemini_target_lang)),
             app._fully_initialized and app.save_settings()
         ]
     )
@@ -450,6 +474,36 @@ def create_settings_tab(app):
     
     # Store function reference for calling during language updates
     app.update_deepl_model_type_for_language = update_deepl_model_type_for_language
+
+    # Function to update Gemini context window options when language changes
+    def update_gemini_context_window_for_language():
+        if hasattr(app, 'gemini_context_window_combobox') and app.gemini_context_window_combobox.winfo_exists():
+            # Get current context window setting
+            current_context_window = app.gemini_context_window_var.get()
+            
+            # Update options with new language
+            new_context_window_options = [
+                (0, app.ui_lang.get_label("gemini_context_window_0", "0 (Disabled)")),
+                (1, app.ui_lang.get_label("gemini_context_window_1", "1 (Last subtitle)")),
+                (2, app.ui_lang.get_label("gemini_context_window_2", "2 (Two subtitles)"))
+            ]
+            
+            # Update combobox values
+            app.gemini_context_window_combobox['values'] = [display for _, display in new_context_window_options]
+            
+            # Restore selection based on current setting
+            for value, display in new_context_window_options:
+                if value == current_context_window:
+                    app.gemini_context_window_display_var.set(display)
+                    break
+            else:
+                # Fallback to default option if current setting not found
+                app.gemini_context_window_display_var.set(new_context_window_options[1][1])  # Default to 1
+            
+            log_debug(f"Updated Gemini context window options for language change")
+    
+    # Store function reference for calling during language updates
+    app.update_gemini_context_window_for_language = update_gemini_context_window_for_language
 
 
     app.models_file_label = ttk.Label(frame, text=app.ui_lang.get_label("models_file_label")) 
