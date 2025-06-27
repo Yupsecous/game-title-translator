@@ -24,6 +24,12 @@ class LanguageManager:
         self.deepl_source_names = []       # List of names only for UI display
         self.deepl_target_names = []       # List of names only for UI display
         
+        # Gemini language lists (same as Google Translate)
+        self.gemini_source_languages = []  # List of (name, code) tuples
+        self.gemini_target_languages = []  # List of (name, code) tuples
+        self.gemini_source_names = []      # List of names only for UI display
+        self.gemini_target_names = []      # List of names only for UI display
+        
         # Generic name to ISO code mapping (for MarianMT display name parsing)
         self.generic_name_to_iso_code = {} # e.g., {'english': 'en', 'polish': 'pl'}
         
@@ -69,8 +75,10 @@ class LanguageManager:
             self._load_csv_to_list(get_resource_path('resources/google_trans_target.csv'), self.google_target_languages, self.google_target_names)
             self._load_csv_to_list(get_resource_path('resources/deepl_trans_source.csv'), self.deepl_source_languages, self.deepl_source_names)
             self._load_csv_to_list(get_resource_path('resources/deepl_trans_target.csv'), self.deepl_target_languages, self.deepl_target_names)
+            self._load_csv_to_list(get_resource_path('resources/gemini_trans_source.csv'), self.gemini_source_languages, self.gemini_source_names)
+            self._load_csv_to_list(get_resource_path('resources/gemini_trans_target.csv'), self.gemini_target_languages, self.gemini_target_names)
             
-            log_debug(f"Loaded language lists: Google Src({len(self.google_source_names)}), Google Tgt({len(self.google_target_names)}), DeepL Src({len(self.deepl_source_names)}), DeepL Tgt({len(self.deepl_target_names)})")
+            log_debug(f"Loaded language lists: Google Src({len(self.google_source_names)}), Google Tgt({len(self.google_target_names)}), DeepL Src({len(self.deepl_source_names)}), DeepL Tgt({len(self.deepl_target_names)}), Gemini Src({len(self.gemini_source_names)}), Gemini Tgt({len(self.gemini_target_names)})")
         except Exception as e:
             log_debug(f"Error loading language lists: {e}")
             self._initialize_default_languages() # Fallback
@@ -144,6 +152,12 @@ class LanguageManager:
         self.deepl_source_names = ["Auto", "English", "Polish"]
         self.deepl_target_languages = [("English (British)", "EN-GB"), ("Polish", "PL")]
         self.deepl_target_names = ["English (British)", "Polish"]
+        
+        # Gemini uses same language codes as Google Translate
+        self.gemini_source_languages = [("Auto", "auto"), ("English", "en"), ("Polish", "pl")]
+        self.gemini_source_names = ["Auto", "English", "Polish"]
+        self.gemini_target_languages = [("English", "en"), ("Polish", "pl")]
+        self.gemini_target_names = ["English", "Polish"]
 
     def get_code_from_name(self, name_to_find, service_type, lang_direction="source"):
         """Gets API code from display name for a specific service."""
@@ -152,6 +166,8 @@ class LanguageManager:
             lst = self.google_source_languages if lang_direction == "source" else self.google_target_languages
         elif service_type == 'deepl_api':
             lst = self.deepl_source_languages if lang_direction == "source" else self.deepl_target_languages
+        elif service_type == 'gemini_api':
+            lst = self.gemini_source_languages if lang_direction == "source" else self.gemini_target_languages
         
         if lst:
             for name, code in lst:
@@ -166,6 +182,8 @@ class LanguageManager:
             lst = self.google_source_languages if lang_direction == "source" else self.google_target_languages
         elif service_type == 'deepl_api':
             lst = self.deepl_source_languages if lang_direction == "source" else self.deepl_target_languages
+        elif service_type == 'gemini_api':
+            lst = self.gemini_source_languages if lang_direction == "source" else self.gemini_target_languages
         
         if lst:
             for name, code in lst:

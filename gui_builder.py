@@ -154,6 +154,7 @@ def create_settings_tab(app):
     ttk.Label(frame, text=app.ui_lang.get_label("translation_model_label")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
     
     translation_models_available_for_ui = []
+    if app.GEMINI_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['gemini_api'])
     if app.MARIANMT_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['marianmt'])
     if app.DEEPL_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['deepl_api'])
     if app.GOOGLE_TRANSLATE_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['google_api'])
@@ -201,6 +202,12 @@ def create_settings_tab(app):
             elif active_model == 'deepl_api': 
                 app.deepl_source_lang = api_code
                 log_debug(f"DeepL source lang set to: {api_code}")
+            elif active_model == 'gemini_api':
+                app.gemini_source_lang = api_code
+                log_debug(f"Gemini source lang set to: {api_code}")
+                # Reset Gemini session when source language changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
+                    app.translation_handler._reset_gemini_session()
             
             app.source_lang_var.set(api_code) 
             log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -243,6 +250,12 @@ def create_settings_tab(app):
             elif active_model == 'deepl_api': 
                 app.deepl_target_lang = api_code
                 log_debug(f"DeepL target lang set to: {api_code}")
+            elif active_model == 'gemini_api':
+                app.gemini_target_lang = api_code
+                log_debug(f"Gemini target lang set to: {api_code}")
+                # Reset Gemini session when target language changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
+                    app.translation_handler._reset_gemini_session()
             
             app.target_lang_var.set(api_code)
             log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -291,9 +304,96 @@ def create_settings_tab(app):
                                          command=lambda: app.toggle_api_key_visibility("deepl"))
     app.deepl_api_key_button.grid(row=5, column=2, padx=5, pady=5, sticky="w")
 
+    # Gemini API Key input (only visible when Gemini is selected)
+    app.gemini_api_key_label = ttk.Label(frame, text=app.ui_lang.get_label("gemini_api_key_label", "Gemini API Key")) 
+    app.gemini_api_key_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+    app.gemini_api_key_entry = ttk.Entry(frame, textvariable=app.gemini_api_key_var, width=40, show="*")
+    app.gemini_api_key_entry.grid(row=6, column=1, padx=5, pady=5, sticky="ew")
+    # Set initial button text based on visibility
+    initial_gemini_text = app.ui_lang.get_label("show_btn", "Show") 
+    if hasattr(app, 'gemini_api_key_visible') and app.gemini_api_key_visible:
+        initial_gemini_text = app.ui_lang.get_label("hide_btn", "Hide")
+    app.gemini_api_key_button = ttk.Button(frame, text=initial_gemini_text, width=5,
+                                          command=lambda: app.toggle_api_key_visibility("gemini"))
+    app.gemini_api_key_button.grid(row=6, column=2, padx=5, pady=5, sticky="w")
+
+    # Gemini Context Window Setting (only visible when Gemini is selected)
+    app.gemini_context_window_label = ttk.Label(frame, text=app.ui_lang.get_label("gemini_context_window_label", "Context Window"))
+    app.gemini_context_window_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+    
+    context_window_options = [
+        (0, "0 (Disabled)"),
+        (1, "1 (Last subtitle)"),
+        (2, "2 (Two subtitles)")
+    ]
+    
+    app.gemini_context_window_display_var = tk.StringVar()
+    # Set initial display value based on current setting
+    current_context_window = app.gemini_context_window_var.get()
+    for value, display in context_window_options:
+        if value == current_context_window:
+            app.gemini_context_window_display_var.set(display)
+            break
+    else:
+        # Fallback if current setting doesn't match any option
+        app.gemini_context_window_display_var.set(context_window_options[1][1])  # Default to 1
+    
+    app.gemini_context_window_combobox = ttk.Combobox(frame, textvariable=app.gemini_context_window_display_var,
+                                                     values=[display for _, display in context_window_options], 
+                                                     width=25, state='readonly')
+    app.gemini_context_window_combobox.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
+    
+    def on_gemini_context_window_changed(event):
+        selected_display = app.gemini_context_window_display_var.get()
+        # Find the corresponding value
+        for value, display in context_window_options:
+            if display == selected_display:
+                app.gemini_context_window_var.set(value)
+                log_debug(f"Gemini context window changed to: {value} (display: {display})")
+                # Reset Gemini session when context window changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
+                    app.translation_handler._reset_gemini_session()
+                if app._fully_initialized:
+                    app.save_settings()
+                break
+    
+    app.gemini_context_window_combobox.bind('<<ComboboxSelected>>', 
+        create_combobox_handler_wrapper(on_gemini_context_window_changed))
+
+    # Gemini Fuzzy Detection Checkbox (only visible when Gemini is selected)
+    app.gemini_fuzzy_detection_frame = ttk.Frame(frame)
+    app.gemini_fuzzy_detection_frame.grid(row=8, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+    app.gemini_fuzzy_detection_checkbox = ttk.Checkbutton(
+        app.gemini_fuzzy_detection_frame, 
+        text=app.ui_lang.get_label("gemini_fuzzy_detection_checkbox", "Enable Smart Duplicate Detection (Reduces API costs by 60-70%)"),
+        variable=app.gemini_fuzzy_detection_var,
+        command=lambda: [
+            log_debug(f"Gemini fuzzy detection toggled: {app.gemini_fuzzy_detection_var.get()}"),
+            # Reset Gemini session when fuzzy detection setting changes
+            (hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session') 
+             and app.translation_handler._reset_gemini_session()),
+            app._fully_initialized and app.save_settings()
+        ]
+    )
+    app.gemini_fuzzy_detection_checkbox.pack(anchor="w")
+
+    # Gemini File Cache Checkbox (only visible when Gemini is selected)
+    app.gemini_file_cache_frame = ttk.Frame(frame)
+    app.gemini_file_cache_frame.grid(row=9, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+    app.gemini_file_cache_checkbox = ttk.Checkbutton(
+        app.gemini_file_cache_frame, 
+        text=app.ui_lang.get_label("gemini_file_cache_checkbox", "Enable Gemini file cache"),
+        variable=app.gemini_file_cache_var,
+        command=lambda: [
+            log_debug(f"Gemini file cache toggled: {app.gemini_file_cache_var.get()}"),
+            app._fully_initialized and app.save_settings()
+        ]
+    )
+    app.gemini_file_cache_checkbox.pack(anchor="w")
+
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
-    app.deepl_model_type_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_model_type_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
     
     # Create model type options with user-friendly names
     deepl_model_options = [
@@ -315,7 +415,7 @@ def create_settings_tab(app):
     app.deepl_model_type_combobox = ttk.Combobox(frame, textvariable=app.deepl_model_display_var,
                                                values=[display for _, display in deepl_model_options], 
                                                width=25, state='readonly')
-    app.deepl_model_type_combobox.grid(row=6, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_model_type_combobox.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
     
     def on_deepl_model_type_changed(event):
         selected_display = app.deepl_model_display_var.get()
