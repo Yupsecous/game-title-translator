@@ -238,20 +238,22 @@ class UIInteractionHandler:
             current_google_target = self.app.google_target_lang  
             current_deepl_source = self.app.deepl_source_lang
             current_deepl_target = self.app.deepl_target_lang
+            current_gemini_source = self.app.gemini_source_lang
+            current_gemini_target = self.app.gemini_target_lang
             current_marian_model = self.app.marian_model_var.get()
             
-            log_debug(f"Preserving selections: Google({current_google_source}->{current_google_target}), DeepL({current_deepl_source}->{current_deepl_target}), MarianMT({current_marian_model})")
+            log_debug(f"Preserving selections: Google({current_google_source}->{current_google_target}), DeepL({current_deepl_source}->{current_deepl_target}), Gemini({current_gemini_source}->{current_gemini_target}), MarianMT({current_marian_model})")
             
             # Update API language dropdowns
             active_model = self.app.translation_model_var.get()
-            if active_model in ['google_api', 'deepl_api']:
+            if active_model in ['google_api', 'deepl_api', 'gemini_api']:
                 self._update_language_dropdowns_for_model(active_model)
             
             # Update MarianMT models dropdown
             self.update_marian_models_dropdown_for_language(ui_language_for_lookup)
             
             # Verify selections were preserved
-            log_debug(f"After update: Google({self.app.google_source_lang}->{self.app.google_target_lang}), DeepL({self.app.deepl_source_lang}->{self.app.deepl_target_lang}), MarianMT({self.app.marian_model_var.get()})")
+            log_debug(f"After update: Google({self.app.google_source_lang}->{self.app.google_target_lang}), DeepL({self.app.deepl_source_lang}->{self.app.deepl_target_lang}), Gemini({self.app.gemini_source_lang}->{self.app.gemini_target_lang}), MarianMT({self.app.marian_model_var.get()})")
             
             # If any selections were lost, restore them
             if self.app.google_source_lang != current_google_source:
@@ -269,6 +271,14 @@ class UIInteractionHandler:
             if self.app.deepl_target_lang != current_deepl_target:
                 log_debug(f"Restoring DeepL target: {current_deepl_target}")
                 self.app.deepl_target_lang = current_deepl_target
+            
+            if self.app.gemini_source_lang != current_gemini_source:
+                log_debug(f"Restoring Gemini source: {current_gemini_source}")
+                self.app.gemini_source_lang = current_gemini_source
+                
+            if self.app.gemini_target_lang != current_gemini_target:
+                log_debug(f"Restoring Gemini target: {current_gemini_target}")
+                self.app.gemini_target_lang = current_gemini_target
                 
             if self.app.marian_model_var.get() != current_marian_model:
                 log_debug(f"Restoring MarianMT model: {current_marian_model}")
@@ -690,6 +700,14 @@ class UIInteractionHandler:
                 # Reset Gemini session when translation model changes to Gemini
                 if hasattr(self.app, 'translation_handler') and hasattr(self.app.translation_handler, '_reset_gemini_session'):
                     self.app.translation_handler._reset_gemini_session()
+                    # Initialize session with current language settings when switching to Gemini
+                    if hasattr(self.app.translation_handler, '_initialize_gemini_session'):
+                        try:
+                            self.app.translation_handler._initialize_gemini_session(
+                                self.app.gemini_source_lang, self.app.gemini_target_lang)
+                            log_debug(f"Gemini session initialized when switching to Gemini model")
+                        except Exception as e:
+                            log_debug(f"Error initializing Gemini session when switching models: {e}")
         elif model_to_configure_for == 'marianmt':
             if self.app.MARIANMT_AVAILABLE and self.app.marian_translator is None and (preload or not initial_setup):
                 self.app.translation_handler.initialize_marian_translator()

@@ -295,8 +295,8 @@ class OCRTranslator:
         self.google_target_lang = self.config['Settings'].get('google_target_lang', 'en')
         self.deepl_source_lang = self.config['Settings'].get('deepl_source_lang', 'auto')
         self.deepl_target_lang = self.config['Settings'].get('deepl_target_lang', 'EN-GB')
-        self.gemini_source_lang = self.config['Settings'].get('gemini_source_lang', 'auto')
-        self.gemini_target_lang = self.config['Settings'].get('gemini_target_lang', 'en')
+        self.gemini_source_lang = self.config['Settings'].get('gemini_source_lang', 'en')
+        self.gemini_target_lang = self.config['Settings'].get('gemini_target_lang', 'pl')
         
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             base_dir = os.path.dirname(sys.executable)
@@ -375,6 +375,9 @@ class OCRTranslator:
         elif active_model_for_init == 'deepl_api':
             initial_source_val = self.deepl_source_lang
             initial_target_val = self.deepl_target_lang
+        elif active_model_for_init == 'gemini_api':
+            initial_source_val = self.gemini_source_lang
+            initial_target_val = self.gemini_target_lang
         elif active_model_for_init == 'marianmt':
             if self.marian_model_display_var.get(): 
                 # ui_interaction_handler is now defined
@@ -1243,6 +1246,10 @@ For more information, see the user manual."""
             # Update DeepL model type dropdown if it exists
             if hasattr(self, 'update_deepl_model_type_for_language'):
                 self.update_deepl_model_type_for_language()
+            
+            # Update Gemini context window dropdown if it exists
+            if hasattr(self, 'update_gemini_context_window_for_language'):
+                self.update_gemini_context_window_for_language()
             
             # Restore the tab change handler for focus behavior
             def on_tab_changed(event):
