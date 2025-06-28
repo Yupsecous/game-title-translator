@@ -205,16 +205,7 @@ def create_settings_tab(app):
             elif active_model == 'gemini_api':
                 app.gemini_source_lang = api_code
                 log_debug(f"Gemini source lang set to: {api_code}")
-                # Reset Gemini session when source language changes
-                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
-                    app.translation_handler._reset_gemini_session()
-                    # Force immediate reinitialization with new languages
-                    if hasattr(app.translation_handler, '_initialize_gemini_session'):
-                        try:
-                            app.translation_handler._initialize_gemini_session(api_code, app.gemini_target_lang)
-                            log_debug(f"Gemini session reinitialized with new source language: {api_code}")
-                        except Exception as e:
-                            log_debug(f"Error reinitializing Gemini session: {e}")
+                # Note: Session will handle language change automatically on next translation
             
             app.source_lang_var.set(api_code) 
             log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -260,16 +251,7 @@ def create_settings_tab(app):
             elif active_model == 'gemini_api':
                 app.gemini_target_lang = api_code
                 log_debug(f"Gemini target lang set to: {api_code}")
-                # Reset Gemini session when target language changes
-                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
-                    app.translation_handler._reset_gemini_session()
-                    # Force immediate reinitialization with new languages
-                    if hasattr(app.translation_handler, '_initialize_gemini_session'):
-                        try:
-                            app.translation_handler._initialize_gemini_session(app.gemini_source_lang, api_code)
-                            log_debug(f"Gemini session reinitialized with new target language: {api_code}")
-                        except Exception as e:
-                            log_debug(f"Error reinitializing Gemini session: {e}")
+                # Note: Session will handle language change automatically on next translation
             
             app.target_lang_var.set(api_code)
             log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")

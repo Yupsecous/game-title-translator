@@ -71,3 +71,268 @@ Gemini(CS-GD,2025-06-27 19:47:55):Jestli se chceš dozvědět víc, pár budouc�
 Gemini(CS-RU,2025-06-27 19:48:07):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Если хотите узнать больше, несколько будущих молодоженов как раз сидят здесь за пивом.
 Gemini(CS-CY,2025-06-27 19:48:19):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Αν θες να μάθεις περισσότερα, μερικοί μελλοντικοί καλεσμένοι εδώ κάθονται και πίνουν μπίρα.
 Gemini(CS-GA,2025-06-27 19:48:45):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Másu chealbhach, tá roinnt daoine atá ag pósadh amach anseo ina suí anseo ag ól beoir.
+Gemini(CS-PL,2025-06-27 21:27:19):Jestli se chceš dozvědět víc, pár budoucích svatebčanů tady zrovna sedí u piva.:==:Jeśli chcesz dowiedzieć się więcej, kilku przyszłych weselników siedzi tutaj przy piwie.
+Gemini(CS-PL,2025-06-27 21:27:27):Třeba támhle mladej Sváťa... to je brácha nevěsty. Umí bejt pěkný kvítko, ale jinak je to hodnej kluk.:==:Może tam młody Sváťa... to brat panny młodej. Potrafi być niezłym łobuzem, ale poza tym to porządny chłopak.
+Gemini(CS-PL,2025-06-27 21:27:29):Třeba támhle mladej to je brácha nevěsty. Umí bejt pěkný kvítko, ale jinak je to hodnej kluk.:==:Może tam młody Sváťa... to brat panny młodej. Potrafi być niezłym łobuzem, ale poza tym to porządny chłopak.
+Gemini(CS-PL,2025-06-27 21:36:51):Třeba támhle mladej Sváťa... to je brácha nevěsty. Umí bejt pěkný kvítko, ale jinak je to hodnej kluk.:==:Może na przykład młody Sváťa... to brat panny młodej. Potrafi być niezłym ziółkiem, ale poza tym to porządny chłopak.
+Gemini(CS-CY,2025-06-27 21:36:59):Třeba támhle mladej Sváťa... to je brácha nevěsty. Umí bejt pěkný kvítko, ale jinak je to hodnej kluk.:==:Efallai bod yr ifanc Sváťa... mae'n frawd y dlys. Gall fod yn flodyn go iawn, ond fel arall mae'n ddyn neis.
+Gemini(CS-GD,2025-06-27 21:37:09):Třeba támhle mladej Sváťa... to je brácha nevěsty. Umí bejt pěkný kvítko, ale jinak je to hodnej kluk.:==:'S dòcha ann an sin tha an t-òganach Sváťa... is e sin bràthair na bainnse. Faodaidh e a bhith na fhlùr snog, ach air neo 's e balach math a th' ann.
+Gemini(CS-PL,2025-06-27 21:39:20):Třeba támhle mladej to je brácha nevěsty. Umí bejt pěkný kvítko, ale jinak je to hodnej kluk.:==:Może tam młody, to brat panny młodej. Potrafi być niezłym łobuzem, ale poza tym jest dobrym chłopakiem.
+Gemini(CS-PL,2025-06-27 21:39:25):Tak já se jdu domluvit s kamarádem...:==:Więc idę pogadać z moim przyjacielem...
+Gemini(CS-PL,2025-06-27 21:39:27):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:I ostrożnie z tymi workami, żebyście mi ich nie podarli, albo coś w tym stylu!
+Gemini(CS-SR,2025-06-27 21:40:06):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:И пазите те кесе, да ми их не исцепате, или нешто слично!
+Gemini(CS-SW,2025-06-27 21:40:12):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na, na,
+Gemini(CS-AF,2025-06-27 21:41:04):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:En wees versigtig met daardie sakke, sodat julle hulle nie skeur nie, of iets!
+Gemini(CS-SQ,2025-06-27 21:41:08):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Dhe kini kujdes me ato çanta, të mos i grisni, ose diçka të tillë!
+Gemini(CS-AZ,2025-06-27 21:41:12):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:və ehtiyatlı olun o çantalarla, yırtmayın onları, ya da belə bir şey!
+Gemini(CS-EU,2025-06-27 21:41:17):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Eta kontuz poltsuekin, ez ditzazun zulatzerik, edo halako zerbait!
+Gemini(CS-BE,2025-06-27 21:41:21):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:А асцярожна з тымі мяшкамі, каб мне іх не парваць, ці нешта такое!
+Gemini(CS-ZH-TW,2025-06-27 21:41:28):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:而且要小心那些袋子，別弄破了，或者別的什麼！
+Gemini(CS-KA,2025-06-27 21:41:37):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:და ფრთხილად იყავით ამ ტომრებთან, რომ არ დამიხიოთ ან რამე მსგავსი!
+Gemini(CS-LV,2025-06-27 21:41:42):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Un uzmanīgi ar tiem maisiņiem, lai tos man neizrāvāt vai kaut ko tamlīdzīgu!
+Gemini(CS-SK,2025-06-27 21:41:55):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:A opatrne s tými vrecami, aby ste mi ich nepretrhli, alebo tak niečo!
+Gemini(CS-GD,2025-06-27 21:42:06):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Agus bi faiceallach leis na pocannan, gus nach reub thu iad, no rudeigin mar sin!
+Gemini(CS-IS,2025-06-27 21:43:26):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Og farið varlega með þessar töskur, svo að þið rífið þær ekki eða eitthvað!
+Gemini(CS-ES,2025-06-27 21:45:52):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Y con cuidado con esas bolsas, no me las vayan a romper, ¡o algo así!
+Gemini(CS-HU,2025-06-27 21:46:00):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:És vigyázzanak azokkal a zsákokkal, nehogy kiszakítsák őket, vagy valami ilyesmi!
+Gemini(CS-CY,2025-06-27 21:46:05):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:A byddwch yn ofalus gyda'r bagiau hynny, peidiwch â'u rhwygo, neu rywbeth tebyg!
+Gemini(CS-GA,2025-06-27 21:46:33):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:Agus bíodh cúram ort leis na málaí sin, ná srac léi iad, nó rud éigin!
+Gemini(CS-JA,2025-06-27 21:46:37):A vopatrně s těma pytlema, ať mi je neprotrhnete, nebo tak něco!:==:そして、袋は丁寧に扱ってください、破いたりしないでくださいね！
+Gemini(CS-JA,2025-06-27 21:50:49):He he... lhář je to teda mizernej, ale pobavit umí, to se musí nechat!:==:へへ…なんてひどい嘘つきなんだ、でも笑わせてくれるのは認めなきゃね！
+Gemini(CS-PL,2025-06-27 21:50:58):He he... lhář je to teda mizernej, ale pobavit umí, to se musí nechat!:==:He he... kłamca z niego marny, ale potrafi zabawiać, trzeba mu to przyznać!
+Gemini(CS-GA,2025-06-27 21:51:22):He he... lhář je to teda mizernej, ale pobavit umí, to se musí nechat!:==:Heh... is é an bréagán olc é, ach is féidir leis siamsaíocht a chur ar fáil, ní mór é sin a admháil!
+Gemini(CS-LT,2025-06-27 22:11:34):Já nelžu! Jsme poslové! Jen... se nám to všechno nějak vymklo z rukou...:==:Aš nemelu! Mes esame pasiuntiniai! Tiesiog... viskas kažkaip išėjo iš kontrolės...
+Gemini(CS-SW,2025-06-27 22:11:44):Já nelžu! Jsme poslové! Jen... se nám to všechno nějak vymklo z rukou...:==:Mimi siilala! Sisi ni wajumbe! Ni tu... kila kitu kilichotoka mikononi mwetu...
+Gemini(CS-SW,2025-06-27 22:11:54):No, ať už nebo ne, s timhle vohozem ti nikdo věřit nebude.:==:Hapana, iwe au usiwe, kwa mavazi haya hakuna mtu atakaye kuamini.
+Gemini(CS-PL,2025-06-27 22:12:03):No, ať už nebo ne, s timhle vohozem ti nikdo věřit nebude.:==:Nie, nieważne czy tak, czy nie, w tym stroju nikt ci nie uwierzy.
+Gemini(CS-EN,2025-06-27 22:12:18):No, ať už nebo ne, s timhle vohozem ti nikdo věřit nebude.:==:No, whether or not, no one will believe you in this outfit.
+Gemini(CS-EN,2025-06-27 22:12:24):Jak ti říkaj, chlapče?:==:What do they call you, boy?
+Gemini(CS-EN,2025-06-27 22:12:28):Jindřich ze Skalice.:==:Jindřich ze Skalice.
+Gemini(CS-EN,2025-06-27 22:12:30):Hmm... troufáš si na panský jméno.:==:Hmm... you dare to have a noble name.
+Gemini(CS-EN,2025-06-27 22:12:35):Takže Jindro... cos teda chtěl?:==:So Jindro... what did you want?
+Gemini(CS-EN,2025-06-27 22:12:39):Když už ses k nám tak přidal...:==:Since you've joined us...
+Gemini(CS-EN,2025-06-27 22:12:42):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:I heard there's a wedding being planned in the region... what do you know about it?
+Gemini(CS-PL,2025-06-27 22:12:53):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Słyszałem, że w okolicy szykuje się jakieś wesele... co o tym wiecie?
+Gemini(CS-DE,2025-06-27 22:12:59):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Ich habe gehört, dass im Landkreis eine Hochzeit stattfinden soll... was wissen Sie darüber?
+Gemini(CS-LT,2025-06-27 22:13:10):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Girdėjau, kad krašte ruošiamasi vestuvėms... ką apie tai žinote?
+Gemini(CS-SL,2025-06-27 22:17:11):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Slišal sem, da se v kraju pripravlja poroka ... kaj veste o tem?
+Gemini(CS-DA,2025-06-27 22:17:19):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Jeg har hørt, at der er et bryllup på vej i området... hvad ved I om det?
+Gemini(CS-ET,2025-06-27 22:17:25):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Kuulsin, et maakonnas toimub mingi pulm... mida te sellest teate?
+Gemini(CS-FI,2025-06-27 22:17:29):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Kuulin, että tässä maakunnassa on tulossa häät... mitä tiedätte siitä?
+Gemini(CS-NO,2025-06-27 22:17:47):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Jeg har hørt at det skal være bryllup i distriktet... hva vet dere om det?
+Gemini(CS-SV,2025-06-27 22:17:54):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Jag har hört att det ska bli ett bröllop i trakten... vad vet ni om det?
+Gemini(CS-HU,2025-06-27 22:18:02):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Hallottam, hogy esküvőre készülnek a környéken… mit tudnak erről?
+Gemini(CS-IT,2025-06-27 22:18:07):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Ho sentito che si sta preparando un matrimonio nella contea... cosa ne sapete?
+Gemini(CS-VI,2025-06-27 22:18:23):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Nghe nói trong vùng sắp có đám cưới... bạn biết gì về chuyện đó không?
+Gemini(CS-TR,2025-06-27 22:24:36):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Duyduğuma göre bu civarda bir düğün olacakmış... Ne biliyorsunuz bu konuda?
+
+Gemini(CS-CY,2025-06-27 22:28:13):Hmm... troufáš si na panský jméno.:==:Ydych chi'n meiddynnu enw dyn.
+Gemini(CS-PL,2025-06-27 22:28:24):Když už ses k nám tak přidal...:==:Skoro jste se k nám přidala...
+Gemini(CS-PL,2025-06-27 22:28:47):No jo, velká událost na Semíně.:==:No jo, velká událost na Semíně.
+Gemini(CS-PL,2025-06-27 22:28:51):Všichni tam musej bejt.:==:Wszyscy tam muszą być.
+Gemini(CS-PL,2025-06-27 22:28:53):A kdo není pozvanej, snaží se nějak vetřít. Já ne. Mně je to jedno.:==:A kto nie jest zaproszony, próbuje się jakoś wcisnąć. Ja nie. Nic mnie to nie obchodzi.
+Gemini(CS-PL,2025-06-27 22:29:13):© © 1 (E 4 bé 4 * 2:28:24) :Když už ses k nám tak přidal...:==:Skoro jste se k nám přidala... 2:28:47):No jo, velká událost na Semíně.:==:No jo, velká událost na Semíně.:==:A kto nie jest zaproszony, próbuje się jakoś wcisnąć. Ja nie. Nic mnie to nie obchodzi.
+Gemini(CS-CY,2025-06-27 22:39:45):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Clywais i fod rhyw briodas yn cael ei chynnal yn yr ardal... beth ydych chi'n ei wybod amdani?
+Gemini(CS-CY,2025-06-27 22:41:31):No jo, velká událost na Semíně.:==:Wel, digwyddiad mawr yn Semín.
+Gemini(CS-CY,2025-06-27 22:41:34):Všichni tam musej bejt.:==:Mae'n rhaid i bawb fod yno.
+Gemini(CS-CY,2025-06-27 22:41:39):A kdo není pozvanej, snaží se nějak vetřít. Já ne. Mně je to jedno.:==:Ac mae'r rhai nad ydynt wedi'u gwahodd, yn ceisio mynd i mewn felly. Nid fi. Does gen i ddim ots.
+Gemini(CS-CY,2025-06-27 22:41:44):Protože tě nepozvali, co?:==:Oherwydd na wnaethon nhw dy wahodd di, dyna ti?
+Gemini(CS-CY,2025-06-27 22:41:46):Ale to víš, že pozvali. Ale co je mi po mladým Semínovi a rychtářovic holce?:==:Ond rydych chi'n gwybod eu bod nhw'n ei wahodd. Ond beth yw fy affaith i ar Semín ifanc a merch y maer?
+Gemini(CS-CY,2025-06-27 22:41:50):Ale to víš, že pozvali. Ale co je mi po mladým a rychtářovic holce?:==:Ond rydych chi'n gwybod eu bod nhw'n ei wahodd. Ond beth yw fy affaith i ar Semín ifanc a merch y maer?
+Gemini(CS-CY,2025-06-27 22:41:53):Jsme jen hračky v rukou Božích. Naše pozemský svazky, se jednou rozplynou v čase jako dým...:==:Rydyn ni'n ddolenni yn unig yng nghadwyn duw. Mae ein cysylltiadau ddaearol yn diflannu un diwrnod yn yr amser fel mwg...
+Gemini(CS-PL,2025-06-27 22:45:20):Slyšel jsem, že se v kraji chystá nějaká svatba... co o tom víte?:==:Słyszałem, że w okolicy szykuje się jakieś wesele… co o tym wiecie?
+Gemini(CS-PL,2025-06-27 22:45:35):No jo, velká událost na Semíně.:==:Tak, wielkie wydarzenie w Semínie.
+Gemini(CS-PL,2025-06-27 22:45:40):A kdo není pozvanej, snaží se nějak vetřít. Já ne. Mně je to jedno.:==:A kto nie jest zaproszony, próbuje się jakoś wcisnąć. Ja nie. Nic mi do tego.
+Gemini(CS-PL,2025-06-27 22:45:50):Protože tě nepozvali, co?:==:Bo cię nie zaprosili, co?
+Gemini(CS-PL,2025-06-27 22:45:51):Ale to víš, že pozvali. Ale co je mi po mladým Semínovi a rychtářovic holce?:==:Ale wiesz, że zaprosili. Ale co mnie obchodzi młody Semín i córka sołtysa?
+Gemini(CS-PL,2025-06-27 22:45:55):Ale to víš, že pozvali. Ale co je mi po mladým a rychtářovic holce?:==:Ale wiesz, że zaprosili. Ale co mnie obchodzi młody Semín i córka sołtysa?
+Gemini(CS-PL,2025-06-27 22:45:58):Jsme jen hračky v rukou Božích. Naše pozemský svazky, se jednou rozplynou v čase jako dým...:==:Jesteśmy tylko zabawkami w rękach Boga. Nasze ziemskie związki pewnego dnia rozwieją się w czasie jak dym...
+Gemini(CS-PL,2025-06-27 22:46:05):Zas už máš ty svoje chytrý řeči, Krejzle?:==:Znowu masz te swoje mądre gadki, Krejzlo?
+Gemini(CS-PL,2025-06-27 22:46:07):Říkám jenom, že mě tyhle lidský malichernosti nechávaj chladným.:==:Mówię tylko, że te ludzkie drobiazgi pozostawiają mnie obojętnym.
+Gemini(CS-PL,2025-06-27 22:46:19):o č 1 2:45:50) :Protože tě nepozvali, co?:==:Bo cie nie zaprosili, co?:==:Mówię tylko, że te ludzkie drobiazgi pozostawiają mnie obojętnym.
+Gemini(CS-PL,2025-06-27 22:46:19):o č 1 2:45:50) :Protože tě nepozvali, co?:==:Bo cie nie zaprosili, co?:==:Mówię tylko, że te ludzkie drobiazgi pozostawiają mnie obojętnym.
+Gemini(DE-PL,2025-06-27 22:52:02):Vielen Dank.:==:Dziękuję bardzo.
+Gemini(DE-PL,2025-06-27 22:52:07):Deine Entscheidungen formen dich.:==:Twoje decyzje kształtują ciebie.
+Gemini(DE-PL,2025-06-27 22:52:10):Die Letzte formt mich als Chauvinist.:==:Ostatnia kształtuje mnie jako szowinistę.
+Gemini(DE-PL,2025-06-27 22:52:11):Wie ein Schwein im Anzug.:==:Jak świnia w garniturze.
+Gemini(DE-PL,2025-06-27 22:52:47):Etwas vergessen?:==:Coś zapomniano?
+Gemini(DE-PL,2025-06-27 22:52:48):Nicht wirklich.:==:Nie do końca.
+Gemini(DE-PL,2025-06-27 22:52:51):Es tut mir leid wegen vorhin.:==:Przepraszam za wcześniejszą sytuację.
+Gemini(DE-PL,2025-06-27 22:52:53):Ich habe einfach nur angenommen.:==:Po prostu coś założyłem.
+Gemini(DE-PL,2025-06-27 22:52:55):Ah, ignoriere ihn. Er war ein Arsch.:==:Ach, zignoruj go. Był dupkiem.
+Gemini(DE-PL,2025-06-27 22:52:59):Du denkst, dein Freund ist ein Arsch?:==:Myślisz, że twój przyjaciel jest dupkiem?
+Gemini(DE-PL,2025-06-27 22:53:00):Du nicht?:==:A ty nie?
+Gemini(DE-PL,2025-06-27 22:53:02):Aber er hat ein geiles Auto.:==:Ale ma świetne auto.
+Gemini(DE-PL,2025-06-27 22:53:07):Was liest du denn?:==:Co czytasz?
+Gemini(DE-PL,2025-06-27 22:53:10):Nur ein bisschen leichte Lektüre.:==:Tylko trochę lekkiej lektury.
+Gemini(DE-PL,2025-06-27 22:53:11):Das sieht aber ziemlich schwierig aus.:==:Ale to wygląda dość trudno.
+Gemini(DE-PL,2025-06-27 22:53:16):Kann ich dir irgendwie helfen?:==:Czy mogę ci jakoś pomóc?
+Gemini(DE-PL,2025-06-27 22:53:18):Könntest du mir einen Gefallen tun?:==:Czy mógłbyś mi wyświadczyć przysługę?
+Gemini(DE-PL,2025-06-27 22:53:23):Ich brauche die Maserati-Schlüssel.:==:Potrzebuję kluczyków do Maserati.
+Gemini(DE-PL,2025-06-27 22:53:27):Weiß Dr. Brent davon?:==:Czy doktor Brent o tym wie?
+Gemini(DE-PL,2025-06-27 22:53:29):Natürlich, weiß er davon.:==:Oczywiście, że wie.
+Gemini(DE-PL,2025-06-27 22:53:33):Also kannst du dafür unterschreiben.:==:Więc możesz to podpisać.
+Gemini(DE-PL,2025-06-27 22:53:37):Okay, er weiß nichts davon.:==:Okej, nic o tym nie wie.
+Gemini(DE-PL,2025-06-27 22:53:41):Ist geheim, aber wirklich wichtig.:==:To tajemnica, ale naprawdę ważna.
+Gemini(DE-PL,2025-06-27 22:53:43):Es ist nur für heute Abend.:==:To tylko na dzisiejszy wieczór.
+Gemini(DE-PL,2025-06-27 22:53:46):Ich bin noch vor zwei Uhr zurück.:==:Wrócę przed drugą.
+Gemini(DE-PL,2025-06-27 22:53:50):Warum brauchst du das Auto?:==:Dlaczego potrzebujesz samochodu?
+Gemini(DE-PL,2025-06-27 22:53:52):Mach dir darum keine Sorgen.:==:Nie martw się tym.
+Gemini(DE-PL,2025-06-27 22:53:56):Tue ich nicht.:==:Nie martwię się.
+Gemini(DE-PL,2025-06-27 22:54:01):OK.:==:OK.
+Gemini(DE-PL,2025-06-27 22:54:03):Ich habe gewettet.:==:Założyłem się.
+Gemini(DE-PL,2025-06-27 22:54:06):mit dem Maserati zur Party komme.:==:że pojadę na imprezę Maserati.
+Gemini(DE-PL,2025-06-27 22:54:09):Das war voreilig.:==:To było pochopne.
+Gemini(DE-PL,2025-06-27 22:54:11):Um was geht es bei der Wette?:==:O co chodzi w zakładzie?
+Gemini(DE-PL,2025-06-27 22:54:12):Einen Tausender.:==:Tysiąc.
+Gemini(DE-PL,2025-06-27 22:54:13):Einen Tausender?:==:Tysiąc?
+Gemini(DE-PL,2025-06-27 22:54:15):100 für dich gegen die Schlüssel.:==:100 dla ciebie w zamian za kluczyki.
+Gemini(DE-PL,2025-06-27 22:54:36):Du bekommst das Auto nicht!:==:Nie dostaniesz samochodu!
+Gemini(DE-PL,2025-06-27 22:54:39):Sehe ich so blöd aus?:==:Czy wyglądam tak głupio?
+Gemini(DE-PL,2025-06-27 22:54:41):Ja.:==:Tak.
+Gemini(DE-PL,2025-06-27 22:54:42):Natürlich tue ich das.:==:Oczywiście, że tak wyglądam.
+Gemini(DE-PL,2025-06-27 22:54:43):Ansonsten hättest du mich nicht gefragt.:==:Bo inaczej byś mnie nie pytał.
+Gemini(DE-PL,2025-06-27 22:54:46):Gute Nacht. Bushaltestelle ist draußen.:==:Dobranoc. Przystanek autobusowy jest na zewnątrz.
+Gemini(DE-PL,2025-06-27 22:54:48):Na gut.:==:W porządku.
+Gemini(DE-PL,2025-06-27 22:54:50):Ich wünsche dir eine gute Nacht.:==:Życzę ci dobrej nocy.
+Gemini(DE-PL,2025-06-27 22:54:52):Idiot.:==:Idiota.
+Gemini(DE-PL,2025-06-27 22:54:57):und ich wähle die mit Idiotenrolle.:==:i wybiorę tę z rolą idiota.
+Gemini(DE-PL,2025-06-27 22:54:59):Gut gemacht.:==:Dobra robota.
+Gemini(DE-PL,2025-06-27 22:55:19):Das hoffe ich, verdammt nochmal!:==:Mam nadzieję, do cholery!
+Gemini(DE-PL,2025-06-27 22:55:23):Hast du den Code für das Tor?:==:Masz kod do bramy?
+Gemini(DE-PL,2025-06-27 22:55:25):Ja, aber meine Sachen sind oben.:==:Tak, ale moje rzeczy są na górze.
+Gemini(DE-PL,2025-06-27 22:55:26):Lass das Zeug, wir müssen weg.:==:Zostaw te rzeczy, musimy iść.
+Gemini(DE-PL,2025-06-27 22:55:29):Nimm diesen Idioten mit.:==:Zabierz tego idiotę.
+Gemini(DE-PL,2025-06-27 22:55:39):Nowy Jak tw #FMV #LateShift #InteractiveMovie dowod - Complete ... Tomek* - Total Com...:==:Nowy Jak tw #FMV #LateShift #InteractiveMovie dowod - Complete ... Tomek* - Total Com...
+Gemini(DE-PL,2025-06-27 22:58:38):-A0:==:-A0
+Gemini(DE-PL,2025-06-27 22:58:45):21:49 v:==:21:49 v:
+Gemini(DE-PL,2025-06-27 22:58:54):21:49 u:==:21:49 u:
+Gemini(DE-PL,2025-06-27 22:58:55):5:==:5:
+Gemini(DE-PL,2025-06-27 22:59:17):Eine Unzahl von Entscheidungen,:==:Mnóstwo decyzji,
+Gemini(DE-PL,2025-06-27 22:59:31):Eine Unzahl 21:49 v:==:Mnóstwo 21:49 v:
+Gemini(DE-PL,2025-06-27 22:59:33):gute Nacht: 21:49 v:==:dobranoc: 21:49 v:
+Gemini(DE-PL,2025-06-27 22:59:34):a, 21:49 v:==:a, 21:49 v:
+Gemini(DE-PL,2025-06-27 22:59:34):21:49 “:==:21:49 „
+Gemini(DE-PL,2025-06-27 22:59:49):Tomek* - TotalCom.. Claude * Git Gui (OCR_Translat... XnView Classic - [Clip.. | E33 Auto Trade 9 C:\Users\Tomek\App... C:==:Tomek* - TotalCom.. Claude * Git Gui (OCR_Translat... XnView Classic - [Clip.. | E33 Auto Trade 9 C:\Users\Tomek\App... C:
+Gemini(DE-PL,2025-06-27 22:59:54):| . 04 j - 4 - Complete ... Tomek“ - Total Com... * Claude * Git Gui (OCR XnView Classic - [Clip... Auto Trade C:\Users\Tomek\App...:==:| . 04 j - 4 - Complete ... Tomek“ - Total Com... * Claude * Git Gui (OCR XnView Classic - [Clip... Auto Trade C:\Users\Tomek\App...
+Gemini(DE-PL,2025-06-27 22:59:54):4 Tomek* - TotalCom... Claude * Git Gui (OCR Translat... XnView Classic - [Clip.. | D:\GitHub\OCR Trans... Auto Trade 5 C:==:4 Tomek* - TotalCom... Claude * Git Gui (OCR Translat... XnView Classic - [Clip.. | D:\GitHub\OCR Trans... Auto Trade 5 C:
+Gemini(DE-PL,2025-06-27 22:59:57):Nowy Jak tw #FMV #LateShift #InteractiveMovie dowod - Complete ... Tomek* - Total Com... Claude * Git Gui XnView Classic - | Auto Trade:==:Nowy Jak tw #FMV #LateShift #InteractiveMovie dowod - Complete ... Tomek* - Total Com... Claude * Git Gui XnView Classic - | Auto Trade
+
+Gemini(DE-PL,2025-06-27 23:29:39):Oder stoppe ich diese Gauner? 1:21:49 v:==:Albo zatrzymam tych oszustów? 1:21:49
+Gemini(DE-PL,2025-06-27 23:29:44):— Oder stoppe ich diese Gauner? 1:21:49 v:==:Albo zatrzymam tych oszustów? 1:21:49
+Gemini(DE-PL,2025-06-27 23:29:46):1:21:49 v:==:Albo zatrzymam tych oszustów? 1:21:49
+Gemini(DE-PL,2025-06-27 23:29:48):Okay, was sine meine Optionen?:==:Dobra, jakie mam opcje?
+Gemini(DE-PL,2025-06-27 23:29:49):Okay, was sind meine Optionen?:==:Dobra, jakie mam opcje?
+Gemini(DE-PL,2025-06-27 23:29:51):Ich könnte den Wachmann warnen.:==:Mógłbym ostrzec ochroniarza.
+Gemini(DE-PL,2025-06-27 23:29:52):Oder in einen höheren Stock fahren:==:Albo pojechać na wyższe piętro
+Gemini(DE-PL,2025-06-27 23:29:53):und einen der Angestellten warnen.:==:i ostrzec jednego z pracowników.
+Gemini(DE-PL,2025-06-27 23:29:56):Oder über das Dach entkommen. N:==:Albo uciec przez dach.
+Gemini(DE-PL,2025-06-27 23:30:00):G:==:G
+Gemini(DE-PL,2025-06-27 23:30:05):Kein Empfang. Typisch.:==:Brak zasięgu. Typowe.
+Gemini(DE-PL,2025-06-27 23:30:12):h:==:h
+Gemini(DE-PL,2025-06-27 23:30:13):k:==:k
+Gemini(DE-PL,2025-06-27 23:30:13):»:==:»
+Gemini(DE-PL,2025-06-27 23:30:23):Wo ist Matt?:==:Gdzie jest Matt?
+Gemini(DE-PL,2025-06-27 23:30:25):Er ist im Aufzug.:==:Jest w windzie.
+Gemini(DE-PL,2025-06-27 23:30:27):Der Aufzug ist hier, aber er nicht!:==:Winda jest tutaj, ale nie on!
+Gemini(DE-PL,2025-06-27 23:30:30):Matt, was machst du?:==:Matt, co robisz?
+Gemini(DE-PL,2025-06-27 23:30:33):Er ist sicher hoch gefahren! Simon?:==:Na pewno pojechał wyżej! Simon?
+Gemini(DE-PL,2025-06-27 23:30:37):Ich kümmere mich darum!:==:Zajmę się tym!
+Gemini(DE-PL,2025-06-27 23:30:49):1:21:49:==:1:21:49
+Gemini(DE-PL,2025-06-27 23:30:50):1:21:49 x:==:1:21:49 x
+Gemini(DE-PL,2025-06-27 23:30:51):1:21:49 %:==:1:21:49 %
+Gemini(DE-PL,2025-06-27 23:30:53):29:21 1:21:49 x:==:29:21 1:21:49 x
+Gemini(DE-PL,2025-06-27 23:30:53):32:25 1:21:49 x:==:32:25 1:21:49 x
+Gemini(DE-PL,2025-06-27 23:30:55):31:37 1:21:49 x:==:31:37 1:21:49 x
+Gemini(DE-PL,2025-06-27 23:30:59):Sofort, oder es gibt Konsequenzen.:==:Natychmiast, albo poniosą konsekwencje.
+Gemini(DE-PL,2025-06-27 23:31:01):OK. Warten Sie hier.:==:OK. Czekaj tutaj.
+Gemini(DE-PL,2025-06-27 23:31:04):Nehmen Sie ein paar Kekse.:==:Weź kilka ciastek.
+Gemini(DE-PL,2025-06-27 23:31:17):„Das Glück kommt nicht zweimal vorbei.:==:„Szczęście nie nadchodzi dwa razy.
+Gemini(DE-PL,2025-06-27 23:31:21):Unglück kommt selten allein.“:==:Nieszczęście rzadko przychodzi samo."
+Gemini(DE-PL,2025-06-27 23:31:22):Hast du das absichtlich ausgewählt?:==:Czy wybrałeś to celowo?
+Gemini(DE-PL,2025-06-27 23:31:26):Was steht auf deinem?:==:Co jest na twoim?
+Gemini(DE-PL,2025-06-27 23:31:29):Us sen _:==:Us sen _
+Gemini(DE-PL,2025-06-27 23:31:29):Da steht ...:==:Jest napisane...
+Gemini(DE-PL,2025-06-27 23:31:31):„Wer Glückskeksen vertraut, findet:==:„Komu ufa ciasteczkom z wróżbą, ten znajduje
+Gemini(DE-PL,2025-06-27 23:31:35):nicht einmal seinen Arsch in der Hose.“:==:nawet swoich pośladków w spodniach.”
+Gemini(DE-PL,2025-06-27 23:31:36):ja, genau.:==:ja, dokładnie.
+Gemini(DE-PL,2025-06-27 23:31:37):Folgen Sie mir, bitte.:==:Proszę za mną.
+Gemini(DE-PL,2025-06-27 23:32:05):Klugscheißer.:==:Mądrala.
+Gemini(DE-PL,2025-06-27 23:59:23):22:21 / 1:21:49 v:==:22:21 / 1:21:49 v
+Gemini(DE-PL,2025-06-27 23:59:24):32:26 / 1:21:49 v:==:32:26 / 1:21:49 v
+Gemini(DE-PL,2025-06-27 23:59:55):Kommt mit.:==:Chodź.
+Gemini(DE-PL,2025-06-28 00:00:03):Was bringt euch hierher?:==:Co was tu sprowadza?
+Gemini(DE-PL,2025-06-28 00:00:24):Warum habt ihr das hierher gebracht?:==:Dlaczego to tu przynieśliście?
+Gemini(DE-PL,2025-06-28 00:00:28):Wir hatten einen Deal.:==:Mieliśmy układ.
+Gemini(DE-PL,2025-06-28 00:00:30):Ich kenne euch gar nicht.:==:W ogóle was nie znam.
+Gemini(DE-PL,2025-06-28 00:00:34):Der andere Mann ist tot, OK?:==:Drugi mężczyzna nie żyje, OK?
+Gemini(DE-PL,2025-06-28 00:00:37):Hier hast du deine Schüssel.:==:Proszę, oto twoja miska.
+Gemini(DE-PL,2025-06-28 00:00:39):Meine Schüssel?:==:Moja miska?
+Gemini(FR-PL,2025-06-28 00:44:44):Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi. La dl:==:Zmanipulowałeś całe cywilizacje, wywołałeś dekady wojny, zniszczyłeś Ziost... i uciekłeś. Powiesz mi dlaczego. Dl
+Gemini(FR-PL,2025-06-28 00:45:44):| Vraiment ? S %…:==:Naprawdę? S %...
+Gemini(FR-PL,2025-06-28 00:45:45):. n > | Vraiment S:==:. n > | Naprawdę S
+Gemini(FR-PL,2025-06-28 00:45:46):Vraiment ? S:==:. n > | Naprawdę S
+Gemini(FR-PL,2025-06-28 00:45:49):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Twierdzisz, że mnie znasz. W takim razie znasz zakres moich mocy. Jakiekolwiek byłyby twoje nadzieje, przychodząc tutaj, w głębi duszy wiesz, że to na próżno.
+Gemini(FR-RU,2025-06-28 00:46:16):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Вы утверждаете, что знаете меня. В таком случае вы знаете пределы моих сил. Какими бы ни были ваши надежды при приходе сюда, в глубине души вы знаете, что это напрасно.
+Gemini(FR-DE,2025-06-28 00:46:39):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Sie behaupten, mich zu kennen. In diesem Fall kennen Sie das Ausmaß meiner Kräfte. Welche Hoffnungen Sie auch immer hatten, als Sie hierher kamen, im Innersten wissen Sie, dass es vergebens ist.
+Gemini(FR-DE,2025-06-28 00:46:57):Mais vous n'êtes pas obligés de m'affronter. Vous pouvez... vous prosterner. = à:==:Aber Sie müssen sich mir nicht stellen. Sie können sich... verbeugen.
+Gemini(FR-DE,2025-06-28 00:46:59):Mais vous n'êtes pas obligés de m'affronter. Vous pouvez... vous prosterner. — —:==:Aber Sie müssen sich mir nicht stellen. Sie können sich... verbeugen.
+Gemini(FR-DE,2025-06-28 00:47:00):Mais vous n'êtes pas obligés de m'affronter. Vous pouvez... vous prosterner. | mn:==:Aber Sie müssen sich mir nicht stellen. Sie können sich... verbeugen.
+Gemini(FR-DE,2025-06-28 00:47:04):#:==:Aber Sie müssen sich mir nicht stellen. Sie können sich... verbeugen.
+Gemini(FR-DE,2025-06-28 00:47:04):Plus jamais je ne me prosternerai devant vous.:==:Nie będę się już przed tobą kłaniał.
+Gemini(FR-DE,2025-06-28 00:47:07):= —:==:Nie będę się już przed tobą kłaniał.
+Gemini(FR-DE,2025-06-28 00:47:08):dus 4 \:==:Nie będę się już przed tobą kłaniał.
+Gemini(FR-DE,2025-06-28 00:47:09):Vous préférez mourir plutôt que de reconnaître ma supériorité ? NN SN:==:Wolisz umrzeć, niż uznać moją wyższość? NN SN
+Gemini(FR-DE,2025-06-28 00:47:10):Vous préférez mourir plutôt que de reconnaître ma supériorité ? \ «:==:Wolisz umrzeć, niż uznać moją wyższość? NN SN
+Gemini(FR-DE,2025-06-28 00:47:11):Vous préférez mourir plutôt que de reconnaître ma supériorité ? \ \ «:==:Wolisz umrzeć, niż uznać moją wyższość? NN SN
+Gemini(FR-DE,2025-06-28 00:47:12):Vous préférez mourir plutôt que de reconnaître ma supériorité ? \ N =:==:Wolisz umrzeć, niż uznać moją wyższość? NN SN
+Gemini(FR-DE,2025-06-28 00:47:13):Vous préférez mourir plutôt que de reconnaître ma supériorité ? \ +:==:Wolisz umrzeć, niż uznać moją wyższość? NN SN
+Gemini(FR-DE,2025-06-28 00:47:13):Vous préférez mourir plutôt que de reconnaître ma supériorité ? | NZ « N |:==:Wolisz umrzeć, niż uznać moją wyższość? NN SN
+Gemini(FR-DE,2025-06-28 00:47:15):C'est vous qui craignez la mort, "Valkorion". Pas moi. Je ne me prosternerai pas.:==:To ty boisz się śmierci, „Valkorion”. Nie ja. Nie będę się kłaniał.
+Gemini(FR-DE,2025-06-28 00:47:22):A il , A:==:To ty boisz się śmierci, „Valkorion”. Nie ja. Nie będę się kłaniał.
+Gemini(FR-DE,2025-06-28 00:47:23):| 4:==:To ty boisz się śmierci, „Valkorion”. Nie ja. Nie będę się kłaniał.
+Gemini(FR-DE,2025-06-28 02:15:57):Sa glorieuse Majesté, le Maître immortel et Protecteur de Zakel : l'Empereur Valkorion.:==:Seine glorreiche Majestät, der unsterbliche Meister und Beschützer von Zakel: Kaiser Valkorion.
+Gemini(FR-PL,2025-06-28 02:16:15):Sa glorieuse Majesté, le Maître immortel et Protecteur de Zakel : l'Empereur Valkorion.:==:Seine glorreiche Majestät, der unsterbliche Meister und Beschützer von Zakel: Kaiser Valkorion.
+Gemini(FR-PL,2025-06-28 02:16:33):Un nouveau nom, un nouveau visage... Mais il en faut plus pour nous échapper.:==:Nowe imię, nowa twarz... ale potrzeba czegoś więcej, żeby nam uciec.
+Gemini(FR-PL,2025-06-28 02:16:40):Bienvenue.:==:Witaj.
+Gemini(FR-PL,2025-06-28 02:17:06):L'Empereur Sith... Votre aura est reconnaissable entre toutes.:==:Imperator Sithów... Twój aurę można rozpoznać spośród wszystkich.
+Gemini(FR-PL,2025-06-28 02:28:55):L'Empereur Sith... Votre aura est reconnaissable entre toutes.:==:Imperator Sith... Twój aurę można rozpoznać spośród wszystkich.
+Gemini(FR-DE,2025-06-28 02:29:12):L'Empereur Sith... Votre aura est reconnaissable entre toutes.:==:Der Sith-Imperator... Deine Aura ist unverwechselbar.
+Gemini(FR-DE,2025-06-28 02:29:15):Oh, une erreur a bien été commise... mais par qui ?:==:Oh, ein Fehler ist tatsächlich gemacht worden ... aber von wem?
+Gemini(FR-DE,2025-06-28 02:29:18):{4 Oh, une erreur a bien été commise... mais par qui ?:==:Oh, ein Fehler ist tatsächlich gemacht worden ... aber von wem?
+Gemini(FR-DE,2025-06-28 02:29:20):J Oh, une erreur a bien été commise... mais par qui ?:==:Oh, ein Fehler ist tatsächlich gemacht worden ... aber von wem?
+Gemini(FR-DE,2025-06-28 02:29:23):> Oh, une erreur a bien été commise... mais par qui ?:==:Oh, ein Fehler ist tatsächlich gemacht worden ... aber von wem?
+Gemini(FR-DE,2025-06-28 02:29:24):Oh, une erreur a bien été commise... mais par qui ? # ?:==:Oh, ein Fehler ist tatsächlich gemacht worden ... aber von wem?
+Gemini(FR-DE,2025-06-28 02:29:26):Ces gens ont-ils une idée de votre identité réelle ? Des choses dont vous êtes capable ?:==:Haben diese Leute eine Vorstellung davon, wer du wirklich bist? Was du tun kannst?
+Gemini(FR-DE,2025-06-28 02:29:26):Ces gens ont-ils une idée de votre identité réelle ? Des choses dont vous êtes capable ? .:==:Haben diese Leute eine Vorstellung davon, wer du wirklich bist? Was du tun kannst?
+Gemini(FR-DE,2025-06-28 02:29:30):| vous ?:==:| dich?
+Gemini(FR-DE,2025-06-28 02:29:31):| Et vous ?:==:| Und du?
+Gemini(FR-DE,2025-06-28 02:29:34):Et vous ?:==:| Und du?
+Gemini(FR-DE,2025-06-28 02:29:36):vous ?:==:| Und du?
+Gemini(FR-DE,2025-06-28 02:29:37):Votre silence perpétuel au cours de notre histoire... C'est à cela que vous étiez occupé ?:==:Dein ewiges Schweigen im Laufe unserer Geschichte... Damit warst du also beschäftigt?
+Gemini(FR-EN,2025-06-28 02:29:47):Votre silence perpétuel au cours de notre histoire... C'est à cela que vous étiez occupé ?:==:Your perpetual silence throughout our history... Is that what you were busy with?
+Gemini(FR-PL,2025-06-28 02:29:54):Votre silence perpétuel au cours de notre histoire... C'est à cela que vous étiez occupé ?:==:Twoje wieczne milczenie przez całą naszą historię... Tym się zajmowałeś?
+Gemini(FR-PL,2025-06-28 02:30:04):C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à mes fins.:==:Taki był mój cel. Reszta... była tylko środkiem do jego osiągnięcia.
+Gemini(FR-PL,2025-06-28 02:30:11):C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à | mes fins.:==:Taki był mój cel. Reszta... była tylko środkiem do jego osiągnięcia.
+Gemini(FR-PL,2025-06-28 02:30:12):Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici, Que voulez-vous ?:==:Mówisz, że przebyłeś całą tę drogę, żeby mnie znaleźć. Jestem tutaj. Czego chcesz?
+Gemini(FR-PL,2025-06-28 02:30:14):Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici. Que voulez-vous ?:==:Mówisz, że przebyłeś całą tę drogę, żeby mnie znaleźć. Jestem tutaj. Czego chcesz?
+Gemini(FR-PL,2025-06-28 02:30:24):Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.:==:Manipulowałeś całymi cywilizacjami, sprowadzałeś dziesięciolecia wojen, niszczyłeś Ziost... i uciekłeś. Powiesz mi dlaczego.
+Gemini(FR-PL,2025-06-28 02:30:34):. n | >= | Vraiment 7?:==:. n | >= | Naprawdę 7?
+Gemini(FR-PL,2025-06-28 02:30:35):Vraiment >.:==:Naprawdę >.
+Gemini(FR-PL,2025-06-28 02:30:37):Vous prétendez me connaître. Dans ce cas, vous connaissez D l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Twierdzisz, że mnie znasz. W takim razie znasz zakres mojej mocy. Jakiekolwiek były twoje nadzieje, przychodząc tutaj, w głębi duszy wiesz, że to daremny trud.
+Gemini(FR-PL,2025-06-28 02:30:39):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Twierdzisz, że mnie znasz. W takim razie znasz zakres mojej mocy. Jakiekolwiek były twoje nadzieje, przychodząc tutaj, w głębi duszy wiesz, że to daremny trud.
+Gemini(FR-PL,2025-06-28 02:30:43):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en | venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Twierdzisz, że mnie znasz. W takim razie znasz zakres mojej mocy. Jakiekolwiek były twoje nadzieje, przychodząc tutaj, w głębi duszy wiesz, że to daremny trud.
+Gemini(FR-LV,2025-06-28 02:30:47):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Jūs apgalvojat, ka mani pazīstat. Tādā gadījumā jūs zināt manu spēku apjomu. Neatkarīgi no cerībām, kas jums bija, ierodoties šeit, jūs dziļi sevī zināt, ka tas ir veltīgi.
+Gemini(FR-VI,2025-06-28 02:30:53):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Bạn nói rằng bạn biết tôi. Trong trường hợp đó, bạn biết phạm vi sức mạnh của tôi. Dù bạn có hy vọng gì khi đến đây, sâu thẳm trong lòng bạn, bạn biết rằng đó là vô ích.
+Gemini(FR-HU,2025-06-28 02:30:59):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Azt állítod, hogy ismersz. Ebben az esetben ismered erőim mértékét. Bármilyen reményeid is voltak, amikor idejöttél, legbelül tudod, hogy hiábavaló.
+Gemini(FR-IS,2025-06-28 02:31:03):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Þú heldur því fram að þú þekkir mig. Í þeim tilfelli þekkirðu umfangið á mætti mínum. Hverjar sem vonir þínar voru að koma hingað, innst inni veistu að það er til lítils.
+Gemini(FR-CS,2025-06-28 02:31:11):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Tvrdíte, že mě znáte. V tom případě znáte rozsah své moci. Ať už jste měli jakékoli naděje, když jste sem přišli, v hloubi duše víte, že je to marné.
+Gemini(FR-JA,2025-06-28 02:31:19):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:あなたは私を知っていると主張します。その場合、私の力の範囲を知っています。ここにやってきた希望が何であれ、心の奥底では無駄だとわかっているはずです。
+Gemini(FR-ZH-TW,2025-06-28 02:31:25):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:你聲稱認識我。那麼，你應該知道我力量的範圍。無論你來這裡有什麼希望，你內心深處都知道這是徒勞的。
+Gemini(FR-KO,2025-06-28 02:31:31):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:당신은 나를 안다고 주장합니다. 그렇다면 당신은 내 힘의 범위를 알고 있습니다. 이곳에 오면서 어떤 희망을 가졌든, 당신은 속으로 그것이 헛된 일임을 알고 있을 것입니다.
+Gemini(FR-SW,2025-06-28 02:31:36):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Unadai kwamba unanijua. Katika hali hiyo, unajua kiwango cha nguvu zangu. Kwa vyovyote vile matumaini yako yalikuwa ukija hapa, ndani ya moyo wako unajua kuwa ni bure.
+Gemini(FR-SV,2025-06-28 02:31:40):Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Du påstår att du känner mig. I så fall känner du till vidden av mina krafter. Vilka dina förhoppningar än var när du kom hit, vet du innerst inne att det är bortkastat.
+Gemini(FR-SV,2025-06-28 02:32:17):| Vous prétendez me connaître. Dans ce cas, vous connaissez l'étendue de mes pouvoirs. Quels qu'aient été vos espoirs en venant ici, en votre for intérieur, vous savez que c'est peine perdue.:==:Du påstår att du känner mig. I så fall känner du till vidden av mina krafter. Vilka dina förhoppningar än var när du kom hit, vet du innerst inne att det är bortkastat.
+Gemini(FR-SV,2025-06-28 02:32:18):Mais vous n'êtes pas obligés de m'affronter. Vous pouvez... vous prosterner.:==:Men du behöver inte möta mig. Du kan... buga.
+Gemini(FR-PL,2025-06-28 02:32:27):Mais vous n'êtes pas obligés de m'affronter. Vous pouvez... vous prosterner.:==:Ale nie musisz mi stawiać czoła. Możesz... uklęknąć.
+Gemini(FR-DE,2025-06-28 02:33:43):Mais vous n'êtes pas obligés de m'affronter. Vous pouvez... vous prosterner.:==:Aber Sie müssen sich mir nicht stellen. Sie können... sich verbeugen.

@@ -157,15 +157,8 @@ class CacheManager:
         if not cache_file_path or not enabled_tk_var.get():
             return False
             
-        # First, check if we already have this translation in our in-memory cache
-        existing_translation = memory_cache.get(cache_key)
-        if existing_translation == translated_text:
-            # We already have this exact translation in memory
-            # No need to add to file (should already be there)
-            return True
-            
         try:
-            # Update in-memory cache
+            # Update in-memory cache first
             memory_cache[cache_key] = translated_text
             
             # Extract language pair from the cache key
@@ -183,9 +176,8 @@ class CacheManager:
             # Get current timestamp
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
             
-            # Before appending, let's check if this text is already in the file
-            # We'll do this by looking for the original text in the file
-            # This is more reliable than just checking the memory cache
+            # Always check if this entry actually exists in the file
+            # Don't rely on memory cache - user might have manually deleted from file
             already_in_file = False
             
             if os.path.exists(cache_file_path):
@@ -194,16 +186,18 @@ class CacheManager:
                         if not line.strip() or line.startswith('#'):
                             continue
                             
-                        # Look for lines with this original text and translation
+                        # Look for lines with this exact original text and translation
                         if ':==:' in line:
-                            if cache_type == 'google':
-                                if f"GoogleTranslate({lang_pair}," in line and f"):{original_text}:==:" in line:
-                                    already_in_file = True
-                                    break
-                            elif cache_type == 'deepl':
-                                if f"DeepL({lang_pair}," in line and f"):{original_text}:==:" in line:
-                                    already_in_file = True
-                                    break
+                            line_parts = line.split(':==:', 1)
+                            if len(line_parts) == 2:
+                                line_key_part = line_parts[0]
+                                line_translation = line_parts[1].strip()
+                                
+                                # Check if this is the same text and translation
+                                if f"{service_name}({lang_pair}," in line_key_part and f"):{original_text}" in line_key_part:
+                                    if line_translation == translated_text:
+                                        already_in_file = True
+                                        break
             
             # Only append to the file if not already there
             if not already_in_file:
@@ -215,6 +209,8 @@ class CacheManager:
                     f.write(f"{formatted_cache_key}:==:{translated_text}\n")
                 
                 log_debug(f"Added new translation to {cache_type} file cache: {original_text}")
+            else:
+                log_debug(f"Translation already exists in {cache_type} file cache: {original_text}")
             
             return True
         except Exception as e_stfc:
