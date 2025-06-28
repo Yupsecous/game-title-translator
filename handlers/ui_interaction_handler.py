@@ -672,7 +672,13 @@ class UIInteractionHandler:
             selected_display_name_from_ui = self.app.translation_model_display_var.get()
             newly_selected_model_code = self.app.translation_model_values.get(selected_display_name_from_ui, 'google_api')
             
-            if newly_selected_model_code != self.app.translation_model_var.get():
+            # Track model change
+            previous_model = self.app.translation_model_var.get()
+            if newly_selected_model_code != previous_model:
+                # Keep sessions alive when switching between models
+                # Each model will manage its own session appropriately
+                log_debug(f"Translation model changed from {previous_model} to {newly_selected_model_code}")
+                
                 self.app.translation_model_var.set(newly_selected_model_code) # This triggers save via trace
                 log_debug(f"Translation model var updated by UI to: {newly_selected_model_code}")
         
@@ -697,17 +703,7 @@ class UIInteractionHandler:
             elif model_to_configure_for == 'gemini_api':
                 self.app.source_lang_var.set(self.app.gemini_source_lang)
                 self.app.target_lang_var.set(self.app.gemini_target_lang)
-                # Reset Gemini session when translation model changes to Gemini
-                if hasattr(self.app, 'translation_handler') and hasattr(self.app.translation_handler, '_reset_gemini_session'):
-                    self.app.translation_handler._reset_gemini_session()
-                    # Initialize session with current language settings when switching to Gemini
-                    if hasattr(self.app.translation_handler, '_initialize_gemini_session'):
-                        try:
-                            self.app.translation_handler._initialize_gemini_session(
-                                self.app.gemini_source_lang, self.app.gemini_target_lang)
-                            log_debug(f"Gemini session initialized when switching to Gemini model")
-                        except Exception as e:
-                            log_debug(f"Error initializing Gemini session when switching models: {e}")
+                # Session will be created/resumed automatically on first translation
         elif model_to_configure_for == 'marianmt':
             if self.app.MARIANMT_AVAILABLE and self.app.marian_translator is None and (preload or not initial_setup):
                 self.app.translation_handler.initialize_marian_translator()

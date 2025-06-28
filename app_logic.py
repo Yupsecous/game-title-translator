@@ -1003,10 +1003,8 @@ For more information, see the user manual."""
             log_debug("Stopping translation process requested by user.")
             self.is_running = False
             
-            # Reset Gemini session when translation is stopped
-            if hasattr(self.translation_handler, '_reset_gemini_session'):
-                self.translation_handler._reset_gemini_session()
-                
+            # Keep Gemini session alive - no need to reset on stop
+            
             self.start_stop_btn.config(text="Start", state=tk.DISABLED)
             self.status_label.config(text="Status: Stopping...")
             self.root.update_idletasks()
