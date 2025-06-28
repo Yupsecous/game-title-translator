@@ -7,6 +7,7 @@ import time
 import html
 import hashlib # Not used here directly, but good for consistency
 import traceback
+from datetime import datetime
 # Removed lru_cache import - replaced with unified cache
 
 from logger import log_debug
@@ -19,6 +20,16 @@ class TranslationHandler:
         self.app = app
         # Initialize unified translation cache (replaces all individual LRU caches)
         self.unified_cache = UnifiedTranslationCache(max_size=1000)
+        
+        # Initialize Gemini API call log file path
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.gemini_log_file = os.path.join(base_dir, "Gemini_API_call_logs.txt")
+        
+        # Initialize Gemini API call log file
+        self._initialize_gemini_log()
         log_debug("Translation handler initialized with unified cache")
     
     def _google_translate(self, text_to_translate_gt, source_lang_gt, target_lang_gt):
@@ -181,6 +192,104 @@ class TranslationHandler:
         except Exception as e_cmm:
             return f"MarianMT translation error: {type(e_cmm).__name__} - {str(e_cmm)}"
 
+    def _initialize_gemini_log(self):
+        """Initialize the Gemini API call log file with a header."""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            header = f"""
+###############################################
+#         GEMINI API CALL LOG                 #
+#         OCR Translator - Token Analysis     #
+###############################################
+
+Logging Started: {timestamp}
+Purpose: Track input/output token usage for Gemini 2.5 Flash Lite API calls
+Format: Each entry shows complete message content sent to Gemini and response received
+
+"""
+            
+            # Create or append to log file
+            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                f.write(header)
+                
+            log_debug(f"Gemini API logging initialized: {self.gemini_log_file}")
+            
+        except Exception as e:
+            log_debug(f"Error initializing Gemini API log: {e}")
+
+    def _log_gemini_api_call(self, message_content, source_lang, target_lang, text_to_translate):
+        """Log complete Gemini API call content to file for token usage analysis."""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Calculate detailed token estimates
+            words_in_message = len(message_content.split())
+            chars_in_message = len(message_content)
+            lines_in_message = len(message_content.split('\n'))
+            
+            log_entry = f"""
+=== GEMINI API CALL LOG ===
+Timestamp: {timestamp}
+Language Pair: {source_lang} -> {target_lang}
+Original Text: {text_to_translate}
+
+CALL DETAILS:
+- Message Length: {chars_in_message} characters
+- Word Count: {words_in_message} words
+- Line Count: {lines_in_message} lines
+- Estimated Input Tokens: ~{int(words_in_message * 1.3)} tokens (word count * 1.3)
+
+COMPLETE MESSAGE CONTENT SENT TO GEMINI:
+---BEGIN MESSAGE---
+{message_content}
+---END MESSAGE---
+
+"""
+            
+            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                f.write(log_entry)
+                
+            log_debug(f"Gemini API call logged: {chars_in_message} chars, ~{int(words_in_message * 1.3)} tokens")
+            
+        except Exception as e:
+            log_debug(f"Error logging Gemini API call: {e}")
+
+    def _log_gemini_response(self, response_text, call_duration):
+        """Log Gemini API response to the same file."""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Calculate detailed response metrics
+            words_in_response = len(response_text.split())
+            chars_in_response = len(response_text)
+            
+            response_entry = f"""RESPONSE RECEIVED:
+Timestamp: {timestamp}
+Call Duration: {call_duration:.3f} seconds
+
+RESPONSE DETAILS:
+- Response Length: {chars_in_response} characters  
+- Word Count: {words_in_response} words
+- Estimated Output Tokens: ~{int(words_in_response * 1.3)} tokens (word count * 1.3)
+
+COMPLETE RESPONSE FROM GEMINI:
+---BEGIN RESPONSE---
+{response_text}
+---END RESPONSE---
+
+========================================
+
+"""
+            
+            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                f.write(response_entry)
+                
+            log_debug(f"Gemini response logged: {chars_in_response} chars, ~{int(words_in_response * 1.3)} tokens, {call_duration:.3f}s")
+                
+        except Exception as e:
+            log_debug(f"Error logging Gemini API response: {e}")
+
     def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
         """Gemini API call with session management and fuzzy duplicate detection."""
         log_debug(f"Gemini API call for: {text_to_translate_gm}")
@@ -245,12 +354,18 @@ class TranslationHandler:
             
             log_debug(f"Sending to Gemini with language codes {source_lang_gm}->{target_lang_gm}: [{text_to_translate_gm}]")
             
+            # Log complete API call content for token usage analysis
+            self._log_gemini_api_call(message_content, source_lang_gm, target_lang_gm, text_to_translate_gm)
+            
             api_call_start_time = time.time()
             response = self.gemini_chat_session.send_message(message_content)
             log_debug(f"Gemini API call took {time.time() - api_call_start_time:.3f}s")
             
             translation_result = response.text.strip()
             log_debug(f"Gemini response: {translation_result}")
+            
+            # Log the response to the API call log file
+            self._log_gemini_response(translation_result, time.time() - api_call_start_time)
             
             # Handle SKIP responses
             if translation_result == "<SKIP>":
