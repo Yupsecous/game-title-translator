@@ -291,7 +291,7 @@ COMPLETE RESPONSE FROM GEMINI:
             log_debug(f"Error logging Gemini API response: {e}")
 
     def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
-        """Gemini API call with session management and fuzzy duplicate detection."""
+        """Gemini API call with simplified message format (no system instructions)."""
         log_debug(f"Gemini API call for: {text_to_translate_gm}")
         
         api_key_gemini = self.app.gemini_api_key_var.get().strip()
@@ -309,56 +309,55 @@ COMPLETE RESPONSE FROM GEMINI:
         try:
             import google.generativeai as genai
             
-            # Check if we need to create a new session (minimal conditions)
+            # Check if we need to create a new model (minimal conditions)
             needs_new_session = (
-                not hasattr(self, 'gemini_chat_session') or 
-                self.gemini_chat_session is None or
+                not hasattr(self, 'gemini_model') or 
+                self.gemini_model is None or
                 self.should_reset_session(api_key_gemini)  # API key changed
             )
             
             if needs_new_session:
                 if hasattr(self, 'gemini_session_api_key') and self.gemini_session_api_key != api_key_gemini:
-                    log_debug("Creating new Gemini session (API key changed)")
+                    log_debug("Creating new Gemini model (API key changed)")
                 else:
-                    log_debug("Creating new Gemini session (no existing session)")
+                    log_debug("Creating new Gemini model (no existing model)")
                 self._initialize_gemini_session(source_lang_gm, target_lang_gm)
             else:
-                # Check if language pair changed - clear context to prevent wrong SKIP responses
+                # Check if language pair changed - clear context
                 if (hasattr(self, 'gemini_current_source_lang') and hasattr(self, 'gemini_current_target_lang') and
                     (self.gemini_current_source_lang != source_lang_gm or self.gemini_current_target_lang != target_lang_gm)):
-                    log_debug(f"Language pair changed from {self.gemini_current_source_lang}->{self.gemini_current_target_lang} to {source_lang_gm}->{target_lang_gm}, clearing context to prevent incorrect SKIP responses")
+                    log_debug(f"Language pair changed from {self.gemini_current_source_lang}->{self.gemini_current_target_lang} to {source_lang_gm}->{target_lang_gm}, clearing context")
                     self._clear_gemini_context()
             
             # Track current language pair for context clearing
             self.gemini_current_source_lang = source_lang_gm
             self.gemini_current_target_lang = target_lang_gm
             
-            if self.gemini_chat_session is None:
-                return "Gemini session initialization failed"
+            if self.gemini_model is None:
+                return "Gemini model initialization failed"
             
-            # Build final message with language codes and context
-            language_code_header = f"<{source_lang_gm}-{target_lang_gm}>"
-            
-            # Prepare context from sliding window
+            # Build message with simplified format - always start with instruction
             context_window = self._build_context_window()
             
-            if context_window and self.app.gemini_fuzzy_detection_var.get():
-                # Context exists, use full format with context + new text to translate
-                message_content = f"{language_code_header}\n{context_window}\n{text_to_translate_gm}:=:"
-            elif self.app.gemini_fuzzy_detection_var.get() and hasattr(self, 'gemini_last_translation') and self.gemini_last_translation:
-                # No sliding window context but we have last translation, show it for comparison
-                message_content = f"{language_code_header}\n{self.gemini_last_source}:=:{self.gemini_last_translation}\n{text_to_translate_gm}:=:"
-            else:
-                # No context available or fuzzy detection disabled - simple translation
-                message_content = f"{language_code_header}\n{text_to_translate_gm}"
+            # Always start with the instruction line
+            instruction_line = "<translate only, don't comment, don't display language codes>"
             
-            log_debug(f"Sending to Gemini with language codes {source_lang_gm}->{target_lang_gm}: [{text_to_translate_gm}]")
+            if context_window:
+                # Context exists, use context format
+                message_content = f"{instruction_line}\n{context_window}\n{source_lang_gm}: {text_to_translate_gm}\n{target_lang_gm}:"
+            else:
+                # No context, use simple format 
+                message_content = f"{instruction_line}\n{source_lang_gm}: {text_to_translate_gm}\n{target_lang_gm}:"
+            
+            log_debug(f"Sending to Gemini {source_lang_gm}->{target_lang_gm}: [{text_to_translate_gm}]")
             
             # Log complete API call content for token usage analysis
             self._log_gemini_api_call(message_content, source_lang_gm, target_lang_gm, text_to_translate_gm)
             
             api_call_start_time = time.time()
-            response = self.gemini_chat_session.send_message(message_content)
+            if not hasattr(self, 'gemini_model') or self.gemini_model is None:
+                return "Gemini model not initialized"
+            response = self.gemini_model.generate_content(message_content)
             log_debug(f"Gemini API call took {time.time() - api_call_start_time:.3f}s")
             
             translation_result = response.text.strip()
@@ -367,25 +366,11 @@ COMPLETE RESPONSE FROM GEMINI:
             # Log the response to the API call log file
             self._log_gemini_response(translation_result, time.time() - api_call_start_time)
             
-            # Handle SKIP responses
-            if translation_result == "<SKIP>":
-                # Get last valid translation from memory
-                last_translation = self._get_last_valid_translation()
-                if last_translation:
-                    log_debug(f"SKIP detected, reusing last translation: {last_translation}")
-                    # Store the SKIP->actual translation mapping in cache
-                    if self.app.gemini_file_cache_var.get():
-                        self.app.cache_manager.save_to_file_cache('gemini', cache_key_gm, last_translation)
-                    return last_translation
-                else:
-                    log_debug("SKIP received but no previous translation available")
-                    return "Translation not available"
-            
             # Store successful translation in file cache
             if self.app.gemini_file_cache_var.get():
                 self.app.cache_manager.save_to_file_cache('gemini', cache_key_gm, translation_result)
             
-            # Update sliding window memory (no language filtering needed)
+            # Update sliding window memory
             self._update_sliding_window(text_to_translate_gm, translation_result)
             
             return translation_result
@@ -395,18 +380,11 @@ COMPLETE RESPONSE FROM GEMINI:
             return f"Gemini API error: {str(e_gm)}"
 
     def _initialize_gemini_session(self, source_lang, target_lang):
-        """Initialize new Gemini chat session with system instructions."""
+        """Initialize new Gemini chat session without system instructions."""
         try:
             import google.generativeai as genai
             
             genai.configure(api_key=self.app.gemini_api_key_var.get().strip())
-            
-            # Get language names for system instructions
-            source_name = self._get_language_display_name(source_lang, 'gemini')
-            target_name = self._get_language_display_name(target_lang, 'gemini')
-            
-            # Build system instructions
-            system_instructions = self._build_system_instructions(source_name, target_name)
             
             # Optimal generation configuration for translation
             generation_config = {
@@ -427,42 +405,38 @@ COMPLETE RESPONSE FROM GEMINI:
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
             }
             
-            # Create model with optimized settings (cost-efficient, low latency)
+            # Create model with optimized settings (no system instructions)
             model = genai.GenerativeModel(
                 model_name="gemini-2.5-flash-lite-preview-06-17",  # Most cost-efficient, real-time optimized
                 generation_config=generation_config,
-                safety_settings=safety_settings,
-                system_instruction=system_instructions
+                safety_settings=safety_settings
+                # No system_instruction parameter - removed to reduce costs
             )
             
-            # Start chat session
-            self.gemini_chat_session = model.start_chat(history=[])
+            # Store model directly for stateless calls (no chat session)
+            self.gemini_model = model
             
             # Initialize sliding window memory and session tracking
             self.gemini_context_window = []
             self.gemini_session_api_key = self.app.gemini_api_key_var.get().strip()
-            self.gemini_last_translation = None
-            self.gemini_last_source = None
             
             # Initialize language tracking for context clearing
             self.gemini_current_source_lang = source_lang
             self.gemini_current_target_lang = target_lang
             
-            log_debug(f"Gemini session initialized with language code support")
+            log_debug(f"Gemini model initialized for stateless calls (no chat session)")
             
         except Exception as e:
-            log_debug(f"Failed to initialize Gemini session: {e}")
-            self.gemini_chat_session = None
+            log_debug(f"Failed to initialize Gemini model: {e}")
+            self.gemini_model = None
 
     def _reset_gemini_session(self):
-        """Reset Gemini session and context completely."""
+        """Reset Gemini model and context completely."""
         try:
             # Clear all session-related attributes
             session_attrs = [
-                'gemini_chat_session',
+                'gemini_model',
                 'gemini_context_window', 
-                'gemini_last_translation',
-                'gemini_last_source',
                 'gemini_session_api_key',
                 'gemini_current_source_lang',
                 'gemini_current_target_lang'
@@ -476,11 +450,11 @@ COMPLETE RESPONSE FROM GEMINI:
             # Initialize empty context window
             self.gemini_context_window = []
             
-            log_debug("Gemini session reset completed - all state cleared")
+            log_debug("Gemini model reset completed - all state cleared")
         except Exception as e:
-            log_debug(f"Error resetting Gemini session: {e}")
-        # Always ensure session is None to force reinitialization
-        self.gemini_chat_session = None
+            log_debug(f"Error resetting Gemini model: {e}")
+        # Always ensure model is None to force reinitialization
+        self.gemini_model = None
 
     def force_gemini_session_reset(self, reason="Manual reset"):
         """Force a complete session reset when actually necessary (API key changes, etc.)."""
@@ -488,12 +462,10 @@ COMPLETE RESPONSE FROM GEMINI:
         self._reset_gemini_session()
         
     def _clear_gemini_context(self):
-        """Clear Gemini context window and last translation to prevent incorrect SKIP responses after language changes."""
+        """Clear Gemini context window after language changes."""
         try:
             self.gemini_context_window = []
-            self.gemini_last_translation = None
-            self.gemini_last_source = None
-            log_debug("Gemini context cleared - no previous translations available for comparison")
+            log_debug("Gemini context cleared")
         except Exception as e:
             log_debug(f"Error clearing Gemini context: {e}")
         
@@ -503,62 +475,8 @@ COMPLETE RESPONSE FROM GEMINI:
             return True
         return self.gemini_session_api_key != api_key
     
-    def handle_fuzzy_detection_change(self):
-        """Handle fuzzy detection setting change - requires session reset due to system instruction change."""
-        if hasattr(self, 'gemini_chat_session') and self.gemini_chat_session is not None:
-            log_debug("Fuzzy detection setting changed - resetting Gemini session (system instructions changed)")
-            self.force_gemini_session_reset("Fuzzy detection setting changed")
-
-    def _build_system_instructions(self, source_name, target_name):
-        """Build system instructions for Gemini with language codes and fuzzy detection."""
-        base_instructions = f"""You are a professional translator. You will receive translation requests with language codes in this format:
-
-FORMAT 1 - Simple translation (no context):
-<source_code-target_code>
-Text to translate
-
-FORMAT 2 - Translation with context:
-<source_code-target_code>
-Previous text:=:Previous translation
-Another text:=:Another translation
-Current text:=:
-
-Language Codes:
-ar=Arabic, bg=Bulgarian, zh-CN=Chinese (Simplified), zh-TW=Chinese (Traditional), hr=Croatian, cs=Czech, da=Danish, nl=Dutch, en=English, et=Estonian, fi=Finnish, fr=French, de=German, el=Greek, he=Hebrew, hi=Hindi, hu=Hungarian, is=Icelandic, id=Indonesian, it=Italian, ja=Japanese, ko=Korean, lv=Latvian, lt=Lithuanian, no=Norwegian, pl=Polish, pt-BR=Portuguese (Brazil), pt-PT=Portuguese (Portugal), ro=Romanian, ru=Russian, sr=Serbian, sk=Slovak, sl=Slovenian, es=Spanish, sw=Swahili, sv=Swedish, th=Thai, tr=Turkish, uk=Ukrainian, vi=Vietnamese
-
-When you see Format 1 (simple text after language code), always provide a translation.
-When you see Format 2 (context with :=: pairs), the context lines help with translation. The last line ending in :=: needs translation.
-
-CRITICAL: For timestamps, numbers, codes, or unclear input, return EXACTLY what you received:
-- Input "1:21:49 v" → Output "1:21:49 v" (EXACTLY as received)
-- Input "22:15" → Output "22:15" (EXACTLY as received)
-- Input "G" → Output "G" (EXACTLY as received)
-- Input "123" → Output "123" (EXACTLY as received)
-
-Only translate clear, meaningful text. NEVER invent or guess translations for unclear input."""
-
-        if self.app.gemini_fuzzy_detection_var.get():
-            return base_instructions + """
-
-DUPLICATE DETECTION: ONLY when using Format 2 (with :=: context pairs), if the current text to translate is essentially the same as the immediately previous subtitle (accounting for minor OCR errors, typos, punctuation differences, or spacing issues), respond with exactly: "<SKIP>"
-
-IMPORTANT: Only use "<SKIP>" when:
-1. The message uses Format 2 (you see :=: pairs showing previous translations)
-2. The current text is essentially identical to the immediately previous subtitle
-3. You are confident the meaning is the same
-
-If the message uses Format 1 (simple text after language code), ALWAYS provide a translation, never "<SKIP>".
-
-Examples that should trigger "<SKIP>" response (only in Format 2):
-- Previous: "Watch out!" → Current: "Watch out! " (spacing)
-- Previous: "She is beautiful" → Current: "She is beutiful" (typo)  
-- Previous: "Hello there" → Current: "Hello there." (punctuation)
-- Previous: "Amazing view" → Current: "Amazing vlew" (OCR error)"""
-        else:
-            return base_instructions
-
     def _build_context_window(self):
-        """Build context window from previous translations."""
+        """Build context window from previous translations using simple format."""
         if not hasattr(self, 'gemini_context_window'):
             self.gemini_context_window = []
         
@@ -570,31 +488,28 @@ Examples that should trigger "<SKIP>" response (only in Format 2):
         context_pairs = self.gemini_context_window[-context_size:]
         context_lines = []
         
-        for source_text, target_text in context_pairs:
-            context_lines.append(f"{source_text}:=:{target_text}")
+        for source_text, target_text, source_lang, target_lang in context_pairs:
+            context_lines.append(f"{source_lang}: {source_text}")
+            context_lines.append(f"{target_lang}: {target_text}")
         
         return "\n".join(context_lines)
 
     def _update_sliding_window(self, source_text, target_text):
-        """Update sliding window with new translation pair."""
+        """Update sliding window with new translation pair including language codes."""
         if not hasattr(self, 'gemini_context_window'):
             self.gemini_context_window = []
         
-        # Add new pair
-        self.gemini_context_window.append((source_text, target_text))
+        # Get current language codes
+        source_lang = getattr(self, 'gemini_current_source_lang', 'en')
+        target_lang = getattr(self, 'gemini_current_target_lang', 'pl')
+        
+        # Add new pair with language codes
+        self.gemini_context_window.append((source_text, target_text, source_lang, target_lang))
         
         # Keep only last 5 pairs (more than the max context window setting)
         self.gemini_context_window = self.gemini_context_window[-5:]
-        
-        # Update last translation for SKIP functionality
-        self.gemini_last_translation = target_text
-        self.gemini_last_source = source_text
 
-    def _get_last_valid_translation(self):
-        """Get the last valid translation for SKIP responses."""
-        if hasattr(self, 'gemini_last_translation') and self.gemini_last_translation:
-            return self.gemini_last_translation
-        return None
+
 
     def _get_language_display_name(self, lang_code, provider):
         """Get display name for language code using the language manager."""
@@ -688,12 +603,10 @@ Examples that should trigger "<SKIP>" response (only in Format 2):
             source_lang = self.app.gemini_source_lang
             target_lang = self.app.gemini_target_lang
             context_window = self.app.gemini_context_window_var.get()
-            fuzzy_detection = self.app.gemini_fuzzy_detection_var.get()
             extra_params = {
-                "context_window": context_window,
-                "fuzzy_detection": fuzzy_detection
+                "context_window": context_window
             }
-            log_debug(f"Gemini translation request with context_window={context_window}, fuzzy_detection={fuzzy_detection}, {source_lang}->{target_lang}")
+            log_debug(f"Gemini translation request with context_window={context_window}, {source_lang}->{target_lang}")
         
         else:
             return f"Error: Unknown translation model '{selected_translation_model}'"
