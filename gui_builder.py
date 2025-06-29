@@ -29,7 +29,8 @@ def create_main_tab(app):
         
         log_debug(f"GUI Language Change: selected_display='{selected_display_name}', lang_code='{lang_code}', current_lang='{app.ui_lang.current_lang}'")
         
-        if lang_code != app.ui_lang.current_lang:
+        # Guard: Only process if the language actually changed
+        if lang_code and lang_code != app.ui_lang.current_lang:
             log_debug(f"Changing GUI language from {app.ui_lang.current_lang} to {lang_code}")
             app.ui_lang.load_language(lang_code)
             
@@ -196,23 +197,36 @@ def create_settings_tab(app):
         log_debug(f"Lookup result: '{selected_display_name}' -> '{api_code}'")
         
         if api_code:
+            # Guard: Check if we're actually changing to a different value
+            current_stored_value = None
             if active_model == 'google_api': 
-                app.google_source_lang = api_code
-                log_debug(f"Google source lang set to: {api_code}")
+                current_stored_value = app.google_source_lang
             elif active_model == 'deepl_api': 
-                app.deepl_source_lang = api_code
-                log_debug(f"DeepL source lang set to: {api_code}")
+                current_stored_value = app.deepl_source_lang
             elif active_model == 'gemini_api':
-                app.gemini_source_lang = api_code
-                log_debug(f"Gemini source lang set to: {api_code}")
-                # Clear Gemini context when source language is changed
-                if (hasattr(app, 'translation_handler') and 
-                    hasattr(app.translation_handler, '_clear_gemini_context')):
-                    app.translation_handler._clear_gemini_context()
+                current_stored_value = app.gemini_source_lang
             
-            app.source_lang_var.set(api_code) 
-            log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
-            app.save_settings() 
+            # Only update and save if the value actually changed
+            if api_code != current_stored_value:
+                if active_model == 'google_api': 
+                    app.google_source_lang = api_code
+                    log_debug(f"Google source lang set to: {api_code}")
+                elif active_model == 'deepl_api': 
+                    app.deepl_source_lang = api_code
+                    log_debug(f"DeepL source lang set to: {api_code}")
+                elif active_model == 'gemini_api':
+                    app.gemini_source_lang = api_code
+                    log_debug(f"Gemini source lang set to: {api_code}")
+                    # Clear Gemini context when source language is changed
+                    if (hasattr(app, 'translation_handler') and 
+                        hasattr(app.translation_handler, '_clear_gemini_context')):
+                        app.translation_handler._clear_gemini_context()
+                
+                app.source_lang_var.set(api_code) 
+                log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
+                app.save_settings() 
+            else:
+                log_debug(f"Source lang unchanged for {active_model}: '{api_code}' - not saving")
         else:
             log_debug(f"ERROR: Could not find API code for source display '{selected_display_name}' / model '{active_model}' / ui_language '{ui_language_for_lookup}' - not saving invalid value")
             # Don't save invalid values - keep the previous valid selection
@@ -245,23 +259,36 @@ def create_settings_tab(app):
         log_debug(f"Lookup result: '{selected_display_name}' -> '{api_code}'")
         
         if api_code:
+            # Guard: Check if we're actually changing to a different value
+            current_stored_value = None
             if active_model == 'google_api': 
-                app.google_target_lang = api_code
-                log_debug(f"Google target lang set to: {api_code}")
+                current_stored_value = app.google_target_lang
             elif active_model == 'deepl_api': 
-                app.deepl_target_lang = api_code
-                log_debug(f"DeepL target lang set to: {api_code}")
+                current_stored_value = app.deepl_target_lang
             elif active_model == 'gemini_api':
-                app.gemini_target_lang = api_code
-                log_debug(f"Gemini target lang set to: {api_code}")
-                # Clear Gemini context when target language is changed
-                if (hasattr(app, 'translation_handler') and 
-                    hasattr(app.translation_handler, '_clear_gemini_context')):
-                    app.translation_handler._clear_gemini_context()
+                current_stored_value = app.gemini_target_lang
             
-            app.target_lang_var.set(api_code)
-            log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
-            app.save_settings() 
+            # Only update and save if the value actually changed
+            if api_code != current_stored_value:
+                if active_model == 'google_api': 
+                    app.google_target_lang = api_code
+                    log_debug(f"Google target lang set to: {api_code}")
+                elif active_model == 'deepl_api': 
+                    app.deepl_target_lang = api_code
+                    log_debug(f"DeepL target lang set to: {api_code}")
+                elif active_model == 'gemini_api':
+                    app.gemini_target_lang = api_code
+                    log_debug(f"Gemini target lang set to: {api_code}")
+                    # Clear Gemini context when target language is changed
+                    if (hasattr(app, 'translation_handler') and 
+                        hasattr(app.translation_handler, '_clear_gemini_context')):
+                        app.translation_handler._clear_gemini_context()
+                
+                app.target_lang_var.set(api_code)
+                log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
+                app.save_settings() 
+            else:
+                log_debug(f"Target lang unchanged for {active_model}: '{api_code}' - not saving")
         else:
             log_debug(f"ERROR: Could not find API code for target display '{selected_display_name}' / model '{active_model}' / ui_language '{ui_language_for_lookup}' - not saving invalid value")
             # Don't save invalid values - keep the previous valid selection

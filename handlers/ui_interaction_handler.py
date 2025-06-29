@@ -14,6 +14,7 @@ import traceback
 class UIInteractionHandler:
     def __init__(self, app):
         self.app = app
+        self._save_in_progress = False
         
     def choose_color_for_settings(self, color_type):
         initial_color = ""
@@ -227,6 +228,9 @@ class UIInteractionHandler:
     def update_all_dropdowns_for_language_change(self):
         """Update all language dropdowns when UI language changes."""
         try:
+            # Suppress StringVar traces during UI updates to prevent cascading saves
+            self.app.suppress_traces()
+            
             ui_language_for_lookup = self.get_current_ui_language_for_lookup()
             
             log_debug(f"Updating dropdowns for language change - UI language: {ui_language_for_lookup}")
@@ -283,10 +287,14 @@ class UIInteractionHandler:
                 self.app.marian_model_var.set(current_marian_model)
             
             log_debug(f"Updated all dropdowns for UI language change to: {self.app.ui_lang.current_lang}")
+            
         except Exception as e:
             log_debug(f"Error updating dropdowns for language change: {e}")
             import traceback
             log_debug(f"Traceback: {traceback.format_exc()}")
+        finally:
+            # Always restore traces even if an exception occurred
+            self.app.restore_traces()
 
     def get_current_ui_language_for_lookup(self):
         """Get the current UI language in the format expected by localization methods."""
@@ -666,106 +674,115 @@ class UIInteractionHandler:
     def on_translation_model_selection_changed(self, event=None, initial_setup=False):
         preload = initial_setup 
 
-        if event is not None: 
-            selected_display_name_from_ui = self.app.translation_model_display_var.get()
-            newly_selected_model_code = self.app.translation_model_values.get(selected_display_name_from_ui, 'google_api')
-            
-            # Track model change
-            previous_model = self.app.translation_model_var.get()
-            if newly_selected_model_code != previous_model:
-                log_debug(f"Translation model changed from {previous_model} to {newly_selected_model_code}")
-                
-                # Clear Gemini context when translation model is changed
-                if (hasattr(self.app, 'translation_handler') and 
-                    hasattr(self.app.translation_handler, '_clear_gemini_context')):
-                    self.app.translation_handler._clear_gemini_context()
-                
-                self.app.translation_model_var.set(newly_selected_model_code) # This triggers save via trace
-                log_debug(f"Translation model var updated by UI to: {newly_selected_model_code}")
-        
-        model_to_configure_for = self.app.translation_model_var.get()
-        
-        expected_display_name = self.app.translation_model_names.get(model_to_configure_for)
-        if expected_display_name and self.app.translation_model_display_var.get() != expected_display_name:
-            self.app.translation_model_display_var.set(expected_display_name)
+        try:
+            # Suppress StringVar traces during model switching to prevent cascading saves
+            if not initial_setup:  # Don't suppress during initial setup
+                self.app.suppress_traces()
 
-        log_debug(f"Configuring UI for model: {model_to_configure_for} (Initial: {initial_setup}, Event: {event is not None})")
-        
-        self.update_translation_model_ui() 
-
-        if model_to_configure_for == 'google_api' or model_to_configure_for == 'deepl_api' or model_to_configure_for == 'gemini_api':
-            self._update_language_dropdowns_for_model(model_to_configure_for)
-            if model_to_configure_for == 'google_api':
-                self.app.source_lang_var.set(self.app.google_source_lang)
-                self.app.target_lang_var.set(self.app.google_target_lang)
-            elif model_to_configure_for == 'deepl_api':
-                self.app.source_lang_var.set(self.app.deepl_source_lang)
-                self.app.target_lang_var.set(self.app.deepl_target_lang)
-            elif model_to_configure_for == 'gemini_api':
-                self.app.source_lang_var.set(self.app.gemini_source_lang)
-                self.app.target_lang_var.set(self.app.gemini_target_lang)
-                # Session will be created/resumed automatically on first translation
-        elif model_to_configure_for == 'marianmt':
-            if self.app.MARIANMT_AVAILABLE and self.app.marian_translator is None and (preload or not initial_setup):
-                self.app.translation_handler.initialize_marian_translator()
-            
-            current_marian_path_from_app_var = self.app.marian_model_var.get() 
-            marian_display_name_to_set_in_ui = self.app.marian_model_display_var.get() # Current UI value
-            
-            log_debug(f"MarianMT model restoration: stored path='{current_marian_path_from_app_var}', current UI display='{marian_display_name_to_set_in_ui}'")
-
-            # If the UI display var isn't correctly reflecting the config path, fix it.
-            # This happens if app_logic.py correctly initialized marian_model_display_var,
-            # and this function is called for initial_setup.
-            path_for_current_ui_display = self.app.marian_models_dict.get(marian_display_name_to_set_in_ui)
-            
-            if current_marian_path_from_app_var and path_for_current_ui_display != current_marian_path_from_app_var:
-                # Config path is different from what UI currently implies. Set UI to match config path.
-                temp_display_name_for_config_path = None
-                for disp_n, path_c in self.app.marian_models_dict.items():
-                    if path_c == current_marian_path_from_app_var:
-                        temp_display_name_for_config_path = disp_n
-                        break
+            if event is not None: 
+                selected_display_name_from_ui = self.app.translation_model_display_var.get()
+                newly_selected_model_code = self.app.translation_model_values.get(selected_display_name_from_ui, 'google_api')
                 
-                # Special handling for English-to-Polish Tatoeba model that may not be in cache yet
-                if not temp_display_name_for_config_path and current_marian_path_from_app_var == "Tatoeba/opus-en-pl-official":
-                    # Look for the English to Polish display name in the models dict
+                # Track model change
+                previous_model = self.app.translation_model_var.get()
+                if newly_selected_model_code != previous_model:
+                    log_debug(f"Translation model changed from {previous_model} to {newly_selected_model_code}")
+                    
+                    # Clear Gemini context when translation model is changed
+                    if (hasattr(self.app, 'translation_handler') and 
+                        hasattr(self.app.translation_handler, '_clear_gemini_context')):
+                        self.app.translation_handler._clear_gemini_context()
+                    
+                    self.app.translation_model_var.set(newly_selected_model_code) # This triggers save via trace
+                    log_debug(f"Translation model var updated by UI to: {newly_selected_model_code}")
+            
+            model_to_configure_for = self.app.translation_model_var.get()
+            
+            expected_display_name = self.app.translation_model_names.get(model_to_configure_for)
+            if expected_display_name and self.app.translation_model_display_var.get() != expected_display_name:
+                self.app.translation_model_display_var.set(expected_display_name)
+
+            log_debug(f"Configuring UI for model: {model_to_configure_for} (Initial: {initial_setup}, Event: {event is not None})")
+            
+            self.update_translation_model_ui() 
+
+            if model_to_configure_for == 'google_api' or model_to_configure_for == 'deepl_api' or model_to_configure_for == 'gemini_api':
+                self._update_language_dropdowns_for_model(model_to_configure_for)
+                if model_to_configure_for == 'google_api':
+                    self.app.source_lang_var.set(self.app.google_source_lang)
+                    self.app.target_lang_var.set(self.app.google_target_lang)
+                elif model_to_configure_for == 'deepl_api':
+                    self.app.source_lang_var.set(self.app.deepl_source_lang)
+                    self.app.target_lang_var.set(self.app.deepl_target_lang)
+                elif model_to_configure_for == 'gemini_api':
+                    self.app.source_lang_var.set(self.app.gemini_source_lang)
+                    self.app.target_lang_var.set(self.app.gemini_target_lang)
+                    # Session will be created/resumed automatically on first translation
+            elif model_to_configure_for == 'marianmt':
+                if self.app.MARIANMT_AVAILABLE and self.app.marian_translator is None and (preload or not initial_setup):
+                    self.app.translation_handler.initialize_marian_translator()
+                
+                current_marian_path_from_app_var = self.app.marian_model_var.get() 
+                marian_display_name_to_set_in_ui = self.app.marian_model_display_var.get() # Current UI value
+                
+                log_debug(f"MarianMT model restoration: stored path='{current_marian_path_from_app_var}', current UI display='{marian_display_name_to_set_in_ui}'")
+
+                # If the UI display var isn't correctly reflecting the config path, fix it.
+                # This happens if app_logic.py correctly initialized marian_model_display_var,
+                # and this function is called for initial_setup.
+                path_for_current_ui_display = self.app.marian_models_dict.get(marian_display_name_to_set_in_ui)
+                
+                if current_marian_path_from_app_var and path_for_current_ui_display != current_marian_path_from_app_var:
+                    # Config path is different from what UI currently implies. Set UI to match config path.
+                    temp_display_name_for_config_path = None
                     for disp_n, path_c in self.app.marian_models_dict.items():
-                        if path_c == "Tatoeba/opus-en-pl-official":
+                        if path_c == current_marian_path_from_app_var:
                             temp_display_name_for_config_path = disp_n
                             break
                     
-                    # If still not found, check if the display name contains English to Polish pattern
-                    if not temp_display_name_for_config_path:
-                        for disp_n in self.app.marian_models_dict.keys():
-                            # Check for English to Polish patterns in different languages
-                            disp_n_lower = disp_n.lower()
-                            if (("english" in disp_n_lower and "polish" in disp_n_lower) or 
-                                ("angielski" in disp_n_lower and "polski" in disp_n_lower) or
-                                ("en-pl" in disp_n_lower)):
+                    # Special handling for English-to-Polish Tatoeba model that may not be in cache yet
+                    if not temp_display_name_for_config_path and current_marian_path_from_app_var == "Tatoeba/opus-en-pl-official":
+                        # Look for the English to Polish display name in the models dict
+                        for disp_n, path_c in self.app.marian_models_dict.items():
+                            if path_c == "Tatoeba/opus-en-pl-official":
                                 temp_display_name_for_config_path = disp_n
-                                log_debug(f"Found English-to-Polish model by pattern matching: {disp_n}")
                                 break
+                        
+                        # If still not found, check if the display name contains English to Polish pattern
+                        if not temp_display_name_for_config_path:
+                            for disp_n in self.app.marian_models_dict.keys():
+                                # Check for English to Polish patterns in different languages
+                                disp_n_lower = disp_n.lower()
+                                if (("english" in disp_n_lower and "polish" in disp_n_lower) or 
+                                    ("angielski" in disp_n_lower and "polski" in disp_n_lower) or
+                                    ("en-pl" in disp_n_lower)):
+                                    temp_display_name_for_config_path = disp_n
+                                    log_debug(f"Found English-to-Polish model by pattern matching: {disp_n}")
+                                    break
+                    
+                    if temp_display_name_for_config_path:
+                        marian_display_name_to_set_in_ui = temp_display_name_for_config_path
+                        self.app.marian_model_display_var.set(marian_display_name_to_set_in_ui)
+                        log_debug(f"Successfully restored MarianMT model selection: '{temp_display_name_for_config_path}' for path '{current_marian_path_from_app_var}'")
+                    else:
+                        log_debug(f"Could not find display name for stored MarianMT path: '{current_marian_path_from_app_var}'")
+                    # If config path still not found, marian_model_display_var (and thus selected_display_name in
+                    # on_marian_model_selection_changed) will use the fallback from app_logic init.
                 
-                if temp_display_name_for_config_path:
-                    marian_display_name_to_set_in_ui = temp_display_name_for_config_path
-                    self.app.marian_model_display_var.set(marian_display_name_to_set_in_ui)
-                    log_debug(f"Successfully restored MarianMT model selection: '{temp_display_name_for_config_path}' for path '{current_marian_path_from_app_var}'")
-                else:
-                    log_debug(f"Could not find display name for stored MarianMT path: '{current_marian_path_from_app_var}'")
-                # If config path still not found, marian_model_display_var (and thus selected_display_name in
-                # on_marian_model_selection_changed) will use the fallback from app_logic init.
-            
-            # If marian_model_display_var is empty but list isn't, set to first
-            if not self.app.marian_model_display_var.get() and self.app.marian_models_list:
-                 self.app.marian_model_display_var.set(self.app.marian_models_list[0])
-                 # Update underlying marian_model_var path too
-                 new_path = self.app.marian_models_dict.get(self.app.marian_models_list[0], "")
-                 if self.app.marian_model_var.get() != new_path:
-                    self.app.marian_model_var.set(new_path)
+                # If marian_model_display_var is empty but list isn't, set to first
+                if not self.app.marian_model_display_var.get() and self.app.marian_models_list:
+                     self.app.marian_model_display_var.set(self.app.marian_models_list[0])
+                     # Update underlying marian_model_var path too
+                     new_path = self.app.marian_models_dict.get(self.app.marian_models_list[0], "")
+                     if self.app.marian_model_var.get() != new_path:
+                        self.app.marian_model_var.set(new_path)
 
+                self.on_marian_model_selection_changed(preload=preload, initial_setup=initial_setup)
 
-            self.on_marian_model_selection_changed(preload=preload, initial_setup=initial_setup)
+        finally:
+            # Always restore traces, but only if we suppressed them
+            if not initial_setup:
+                self.app.restore_traces()
 
 
     def update_stability_from_spinbox(self):
@@ -831,6 +848,11 @@ class UIInteractionHandler:
             messagebox.showerror("Error", f"Failed to save debug images: {e}", parent=self.app.root)
     
     def save_settings(self):
+        if self._save_in_progress:
+            log_debug("Save settings already in progress, skipping duplicate save operation")
+            return True
+        
+        self._save_in_progress = True
         try:
             cfg = self.app.config['Settings']
             
@@ -969,6 +991,8 @@ class UIInteractionHandler:
              if self.app.root.winfo_exists(): 
                 messagebox.showerror("Error", f"Failed to save settings:\n{e}", parent=self.app.root)
              return False
+        finally:
+            self._save_in_progress = False
              
     def clear_debug_log(self):
         try:
