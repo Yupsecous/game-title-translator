@@ -15,6 +15,8 @@ class UIInteractionHandler:
     def __init__(self, app):
         self.app = app
         self._save_in_progress = False
+        self._last_save_time = 0
+        self._save_debounce_interval = 0.1  # 100ms debounce
         
     def choose_color_for_settings(self, color_type):
         initial_color = ""
@@ -228,8 +230,8 @@ class UIInteractionHandler:
     def update_all_dropdowns_for_language_change(self):
         """Update all language dropdowns when UI language changes."""
         try:
-            # Suppress StringVar traces during UI updates to prevent cascading saves
-            self.app.suppress_traces()
+            # Start comprehensive UI update - suppresses all saves and traces
+            self.app.start_ui_update()
             
             ui_language_for_lookup = self.get_current_ui_language_for_lookup()
             
@@ -293,8 +295,8 @@ class UIInteractionHandler:
             import traceback
             log_debug(f"Traceback: {traceback.format_exc()}")
         finally:
-            # Always restore traces even if an exception occurred
-            self.app.restore_traces()
+            # Always end UI update operation even if an exception occurred
+            self.app.end_ui_update()
 
     def get_current_ui_language_for_lookup(self):
         """Get the current UI language in the format expected by localization methods."""
@@ -675,9 +677,9 @@ class UIInteractionHandler:
         preload = initial_setup 
 
         try:
-            # Suppress StringVar traces during model switching to prevent cascading saves
+            # Start comprehensive UI update during model switching to prevent cascading saves
             if not initial_setup:  # Don't suppress during initial setup
-                self.app.suppress_traces()
+                self.app.start_ui_update()
 
             if event is not None: 
                 selected_display_name_from_ui = self.app.translation_model_display_var.get()
@@ -780,9 +782,9 @@ class UIInteractionHandler:
                 self.on_marian_model_selection_changed(preload=preload, initial_setup=initial_setup)
 
         finally:
-            # Always restore traces, but only if we suppressed them
+            # Always end UI update operation, but only if we started one
             if not initial_setup:
-                self.app.restore_traces()
+                self.app.end_ui_update()
 
 
     def update_stability_from_spinbox(self):
@@ -848,10 +850,24 @@ class UIInteractionHandler:
             messagebox.showerror("Error", f"Failed to save debug images: {e}", parent=self.app.root)
     
     def save_settings(self):
+        import time
+        current_time = time.time()
+        
         if self._save_in_progress:
             log_debug("Save settings already in progress, skipping duplicate save operation")
             return True
+            
+        # Debounce rapid successive save attempts
+        if current_time - self._last_save_time < self._save_debounce_interval:
+            log_debug(f"Save settings debounced (last save {current_time - self._last_save_time:.3f}s ago)")
+            return True
+            
+        # Check if UI update is in progress
+        if hasattr(self.app, '_ui_update_in_progress') and self.app._ui_update_in_progress:
+            log_debug("Save settings skipped - UI update in progress")
+            return True
         
+        self._last_save_time = current_time
         self._save_in_progress = True
         try:
             cfg = self.app.config['Settings']

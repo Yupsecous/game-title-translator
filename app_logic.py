@@ -239,14 +239,17 @@ class OCRTranslator:
         self.translation_handler = TranslationHandler(self)
         self.ui_interaction_handler = UIInteractionHandler(self) # Needs self.translation_model_names
 
-        # Initialize trace suppression mechanism
+        # Initialize trace suppression mechanism and UI update detection
         self._suppress_traces = False
+        self._ui_update_in_progress = False
         
         def _settings_changed_callback_internal(*args, **kwargs):
-            if self._fully_initialized and not self._suppress_traces:
+            if self._fully_initialized and not self._suppress_traces and not self._ui_update_in_progress:
                 self.save_settings()
             elif self._suppress_traces:
                 log_debug("StringVar trace suppressed during UI update")
+            elif self._ui_update_in_progress:
+                log_debug("StringVar trace suppressed during UI update operation")
 
         self.settings_changed_callback = _settings_changed_callback_internal
 
@@ -507,6 +510,18 @@ For more information, see the user manual."""
         """Restore StringVar traces after UI updates complete"""
         self._suppress_traces = False
         log_debug("StringVar traces restored")
+        
+    def start_ui_update(self):
+        """Mark the start of a UI update operation to suppress all saves"""
+        self._ui_update_in_progress = True
+        self.suppress_traces()
+        log_debug("UI update operation started - all saves suppressed")
+        
+    def end_ui_update(self):
+        """Mark the end of a UI update operation and restore normal save behavior"""
+        self._ui_update_in_progress = False
+        self.restore_traces()
+        log_debug("UI update operation ended - saves restored")
 
     def on_window_configure(self, event):
         self.configuration_handler.on_window_configure(event)
@@ -1184,8 +1199,8 @@ For more information, see the user manual."""
     def update_ui_language(self):
         """Update all UI elements to reflect the selected language"""
         try:
-            # Suppress StringVar traces during comprehensive UI rebuild
-            self.suppress_traces()
+            # Start comprehensive UI update - suppresses all saves and traces
+            self.start_ui_update()
             
             # Update translation model names with new language
             self.update_translation_model_names()
@@ -1317,8 +1332,8 @@ For more information, see the user manual."""
         except Exception as e:
             log_debug(f"Error updating UI language: {e}")
         finally:
-            # Always restore traces after UI language update
-            self.restore_traces()
+            # Always end UI update operation to restore saves and traces
+            self.end_ui_update()
 
     def on_closing(self):
         log_debug("Main window close requested. Initiating shutdown...")
