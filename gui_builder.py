@@ -42,7 +42,11 @@ def create_main_tab(app):
             
             # This complete UI rebuild is necessary to update all elements
             app.update_ui_language()
-            app.save_settings()
+            
+            # Save settings only after all UI updates are complete
+            # The UI update methods will suppress saves during the update process
+            if app._fully_initialized:
+                app.save_settings()
         else:
             log_debug(f"GUI language unchanged: {lang_code}")
     
