@@ -340,7 +340,7 @@ COMPLETE RESPONSE FROM GEMINI:
             context_window = self._build_context_window()
             
             # Always start with the instruction line
-            instruction_line = "<translate only, don't comment, don't display language codes>"
+            instruction_line = f"<Remove gibberish from the source text and translate to {target_lang_gm}. Return translation only.>"
             
             if context_window:
                 # Context exists, use context format
@@ -361,6 +361,11 @@ COMPLETE RESPONSE FROM GEMINI:
             log_debug(f"Gemini API call took {time.time() - api_call_start_time:.3f}s")
             
             translation_result = response.text.strip()
+            # New: Add a line to strip the language code if it still appears
+            if translation_result.startswith(f"{target_lang_gm}: "):
+                translation_result = translation_result[len(f"{target_lang_gm}: "):].strip()
+            if translation_result.startswith(f"{target_lang_gm}:"):
+                translation_result = translation_result[len(f"{target_lang_gm}:"):].strip()                
             log_debug(f"Gemini response: {translation_result}")
             
             # Log the response to the API call log file
@@ -388,7 +393,7 @@ COMPLETE RESPONSE FROM GEMINI:
             
             # Optimal generation configuration for translation
             generation_config = {
-                "temperature": 0.8,              # Natural, creative translations for dialogue
+                "temperature": 0.0,              # Natural, creative translations for dialogue
                 "max_output_tokens": 1024,       # Sufficient for subtitle translations
                 "candidate_count": 1,            # Single response needed
                 "top_p": 0.95,                   # Slightly constrain token selection
