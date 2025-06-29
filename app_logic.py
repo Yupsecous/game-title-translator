@@ -239,9 +239,14 @@ class OCRTranslator:
         self.translation_handler = TranslationHandler(self)
         self.ui_interaction_handler = UIInteractionHandler(self) # Needs self.translation_model_names
 
+        # Initialize trace suppression mechanism
+        self._suppress_traces = False
+        
         def _settings_changed_callback_internal(*args, **kwargs):
-            if self._fully_initialized:
+            if self._fully_initialized and not self._suppress_traces:
                 self.save_settings()
+            elif self._suppress_traces:
+                log_debug("StringVar trace suppressed during UI update")
 
         self.settings_changed_callback = _settings_changed_callback_internal
 
@@ -492,6 +497,16 @@ For more information, see the user manual."""
             return self.ui_interaction_handler.save_settings()
         log_debug("Attempted to save settings before full initialization.")
         return False
+
+    def suppress_traces(self):
+        """Suppress StringVar traces during UI updates to prevent cascading saves"""
+        self._suppress_traces = True
+        log_debug("StringVar traces suppressed")
+
+    def restore_traces(self):
+        """Restore StringVar traces after UI updates complete"""
+        self._suppress_traces = False
+        log_debug("StringVar traces restored")
 
     def on_window_configure(self, event):
         self.configuration_handler.on_window_configure(event)
@@ -1169,6 +1184,9 @@ For more information, see the user manual."""
     def update_ui_language(self):
         """Update all UI elements to reflect the selected language"""
         try:
+            # Suppress StringVar traces during comprehensive UI rebuild
+            self.suppress_traces()
+            
             # Update translation model names with new language
             self.update_translation_model_names()
             
@@ -1298,6 +1316,9 @@ For more information, see the user manual."""
             log_debug(f"UI language completely rebuilt for: {self.ui_lang.current_lang}")
         except Exception as e:
             log_debug(f"Error updating UI language: {e}")
+        finally:
+            # Always restore traces after UI language update
+            self.restore_traces()
 
     def on_closing(self):
         log_debug("Main window close requested. Initiating shutdown...")
