@@ -210,7 +210,6 @@ class OCRTranslator:
         self.google_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'google_file_cache', fallback=True))
         self.deepl_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'deepl_file_cache', fallback=True))
         self.gemini_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_file_cache', fallback=True))
-        self.gemini_fuzzy_detection_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_fuzzy_detection', fallback=True))
         self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
 
         tesseract_path_from_config = self.config['Settings'].get('tesseract_path', r'C:\Program Files\Tesseract-OCR\tesseract.exe')
@@ -1003,7 +1002,10 @@ For more information, see the user manual."""
             log_debug("Stopping translation process requested by user.")
             self.is_running = False
             
-            # Keep Gemini session alive - no need to reset on stop
+            # Clear Gemini context when translation is stopped
+            if (hasattr(self, 'translation_handler') and 
+                hasattr(self.translation_handler, '_clear_gemini_context')):
+                self.translation_handler._clear_gemini_context()
             
             self.start_stop_btn.config(text="Start", state=tk.DISABLED)
             self.status_label.config(text="Status: Stopping...")

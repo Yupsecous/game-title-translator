@@ -205,7 +205,10 @@ def create_settings_tab(app):
             elif active_model == 'gemini_api':
                 app.gemini_source_lang = api_code
                 log_debug(f"Gemini source lang set to: {api_code}")
-                # Note: Session will handle language change automatically on next translation
+                # Clear Gemini context when source language is changed
+                if (hasattr(app, 'translation_handler') and 
+                    hasattr(app.translation_handler, '_clear_gemini_context')):
+                    app.translation_handler._clear_gemini_context()
             
             app.source_lang_var.set(api_code) 
             log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -251,7 +254,10 @@ def create_settings_tab(app):
             elif active_model == 'gemini_api':
                 app.gemini_target_lang = api_code
                 log_debug(f"Gemini target lang set to: {api_code}")
-                # Note: Session will handle language change automatically on next translation
+                # Clear Gemini context when target language is changed
+                if (hasattr(app, 'translation_handler') and 
+                    hasattr(app.translation_handler, '_clear_gemini_context')):
+                    app.translation_handler._clear_gemini_context()
             
             app.target_lang_var.set(api_code)
             log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -363,25 +369,6 @@ def create_settings_tab(app):
     
     app.gemini_context_window_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_gemini_context_window_changed))
-
-    # Gemini Fuzzy Detection Checkbox (only visible when Gemini is selected)
-    app.gemini_fuzzy_detection_frame = ttk.Frame(frame)
-    app.gemini_fuzzy_detection_frame.grid(row=8, column=0, columnspan=2, padx=5, pady=5, sticky="w")
-    app.gemini_fuzzy_detection_checkbox = ttk.Checkbutton(
-        app.gemini_fuzzy_detection_frame, 
-        text=app.ui_lang.get_label("gemini_fuzzy_detection_checkbox", "Enable Smart Duplicate Detection (Reduces API costs by 60-70%)"),
-        variable=app.gemini_fuzzy_detection_var,
-        command=lambda: [
-            log_debug(f"Gemini fuzzy detection toggled: {app.gemini_fuzzy_detection_var.get()}"),
-            # Reset and reinitialize Gemini session when fuzzy detection setting changes
-            (hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session') 
-             and app.translation_handler._reset_gemini_session()),
-            (hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_initialize_gemini_session')
-             and app.translation_handler._initialize_gemini_session(app.gemini_source_lang, app.gemini_target_lang)),
-            app._fully_initialized and app.save_settings()
-        ]
-    )
-    app.gemini_fuzzy_detection_checkbox.pack(anchor="w")
 
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))

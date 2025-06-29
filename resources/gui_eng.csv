@@ -62,7 +62,6 @@ file_cache_description,"File caching saves translations to disk to reduce API co
 google_cache_checkbox,"Enable Google Translate file cache (saves to disk, reduces API calls)"
 deepl_cache_checkbox,"Enable DeepL file cache (saves to disk, reduces API calls)"
 gemini_file_cache_checkbox,"Enable Gemini file cache"
-gemini_fuzzy_detection_checkbox,"Enable Smart Duplicate Detection (Reduces API costs by 60-70%)"
 cache_files_label,Cache files:
 clear_caches_btn,Clear File Caches
 save_settings_btn,Save Settings Now

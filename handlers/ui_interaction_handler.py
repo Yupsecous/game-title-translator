@@ -138,8 +138,6 @@ class UIInteractionHandler:
             manage_grid(self.app.gemini_context_window_label, show=is_gemini)
         if hasattr(self.app, 'gemini_context_window_combobox'):
             manage_grid(self.app.gemini_context_window_combobox, show=is_gemini)
-        if hasattr(self.app, 'gemini_fuzzy_detection_frame'):
-            manage_grid(self.app.gemini_fuzzy_detection_frame, show=is_gemini)
         # Note: gemini_file_cache_checkbox is now permanently visible in the cache section
         
         # DeepL Model Type visibility
@@ -675,9 +673,12 @@ class UIInteractionHandler:
             # Track model change
             previous_model = self.app.translation_model_var.get()
             if newly_selected_model_code != previous_model:
-                # Keep sessions alive when switching between models
-                # Each model will manage its own session appropriately
                 log_debug(f"Translation model changed from {previous_model} to {newly_selected_model_code}")
+                
+                # Clear Gemini context when translation model is changed
+                if (hasattr(self.app, 'translation_handler') and 
+                    hasattr(self.app.translation_handler, '_clear_gemini_context')):
+                    self.app.translation_handler._clear_gemini_context()
                 
                 self.app.translation_model_var.set(newly_selected_model_code) # This triggers save via trace
                 log_debug(f"Translation model var updated by UI to: {newly_selected_model_code}")
@@ -920,7 +921,6 @@ class UIInteractionHandler:
             cfg['deepl_model_type'] = self.app.deepl_model_type_var.get()
             cfg['gemini_api_key'] = self.app.gemini_api_key_var.get()
             cfg['gemini_context_window'] = str(self.app.gemini_context_window_var.get())
-            cfg['gemini_fuzzy_detection'] = str(self.app.gemini_fuzzy_detection_var.get())
             cfg['google_file_cache'] = str(self.app.google_file_cache_var.get())
             cfg['deepl_file_cache'] = str(self.app.deepl_file_cache_var.get())
             cfg['gemini_file_cache'] = str(self.app.gemini_file_cache_var.get())
