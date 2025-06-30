@@ -31,7 +31,7 @@ debug_images/
 googletrans_cache.txt
 deepl_cache.txt
 gemini_cache.txt
-Gemini_API_call_logs.txt
+Gemini_API_call_log*.txt
 
 # API Keys and sensitive information
 api_keys.json
