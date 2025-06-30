@@ -336,15 +336,19 @@ COMPLETE RESPONSE FROM GEMINI:
             if self.gemini_model is None:
                 return "Gemini model initialization failed"
             
-            # Build message with simplified format - always start with instruction
-            context_window = self._build_context_window()
+            # Get display names for source and target languages
+            source_lang_name = self._get_language_display_name(source_lang_gm, 'gemini')
+            target_lang_name = self._get_language_display_name(target_lang_gm, 'gemini')
             
-            # Always start with the instruction line
-            instruction_line = f"<Remove gibberish from the source text and translate to {target_lang_gm}. Return translation only.>"
+            # Always start with the instruction line with explicit language names
+            instruction_line = f"<Remove gibberish from the source text and translate from {source_lang_name} to {target_lang_name}. Return translation only.>"
             
-            if context_window:
-                # Context exists, use context format
-                message_content = f"{instruction_line}\n{context_window}\n{source_lang_gm}: {text_to_translate_gm}\n{target_lang_gm}:"
+            # Build context window with new text integrated in grouped format
+            context_with_new_text = self._build_context_window(text_to_translate_gm, source_lang_gm)
+            
+            if context_with_new_text:
+                # Use grouped format with integrated new text
+                message_content = f"{instruction_line}\n{context_with_new_text}\n{target_lang_gm}:"
             else:
                 # No context, use simple format 
                 message_content = f"{instruction_line}\n{source_lang_gm}: {text_to_translate_gm}\n{target_lang_gm}:"
@@ -404,10 +408,14 @@ COMPLETE RESPONSE FROM GEMINI:
             # Gaming-appropriate safety settings
             from google.generativeai.types import HarmCategory, HarmBlockThreshold
             safety_settings = {
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                # HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                # HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                # HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                # HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
             }
             
             # Create model with optimized settings (no system instructions)
@@ -480,24 +488,35 @@ COMPLETE RESPONSE FROM GEMINI:
             return True
         return self.gemini_session_api_key != api_key
     
-    def _build_context_window(self):
-        """Build context window from previous translations using simple format."""
+    def _build_context_window(self, new_source_text=None, source_lang_code=None):
+        """Build context window from previous translations with grouped format."""
         if not hasattr(self, 'gemini_context_window'):
             self.gemini_context_window = []
         
         context_size = self.app.gemini_context_window_var.get()
-        if context_size == 0 or not self.gemini_context_window:
+        if context_size == 0 and not new_source_text:
             return ""
         
-        # Get last N context pairs
-        context_pairs = self.gemini_context_window[-context_size:]
-        context_lines = []
+        source_lines = []
+        target_lines = []
         
-        for source_text, target_text, source_lang, target_lang in context_pairs:
-            context_lines.append(f"{source_lang}: {source_text}")
-            context_lines.append(f"{target_lang}: {target_text}")
+        # Add context pairs if available
+        if context_size > 0 and self.gemini_context_window:
+            # Get last N context pairs
+            context_pairs = self.gemini_context_window[-context_size:]
+            
+            # Collect all source lines first, then all target lines
+            for source_text, target_text, source_lang, target_lang in context_pairs:
+                source_lines.append(f"{source_lang}: {source_text}")
+                target_lines.append(f"{target_lang}: {target_text}")
         
-        return "\n".join(context_lines)
+        # Add new source text if provided
+        if new_source_text and source_lang_code:
+            source_lines.append(f"{source_lang_code}: {new_source_text}")
+        
+        # Combine: all sources first, then all targets
+        all_lines = source_lines + target_lines
+        return "\n".join(all_lines) if all_lines else ""
 
     def _update_sliding_window(self, source_text, target_text):
         """Update sliding window with new translation pair including language codes."""
