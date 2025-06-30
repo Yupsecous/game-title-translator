@@ -417,17 +417,17 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             target_lang_name = self._get_language_display_name(target_lang_gm, 'gemini')
             
             # Always start with the instruction line with explicit language names
-            instruction_line = f"<Translate the last {source_lang_name} line to {target_lang_name}. Ensure perfect grammar, style and accuracy. Return translation only.>"
+            instruction_line = f"<Translate idiomatically the last {source_lang_name} item only to {target_lang_name}. Ensure perfect grammar, style and accuracy. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_with_new_text = self._build_context_window(text_to_translate_gm, source_lang_gm)
             
             if context_with_new_text:
                 # Use grouped format with integrated new text
-                message_content = f"{instruction_line}\n{context_with_new_text}\n{target_lang_gm}:"
+                message_content = f"{instruction_line}\n\n{context_with_new_text}\n{target_lang_name.upper()}:"
             else:
                 # No context, use simple format 
-                message_content = f"{instruction_line}\n{source_lang_gm}: {text_to_translate_gm}\n{target_lang_gm}:"
+                message_content = f"{instruction_line}\n\n{source_lang_name.upper()}: {text_to_translate_gm}\n\n{target_lang_name.upper()}:"
             
             log_debug(f"Sending to Gemini {source_lang_gm}->{target_lang_gm}: [{text_to_translate_gm}]")
             
@@ -454,6 +454,12 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 
             translation_result = response.text.strip()
             # New: Add a line to strip the language code if it still appears
+            target_lang_upper = target_lang_name.upper()
+            if translation_result.startswith(f"{target_lang_upper}: "):
+                translation_result = translation_result[len(f"{target_lang_upper}: "):].strip()
+            if translation_result.startswith(f"{target_lang_upper}:"):
+                translation_result = translation_result[len(f"{target_lang_upper}:"):].strip()
+            # Also check for the old format just in case
             if translation_result.startswith(f"{target_lang_gm}: "):
                 translation_result = translation_result[len(f"{target_lang_gm}: "):].strip()
             if translation_result.startswith(f"{target_lang_gm}:"):
@@ -595,15 +601,26 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Collect all source lines first, then all target lines
             for source_text, target_text, source_lang, target_lang in context_pairs:
-                source_lines.append(f"{source_lang}: {source_text}")
-                target_lines.append(f"{target_lang}: {target_text}")
+                # Get display names and convert to uppercase
+                source_display = self._get_language_display_name(source_lang, 'gemini').upper()
+                target_display = self._get_language_display_name(target_lang, 'gemini').upper()
+                source_lines.append(f"{source_display}: {source_text}")
+                target_lines.append(f"{target_display}: {target_text}")
         
         # Add new source text if provided
         if new_source_text and source_lang_code:
-            source_lines.append(f"{source_lang_code}: {new_source_text}")
+            source_display = self._get_language_display_name(source_lang_code, 'gemini').upper()
+            source_lines.append(f"{source_display}: {new_source_text}")
         
-        # Combine: all sources first, then all targets
-        all_lines = source_lines + target_lines
+        # Combine: all sources first, blank line, then all targets
+        if source_lines and target_lines:
+            all_lines = source_lines + [""] + target_lines
+        elif source_lines:
+            all_lines = source_lines
+        elif target_lines:
+            all_lines = target_lines
+        else:
+            all_lines = []
         return "\n".join(all_lines) if all_lines else ""
 
     def _update_sliding_window(self, source_text, target_text):
