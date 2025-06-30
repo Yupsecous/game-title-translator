@@ -1,8 +1,0 @@
-# Gemini Cache File
-# Format: Gemini(SOURCE-TARGET,TIMESTAMP):text:==:translation
-# Example: Gemini(EN-PL,2025-05-13 22:43:12):Hello world:==:Witaj świecie
-Gemini(EN-PL,2025-06-28 23:34:07):I need a good vantage.:==:Potrzebuję dobrego punktu widokowego.
-Gemini(EN-PL,2025-06-28 23:34:18):No sign of pursuit. Watch my six while I cover the retreat.:==:pl: Nie ma śladu pościgu. Pilnuj mojego tyłu, a ja osłonię odwrót.
-Gemini(EN-PL,2025-06-28 23:34:24):This new emperor. You've met him?:==:pl: Ten nowy cesarz. Spotkałeś go?
-Gemini(EN-PL,2025-06-28 23:34:28):What's your assessment?:==:pl: Jaka jest twoja ocena?
-Gemini(EN-PL,2025-06-28 23:34:31):Valkorion believed he could start something new and different here, but in the end he only taught his heirs to be every bit the Sith he was.:==:pl: Valkorion wierzył, że może tu zacząć coś nowego i innego, ale ostatecznie nauczył swoich spadkobierców być dokładnie takimi Sithami, jakimi sam był.
