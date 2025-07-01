@@ -211,6 +211,10 @@ class OCRTranslator:
         self.deepl_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'deepl_file_cache', fallback=True))
         self.gemini_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_file_cache', fallback=True))
         self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
+        
+        # Gemini statistics variables (initialized by GUI builder)
+        self.gemini_total_words_var = None
+        self.gemini_total_cost_var = None
 
         tesseract_path_from_config = self.config['Settings'].get('tesseract_path', r'C:\Program Files\Tesseract-OCR\tesseract.exe')
         self.tesseract_path_var = tk.StringVar(value=tesseract_path_from_config)
@@ -468,6 +472,10 @@ For more information, see the user manual."""
         
         self._fully_initialized = True
         log_debug("OCRTranslator fully initialized.")
+        
+        # Update Gemini stats if Gemini model is selected - use after_idle to ensure GUI is ready
+        if hasattr(self, 'translation_model_var') and self.translation_model_var.get() == 'gemini_api':
+            self.root.after_idle(lambda: self._delayed_gemini_stats_update())
 
     def ensure_window_visible(self):
         """Ensure the main window is visible after all initialization is complete."""
@@ -598,6 +606,82 @@ For more information, see the user manual."""
 
     def clear_debug_log(self):
         self.ui_interaction_handler.clear_debug_log()
+
+    def reset_gemini_api_log(self):
+        """Reset/clear the Gemini API call log file."""
+        try:
+            if hasattr(self.translation_handler, 'gemini_log_file'):
+                log_file_path = self.translation_handler.gemini_log_file
+                
+                # Clear the file by truncating it
+                if os.path.exists(log_file_path):
+                    with open(log_file_path, 'w', encoding='utf-8') as f:
+                        f.write('')  # Clear the file
+                    log_debug(f"Gemini API log file cleared: {log_file_path}")
+                    
+                    # Reinitialize the log with header
+                    if hasattr(self.translation_handler, '_initialize_gemini_log'):
+                        self.translation_handler._initialize_gemini_log()
+                    
+                    # Update the GUI fields
+                    self.update_gemini_stats()
+                    
+                    messagebox.showinfo("Success", "Gemini API log has been reset.")
+                else:
+                    log_debug(f"Gemini API log file does not exist: {log_file_path}")
+                    messagebox.showwarning("Warning", "Gemini API log file does not exist.")
+            else:
+                log_debug("Gemini log file path not available")
+                messagebox.showerror("Error", "Could not access Gemini log file.")
+        except Exception as e:
+            log_debug(f"Error resetting Gemini API log: {e}")
+            messagebox.showerror("Error", f"Failed to reset Gemini API log: {str(e)}")
+
+    def update_gemini_stats(self):
+        """Update the Gemini statistics fields by reading the log file."""
+        try:
+            # Check if all required components are available
+            if not hasattr(self.translation_handler, '_get_cumulative_totals'):
+                log_debug("TranslationHandler._get_cumulative_totals method not available")
+                return
+                
+            if not (hasattr(self, 'gemini_total_words_var') and 
+                    hasattr(self, 'gemini_total_cost_var') and
+                    self.gemini_total_words_var is not None and 
+                    self.gemini_total_cost_var is not None):
+                log_debug("Gemini stats variables not initialized yet")
+                return
+                
+            total_words, total_input, total_output = self.translation_handler._get_cumulative_totals()
+            
+            # Calculate total cost using the same logic as the translation handler
+            # Get token costs from config
+            input_cost_per_million = float(self.config['Settings'].get('input_token_cost', '0.1'))
+            output_cost_per_million = float(self.config['Settings'].get('output_token_cost', '0.4'))
+            
+            total_input_cost = (total_input / 1_000_000) * input_cost_per_million
+            total_output_cost = (total_output / 1_000_000) * output_cost_per_million
+            total_cost = total_input_cost + total_output_cost
+            
+            # Update GUI fields
+            self.gemini_total_words_var.set(str(total_words))
+            self.gemini_total_cost_var.set(f"${total_cost:.8f}")
+            
+            log_debug(f"Updated Gemini stats: {total_words} words, ${total_cost:.8f}")
+        except Exception as e:
+            log_debug(f"Error updating Gemini stats: {e}")
+            # Set default values if there's an error
+            if hasattr(self, 'gemini_total_words_var') and self.gemini_total_words_var is not None:
+                self.gemini_total_words_var.set("0")
+            if hasattr(self, 'gemini_total_cost_var') and self.gemini_total_cost_var is not None:
+                self.gemini_total_cost_var.set("$0.00000000")
+
+    def _delayed_gemini_stats_update(self):
+        """Delayed stats update to ensure GUI is fully ready."""
+        try:
+            self.update_gemini_stats()
+        except Exception as e:
+            log_debug(f"Error in delayed Gemini stats update: {e}")
 
     def toggle_debug_logging(self):
         """Toggle debug logging on/off and update button text."""

@@ -141,6 +141,12 @@ class UIInteractionHandler:
             manage_grid(self.app.gemini_context_window_label, show=is_gemini)
         if hasattr(self.app, 'gemini_context_window_combobox'):
             manage_grid(self.app.gemini_context_window_combobox, show=is_gemini)
+        
+        # Gemini statistics visibility
+        if hasattr(self.app, 'gemini_stats_frame'):
+            manage_grid(self.app.gemini_stats_frame, show=is_gemini)
+        if hasattr(self.app, 'gemini_refresh_stats_button'):
+            manage_grid(self.app.gemini_refresh_stats_button, show=is_gemini)
         # Note: gemini_file_cache_checkbox is now permanently visible in the cache section
         
         # DeepL Model Type visibility
@@ -159,6 +165,11 @@ class UIInteractionHandler:
         if hasattr(self.app, 'marian_explanation_labels'):
             for lbl in self.app.marian_explanation_labels:
                 manage_grid(lbl, show=is_marian)
+        
+        # Update Gemini statistics when Gemini model is selected
+        if is_gemini and hasattr(self.app, 'update_gemini_stats'):
+            # Use after_idle to ensure all GUI elements are ready
+            self.app.root.after_idle(self.app.update_gemini_stats)
     
     def update_marian_models_dropdown_for_language(self, ui_language=None):
         """Update MarianMT models dropdown with localized display names."""

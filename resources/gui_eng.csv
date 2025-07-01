@@ -110,3 +110,7 @@ refresh_preview,Refresh Preview
 close_btn,Close
 no_text_recognized,No text recognized
 no_image_for_ocr,No image available for OCR
+gemini_total_words_label,Total Words
+gemini_total_cost_label,Total Cost
+gemini_reset_log_button,Reset API Log
+gemini_refresh_stats_button,Refresh
