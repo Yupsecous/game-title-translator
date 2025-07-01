@@ -416,18 +416,30 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             source_lang_name = self._get_language_display_name(source_lang_gm, 'gemini')
             target_lang_name = self._get_language_display_name(target_lang_gm, 'gemini')
             
-            # Always start with the instruction line with explicit language names
-            instruction_line = f"<Translate idiomatically the last {source_lang_name} item only to {target_lang_name}. Ensure perfect grammar, style and accuracy. Return translation only.>"
+            # Get context window size to determine instruction format
+            context_size = self.app.gemini_context_window_var.get()
+            
+            # Build instruction line based on context window size
+            if context_size == 0:
+                # instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Identify and correctly phrase elliptical questions, if any. Ensure perfect grammar, style, and accuracy. Return translation only.>"
+                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+            else:
+                # Convert to ordinal number (context_size + 1)
+                ordinal = self._get_ordinal_number(context_size + 1)
+                # instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Identify and correctly phrase elliptical questions, if any. Ensure perfect grammar, style, and accuracy. Return translation only.>"
+                instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                # instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. The translation should be perfect in terms of grammar, style, terminology, collocation, flow, idiomacy. If context is provided, the translation should take it into account. If there is any gibberish in the source text, remove it before you translate. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
-            context_with_new_text = self._build_context_window(text_to_translate_gm, source_lang_gm)
+            context_size = self.app.gemini_context_window_var.get()
             
-            if context_with_new_text:
-                # Use grouped format with integrated new text
-                message_content = f"{instruction_line}\n\n{context_with_new_text}\n{target_lang_name.upper()}:"
-            else:
+            if context_size == 0:
                 # No context, use simple format 
                 message_content = f"{instruction_line}\n\n{source_lang_name.upper()}: {text_to_translate_gm}\n\n{target_lang_name.upper()}:"
+            else:
+                # Build context window for multi-line format
+                context_with_new_text = self._build_context_window(text_to_translate_gm, source_lang_gm)
+                message_content = f"{instruction_line}\n\n{context_with_new_text}\n{target_lang_name.upper()}:"
             
             log_debug(f"Sending to Gemini {source_lang_gm}->{target_lang_gm}: [{text_to_translate_gm}]")
             
@@ -453,16 +465,30 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 log_debug("Could not find usage_metadata in Gemini response. Tokens will be logged as 0.")
 
             translation_result = response.text.strip()
-            # New: Add a line to strip the language code if it still appears
+            
+            # Handle multiple lines - only keep the last line
+            if '\n' in translation_result:
+                lines = translation_result.split('\n')
+                # Filter out empty lines and take the last non-empty line
+                non_empty_lines = [line.strip() for line in lines if line.strip()]
+                if non_empty_lines:
+                    translation_result = non_empty_lines[-1]
+                else:
+                    translation_result = lines[-1].strip() if lines else ""
+            
+            # Strip language prefixes from the result
             target_lang_upper = target_lang_name.upper()
+            
+            # Check for uppercase language name with colon and space
             if translation_result.startswith(f"{target_lang_upper}: "):
                 translation_result = translation_result[len(f"{target_lang_upper}: "):].strip()
-            if translation_result.startswith(f"{target_lang_upper}:"):
+            # Check for uppercase language name with colon only
+            elif translation_result.startswith(f"{target_lang_upper}:"):
                 translation_result = translation_result[len(f"{target_lang_upper}:"):].strip()
-            # Also check for the old format just in case
-            if translation_result.startswith(f"{target_lang_gm}: "):
+            # Also check for the old format (lowercase language code) just in case
+            elif translation_result.startswith(f"{target_lang_gm}: "):
                 translation_result = translation_result[len(f"{target_lang_gm}: "):].strip()
-            if translation_result.startswith(f"{target_lang_gm}:"):
+            elif translation_result.startswith(f"{target_lang_gm}:"):
                 translation_result = translation_result[len(f"{target_lang_gm}:"):].strip()                
             log_debug(f"Gemini response: {translation_result}")
             
@@ -588,7 +614,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             self.gemini_context_window = []
         
         context_size = self.app.gemini_context_window_var.get()
-        if context_size == 0 and not new_source_text:
+        if context_size == 0:
             return ""
         
         source_lines = []
@@ -612,13 +638,11 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             source_display = self._get_language_display_name(source_lang_code, 'gemini').upper()
             source_lines.append(f"{source_display}: {new_source_text}")
         
-        # Combine: all sources first, blank line, then all targets
+        # Combine: all sources first, blank line, then all targets (no new target)
         if source_lines and target_lines:
             all_lines = source_lines + [""] + target_lines
         elif source_lines:
             all_lines = source_lines
-        elif target_lines:
-            all_lines = target_lines
         else:
             all_lines = []
         return "\n".join(all_lines) if all_lines else ""
@@ -639,6 +663,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         self.gemini_context_window = self.gemini_context_window[-5:]
 
 
+
+    def _get_ordinal_number(self, number):
+        """Convert number to ordinal string (1->first, 2->second, etc.)."""
+        ordinals = {
+            1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth",
+            6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth"
+        }
+        return ordinals.get(number, f"{number}th")
 
     def _get_language_display_name(self, lang_code, provider):
         """Get display name for language code using the language manager."""
