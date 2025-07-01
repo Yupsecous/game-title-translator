@@ -973,6 +973,7 @@ class UIInteractionHandler:
             cfg['google_file_cache'] = str(self.app.google_file_cache_var.get())
             cfg['deepl_file_cache'] = str(self.app.deepl_file_cache_var.get())
             cfg['gemini_file_cache'] = str(self.app.gemini_file_cache_var.get())
+            cfg['gemini_api_log_enabled'] = str(self.app.gemini_api_log_enabled_var.get())
             cfg['marian_models_file'] = self.app.models_file_var.get()
             try: 
                 beam_val = int(self.app.num_beams_var.get())

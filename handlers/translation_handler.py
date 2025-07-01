@@ -231,6 +231,10 @@ Format: Each entry shows complete message content sent to and received from Gemi
 
     def _log_gemini_api_call(self, message_content, source_lang, target_lang, text_to_translate):
         """Log complete Gemini API call content to file for token usage analysis."""
+        # Check if API logging is enabled
+        if not self.app.gemini_api_log_enabled_var.get():
+            return
+            
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
@@ -305,6 +309,10 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
 
     def _log_gemini_response(self, response_text, call_duration, input_tokens, output_tokens, original_text):
         """Log Gemini API response, exact tokens, costs, and cumulative totals."""
+        # Check if API logging is enabled
+        if not self.app.gemini_api_log_enabled_var.get():
+            return
+            
         try:
             # --- 1. Calculate current call translated word count from original text ---
             current_translated_words = len(original_text.split())

@@ -416,22 +416,32 @@ def create_settings_tab(app):
     # Total Cost field (read-only)
     app.gemini_total_cost_label = ttk.Label(app.gemini_stats_frame, text=app.ui_lang.get_label("gemini_total_cost_label", "Łączny koszt"))
     app.gemini_total_cost_label.grid(row=0, column=2, padx=(0,5), pady=0, sticky="w")
-    app.gemini_total_cost_var = tk.StringVar(value="$0.00000000")
+    app.gemini_total_cost_var = tk.StringVar(value=app.format_cost_for_display(0.0))
     app.gemini_total_cost_entry = ttk.Entry(app.gemini_stats_frame, textvariable=app.gemini_total_cost_var, 
                                           width=15, state='readonly')
     app.gemini_total_cost_entry.grid(row=0, column=3, padx=(0,10), pady=0, sticky="w")
     
-    # Reset API Log button
-    app.gemini_reset_log_button = ttk.Button(app.gemini_stats_frame, 
-                                           text=app.ui_lang.get_label("gemini_reset_log_button", "Wyzeruj rejestr API"), 
-                                           command=app.reset_gemini_api_log)
-    app.gemini_reset_log_button.grid(row=0, column=4, padx=(0,5), pady=0, sticky="w")
+    # API Log controls row (new row below Total Words and Total Cost)
+    # Enable API Log checkbox
+    app.gemini_enable_api_log_checkbox = ttk.Checkbutton(
+        app.gemini_stats_frame, 
+        text=app.ui_lang.get_label("gemini_enable_api_log_checkbox", "Enable API Log"),
+        variable=app.gemini_api_log_enabled_var,
+        command=lambda: app._fully_initialized and app.save_settings()
+    )
+    app.gemini_enable_api_log_checkbox.grid(row=1, column=0, padx=(0,10), pady=5, sticky="w")
     
-    # Refresh Stats button
+    # Refresh Stats button (moved to new row)
     app.gemini_refresh_stats_button = ttk.Button(app.gemini_stats_frame, 
                                                text=app.ui_lang.get_label("gemini_refresh_stats_button", "Odśwież"), 
                                                command=app.update_gemini_stats)
-    app.gemini_refresh_stats_button.grid(row=0, column=5, padx=0, pady=0, sticky="w")
+    app.gemini_refresh_stats_button.grid(row=1, column=1, padx=(0,5), pady=5, sticky="w")
+    
+    # Reset API Log button (moved to new row, renamed to just "Reset")
+    app.gemini_reset_log_button = ttk.Button(app.gemini_stats_frame, 
+                                           text=app.ui_lang.get_label("gemini_reset_log_button", "Wyzeruj"), 
+                                           command=app.reset_gemini_api_log)
+    app.gemini_reset_log_button.grid(row=1, column=2, padx=(0,5), pady=5, sticky="w")
 
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
@@ -536,6 +546,41 @@ def create_settings_tab(app):
     
     # Store function reference for calling during language updates
     app.update_gemini_context_window_for_language = update_gemini_context_window_for_language
+
+    # Function to update Gemini labels when language changes
+    def update_gemini_labels_for_language():
+        if hasattr(app, 'gemini_enable_api_log_checkbox') and app.gemini_enable_api_log_checkbox.winfo_exists():
+            app.gemini_enable_api_log_checkbox.config(text=app.ui_lang.get_label("gemini_enable_api_log_checkbox", "Enable API Log"))
+        if hasattr(app, 'gemini_reset_log_button') and app.gemini_reset_log_button.winfo_exists():
+            app.gemini_reset_log_button.config(text=app.ui_lang.get_label("gemini_reset_log_button", "Reset"))
+        if hasattr(app, 'gemini_refresh_stats_button') and app.gemini_refresh_stats_button.winfo_exists():
+            app.gemini_refresh_stats_button.config(text=app.ui_lang.get_label("gemini_refresh_stats_button", "Refresh"))
+        if hasattr(app, 'gemini_total_words_label') and app.gemini_total_words_label.winfo_exists():
+            app.gemini_total_words_label.config(text=app.ui_lang.get_label("gemini_total_words_label", "Total Words"))
+        if hasattr(app, 'gemini_total_cost_label') and app.gemini_total_cost_label.winfo_exists():
+            app.gemini_total_cost_label.config(text=app.ui_lang.get_label("gemini_total_cost_label", "Total Cost"))
+        
+        # Update cost format when language changes
+        if hasattr(app, 'gemini_total_cost_var') and app.gemini_total_cost_var is not None:
+            try:
+                # Get current cost value and reformat it
+                current_value = app.gemini_total_cost_var.get()
+                # Parse the current cost regardless of format
+                import re
+                cost_match = re.search(r'[\d,\.]+', current_value)
+                if cost_match:
+                    cost_str = cost_match.group().replace(',', '.')  # Normalize to decimal point
+                    cost_value = float(cost_str)
+                    app.gemini_total_cost_var.set(app.format_cost_for_display(cost_value))
+            except Exception as e:
+                log_debug(f"Error updating cost format for language change: {e}")
+                # Fallback to default formatted value
+                app.gemini_total_cost_var.set(app.format_cost_for_display(0.0))
+        
+        log_debug("Updated Gemini labels for language change")
+    
+    # Store function reference for calling during language updates
+    app.update_gemini_labels_for_language = update_gemini_labels_for_language
 
 
     app.models_file_label = ttk.Label(frame, text=app.ui_lang.get_label("models_file_label")) 

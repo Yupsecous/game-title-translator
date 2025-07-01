@@ -63,7 +63,7 @@ file_cache_frame_title,Opcje buforowania do plików
 file_cache_description,"Buforowanie do plików zapisuje tłumaczenia na dysk, aby zmniejszyć koszty API i poprawić wydajność."
 google_cache_checkbox,"Włącz bufor Google Translate (zapisuje na dysk, zmniejsza wywołania API)"
 deepl_cache_checkbox,"Włącz bufor DeepL (zapisuje na dysk, zmniejsza wywołania API)"
-gemini_file_cache_checkbox,"Włącz bufor Gemini"
+gemini_file_cache_checkbox,"Włącz bufor Gemini (zapisuje na dysk, zmniejsza wywołania API)"
 cache_files_label,Pliki buforów:
 clear_caches_btn,Wyczyść pliki buforów
 save_settings_btn,Zapisz ustawienia
@@ -112,5 +112,6 @@ no_text_recognized,Nie rozpoznano tekstu
 no_image_for_ocr,Brak obrazu dla OCR
 gemini_total_words_label,Łącznie słów
 gemini_total_cost_label,Łączny koszt
-gemini_reset_log_button,Wyzeruj rejestr API
+gemini_enable_api_log_checkbox,Włącz rejestr API
+gemini_reset_log_button,Wyzeruj
 gemini_refresh_stats_button,Odśwież
