@@ -110,3 +110,7 @@ refresh_preview,Odśwież podgląd
 close_btn,Zamknij
 no_text_recognized,Nie rozpoznano tekstu
 no_image_for_ocr,Brak obrazu dla OCR
+gemini_total_words_label,Łącznie słów
+gemini_total_cost_label,Łączny koszt
+gemini_reset_log_button,Wyzeruj rejestr API
+gemini_refresh_stats_button,Odśwież

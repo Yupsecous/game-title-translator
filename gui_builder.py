@@ -401,6 +401,38 @@ def create_settings_tab(app):
     app.gemini_context_window_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_gemini_context_window_changed))
 
+    # Gemini API Statistics Row (only visible when Gemini is selected)
+    app.gemini_stats_frame = ttk.Frame(frame)
+    app.gemini_stats_frame.grid(row=8, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+    
+    # Total Words field (read-only)
+    app.gemini_total_words_label = ttk.Label(app.gemini_stats_frame, text=app.ui_lang.get_label("gemini_total_words_label", "Łącznie słów"))
+    app.gemini_total_words_label.grid(row=0, column=0, padx=(0,5), pady=0, sticky="w")
+    app.gemini_total_words_var = tk.StringVar(value="0")
+    app.gemini_total_words_entry = ttk.Entry(app.gemini_stats_frame, textvariable=app.gemini_total_words_var, 
+                                           width=12, state='readonly')
+    app.gemini_total_words_entry.grid(row=0, column=1, padx=(0,10), pady=0, sticky="w")
+    
+    # Total Cost field (read-only)
+    app.gemini_total_cost_label = ttk.Label(app.gemini_stats_frame, text=app.ui_lang.get_label("gemini_total_cost_label", "Łączny koszt"))
+    app.gemini_total_cost_label.grid(row=0, column=2, padx=(0,5), pady=0, sticky="w")
+    app.gemini_total_cost_var = tk.StringVar(value="$0.00000000")
+    app.gemini_total_cost_entry = ttk.Entry(app.gemini_stats_frame, textvariable=app.gemini_total_cost_var, 
+                                          width=15, state='readonly')
+    app.gemini_total_cost_entry.grid(row=0, column=3, padx=(0,10), pady=0, sticky="w")
+    
+    # Reset API Log button
+    app.gemini_reset_log_button = ttk.Button(app.gemini_stats_frame, 
+                                           text=app.ui_lang.get_label("gemini_reset_log_button", "Wyzeruj rejestr API"), 
+                                           command=app.reset_gemini_api_log)
+    app.gemini_reset_log_button.grid(row=0, column=4, padx=(0,5), pady=0, sticky="w")
+    
+    # Refresh Stats button
+    app.gemini_refresh_stats_button = ttk.Button(app.gemini_stats_frame, 
+                                               text=app.ui_lang.get_label("gemini_refresh_stats_button", "Odśwież"), 
+                                               command=app.update_gemini_stats)
+    app.gemini_refresh_stats_button.grid(row=0, column=5, padx=0, pady=0, sticky="w")
+
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
     app.deepl_model_type_label.grid(row=9, column=0, padx=5, pady=5, sticky="w")

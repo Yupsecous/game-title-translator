@@ -271,29 +271,31 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
         total_input = 0
         total_output = 0
         if not os.path.exists(self.gemini_log_file):
+            log_debug(f"Gemini log file does not exist: {self.gemini_log_file}")
             return 0, 0, 0
         
-        # Define regex to find the exact counts (accounting for "- " prefix)
-        translated_words_regex = re.compile(r"^\s*-\s*Translated Words:\s*(\d+)")
-        input_token_regex = re.compile(r"^\s*-\s*Exact Input Tokens:\s*(\d+)")
-        output_token_regex = re.compile(r"^\s*-\s*Exact Output Tokens:\s*(\d+)")
+        # Define regex to find the exact counts (accounting for "- " prefix and "(so far)" format)
+        translated_words_regex = re.compile(r"^\s*-\s*Total Translated Words \(so far\):\s*(\d+)")
+        input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(so far\):\s*(\d+)")
+        output_token_regex = re.compile(r"^\s*-\s*Total Output Tokens \(so far\):\s*(\d+)")
         
         try:
             with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     translated_words_match = translated_words_regex.match(line)
                     if translated_words_match:
-                        total_translated_words += int(translated_words_match.group(1))
+                        total_translated_words = int(translated_words_match.group(1))
                         continue
                     
                     input_match = input_token_regex.match(line)
                     if input_match:
-                        total_input += int(input_match.group(1))
+                        total_input = int(input_match.group(1))
                         continue # Move to next line
                     
                     output_match = output_token_regex.match(line)
                     if output_match:
-                        total_output += int(output_match.group(1))
+                        total_output = int(output_match.group(1))
+                        
         except (IOError, ValueError) as e:
             log_debug(f"Error reading or parsing cumulative totals from log file: {e}")
             # Return 0, 0, 0 as a fallback
@@ -311,8 +313,8 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
             prev_total_translated_words, prev_total_input, prev_total_output = self._get_cumulative_totals()
 
             # --- 3. Define costs and calculate for current call ---
-            INPUT_COST_PER_MILLION = 0.10  # USD for gemini-2.5-flash-lite
-            OUTPUT_COST_PER_MILLION = 0.40 # USD for gemini-2.5-flash-lite
+            INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
+            OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
             
             call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
             call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
@@ -515,9 +517,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             genai.configure(api_key=self.app.gemini_api_key_var.get().strip())
             
+            # Get configuration values
+            model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
+            model_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite-preview-06-17')
+            
             # Optimal generation configuration for translation
             generation_config = {
-                "temperature": 0.0,              # Natural, creative translations for dialogue
+                "temperature": model_temperature,        # Configurable temperature for translations
                 "max_output_tokens": 1024,       # Sufficient for subtitle translations
                 "candidate_count": 1,            # Single response needed
                 "top_p": 0.95,                   # Slightly constrain token selection
@@ -540,7 +546,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Create model with optimized settings (no system instructions)
             model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash-lite-preview-06-17",  # Most cost-efficient, real-time optimized
+                model_name=model_name,           # Configurable model name
                 generation_config=generation_config,
                 safety_settings=safety_settings
                 # No system_instruction parameter - removed to reduce costs
