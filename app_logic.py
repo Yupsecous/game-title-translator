@@ -211,6 +211,7 @@ class OCRTranslator:
         self.deepl_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'deepl_file_cache', fallback=True))
         self.gemini_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_file_cache', fallback=True))
         self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
+        self.gemini_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_api_log_enabled', fallback=True))
         
         # Gemini statistics variables (initialized by GUI builder)
         self.gemini_total_words_var = None
@@ -637,6 +638,21 @@ For more information, see the user manual."""
             log_debug(f"Error resetting Gemini API log: {e}")
             messagebox.showerror("Error", f"Failed to reset Gemini API log: {str(e)}")
 
+    def format_cost_for_display(self, cost_value):
+        """Format cost value according to current UI language."""
+        try:
+            if self.ui_lang.current_lang == 'pol':
+                # Polish format: "0,04941340 $" 
+                cost_str = f"{cost_value:.8f}"
+                cost_str = cost_str.replace('.', ',')  # Replace decimal point with comma
+                return f"{cost_str} $"
+            else:
+                # English format: "$0.04941340"
+                return f"${cost_value:.8f}"
+        except Exception as e:
+            log_debug(f"Error formatting cost: {e}")
+            return f"${cost_value:.8f}"  # Fallback to English format
+
     def update_gemini_stats(self):
         """Update the Gemini statistics fields by reading the log file."""
         try:
@@ -665,7 +681,7 @@ For more information, see the user manual."""
             
             # Update GUI fields
             self.gemini_total_words_var.set(str(total_words))
-            self.gemini_total_cost_var.set(f"${total_cost:.8f}")
+            self.gemini_total_cost_var.set(self.format_cost_for_display(total_cost))
             
             log_debug(f"Updated Gemini stats: {total_words} words, ${total_cost:.8f}")
         except Exception as e:
@@ -674,7 +690,7 @@ For more information, see the user manual."""
             if hasattr(self, 'gemini_total_words_var') and self.gemini_total_words_var is not None:
                 self.gemini_total_words_var.set("0")
             if hasattr(self, 'gemini_total_cost_var') and self.gemini_total_cost_var is not None:
-                self.gemini_total_cost_var.set("$0.00000000")
+                self.gemini_total_cost_var.set(self.format_cost_for_display(0.0))
 
     def _delayed_gemini_stats_update(self):
         """Delayed stats update to ensure GUI is fully ready."""
@@ -1367,6 +1383,10 @@ For more information, see the user manual."""
             # Update Gemini context window dropdown if it exists
             if hasattr(self, 'update_gemini_context_window_for_language'):
                 self.update_gemini_context_window_for_language()
+            
+            # Update Gemini labels if they exist
+            if hasattr(self, 'update_gemini_labels_for_language'):
+                self.update_gemini_labels_for_language()
             
             # Restore the tab change handler for focus behavior
             def on_tab_changed(event):

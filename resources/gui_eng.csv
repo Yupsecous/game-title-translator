@@ -61,7 +61,7 @@ file_cache_frame_title,File Caching Options
 file_cache_description,"File caching saves translations to disk to reduce API costs, and improves performance."
 google_cache_checkbox,"Enable Google Translate file cache (saves to disk, reduces API calls)"
 deepl_cache_checkbox,"Enable DeepL file cache (saves to disk, reduces API calls)"
-gemini_file_cache_checkbox,"Enable Gemini file cache"
+gemini_file_cache_checkbox,"Enable Gemini file cache (saves to disk, reduces API calls)"
 cache_files_label,Cache files:
 clear_caches_btn,Clear File Caches
 save_settings_btn,Save Settings Now
@@ -112,5 +112,6 @@ no_text_recognized,No text recognized
 no_image_for_ocr,No image available for OCR
 gemini_total_words_label,Total Words
 gemini_total_cost_label,Total Cost
-gemini_reset_log_button,Reset API Log
+gemini_enable_api_log_checkbox,Enable API Log
+gemini_reset_log_button,Reset
 gemini_refresh_stats_button,Refresh
