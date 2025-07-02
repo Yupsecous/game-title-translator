@@ -429,16 +429,26 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Get context window size to determine instruction format
             context_size = self.app.gemini_context_window_var.get()
             
-            # Build instruction line based on context window size
+            # Build instruction line based on actual context window content
             if context_size == 0:
-                # instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Identify and correctly phrase elliptical questions, if any. Ensure perfect grammar, style, and accuracy. Return translation only.>"
                 instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
             else:
-                # Convert to ordinal number (context_size + 1)
-                ordinal = self._get_ordinal_number(context_size + 1)
-                # instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Identify and correctly phrase elliptical questions, if any. Ensure perfect grammar, style, and accuracy. Return translation only.>"
-                instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-                # instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. The translation should be perfect in terms of grammar, style, terminology, collocation, flow, idiomacy. If context is provided, the translation should take it into account. If there is any gibberish in the source text, remove it before you translate. Return translation only.>"
+                # Check actual number of stored context pairs
+                actual_context_count = len(self.gemini_context_window) if hasattr(self, 'gemini_context_window') else 0
+                
+                if actual_context_count == 0:
+                    # Change 1: Empty context window - use simple format
+                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                elif context_size == 1:
+                    # Context Window = 1: Always "second subtitle" when context exists
+                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                elif context_size == 2:
+                    if actual_context_count == 1:
+                        # Change 2: Context Window = 2 but only 1 item stored
+                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    else:
+                        # Context Window = 2 and 2+ items stored
+                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_size = self.app.gemini_context_window_var.get()
@@ -669,6 +679,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         # Get current language codes
         source_lang = getattr(self, 'gemini_current_source_lang', 'en')
         target_lang = getattr(self, 'gemini_current_target_lang', 'pl')
+        
+        # Change 3: Check if new translation is identical to the most recent one
+        if self.gemini_context_window:
+            most_recent_translation = self.gemini_context_window[-1][1]  # Get target_text from last entry
+            if target_text == most_recent_translation:
+                log_debug(f"Skipping context window update - identical translation: '{target_text}'")
+                return  # Don't add duplicate translation to context window
         
         # Add new pair with language codes
         self.gemini_context_window.append((source_text, target_text, source_lang, target_lang))
