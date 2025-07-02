@@ -431,24 +431,24 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Build instruction line based on actual context window content
             if context_size == 0:
-                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
             else:
                 # Check actual number of stored context pairs
                 actual_context_count = len(self.gemini_context_window) if hasattr(self, 'gemini_context_window') else 0
                 
                 if actual_context_count == 0:
                     # Change 1: Empty context window - use simple format
-                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
                 elif context_size == 1:
                     # Context Window = 1: Always "second subtitle" when context exists
-                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
                 elif context_size == 2:
                     if actual_context_count == 1:
                         # Change 2: Context Window = 2 but only 1 item stored
-                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
                     else:
                         # Context Window = 2 and 2+ items stored
-                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_size = self.app.gemini_context_window_var.get()
