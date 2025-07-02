@@ -378,7 +378,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 
     def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
         """Gemini API call with simplified message format (no system instructions)."""
-        log_debug(f"Gemini API call for: {text_to_translate_gm}")
+        log_debug(f"Gemini translate request for: {text_to_translate_gm}")
         
         api_key_gemini = self.app.gemini_api_key_var.get().strip()
         if not api_key_gemini:
@@ -431,24 +431,24 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Build instruction line based on actual context window content
             if context_size == 0:
-                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
+                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
             else:
                 # Check actual number of stored context pairs
                 actual_context_count = len(self.gemini_context_window) if hasattr(self, 'gemini_context_window') else 0
                 
                 if actual_context_count == 0:
                     # Change 1: Empty context window - use simple format
-                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
                 elif context_size == 1:
                     # Context Window = 1: Always "second subtitle" when context exists
-                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                 elif context_size == 2:
                     if actual_context_count == 1:
                         # Change 2: Context Window = 2 but only 1 item stored
-                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                     else:
                         # Context Window = 2 and 2+ items stored
-                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Ignore random characters. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_size = self.app.gemini_context_window_var.get()
@@ -462,6 +462,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 message_content = f"{instruction_line}\n\n{context_with_new_text}\n{target_lang_name.upper()}:"
             
             log_debug(f"Sending to Gemini {source_lang_gm}->{target_lang_gm}: [{text_to_translate_gm}]")
+            
+            log_debug(f"Making Gemini API call for: {text_to_translate_gm}")
             
             # Log complete API call content for token usage analysis
             self._log_gemini_api_call(message_content, source_lang_gm, target_lang_gm, text_to_translate_gm)
@@ -518,9 +520,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Store successful translation in file cache
             if self.app.gemini_file_cache_var.get():
                 self.app.cache_manager.save_to_file_cache('gemini', cache_key_gm, translation_result)
-            
-            # Update sliding window memory
-            self._update_sliding_window(text_to_translate_gm, translation_result)
             
             return translation_result
             
@@ -813,6 +812,29 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache (DeepL model_type={extra_params.get('model_type', 'unknown')})")
             else:
                 log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
+            
+            # Change 2: Synchronize file cache with LRU cache for API services
+            if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+                cache_key_gemini = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+                if not self.app.cache_manager.check_file_cache('gemini', cache_key_gemini):
+                    self.app.cache_manager.save_to_file_cache('gemini', cache_key_gemini, cached_result)
+                    log_debug(f"Synchronized Gemini translation to file cache from LRU cache")
+            elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
+                cache_key_google = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+                if not self.app.cache_manager.check_file_cache('google', cache_key_google):
+                    self.app.cache_manager.save_to_file_cache('google', cache_key_google, cached_result)
+                    log_debug(f"Synchronized Google translation to file cache from LRU cache")
+            elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+                model_type = extra_params.get('model_type', 'latency_optimized')
+                cache_key_deepl = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+                if not self.app.cache_manager.check_file_cache('deepl', cache_key_deepl):
+                    self.app.cache_manager.save_to_file_cache('deepl', cache_key_deepl, cached_result)
+                    log_debug(f"Synchronized DeepL translation to file cache from LRU cache")
+            
+            # Change 1: Update Gemini sliding context window for all successful translations
+            if selected_translation_model == 'gemini_api' and not self._is_error_message(cached_result):
+                self._update_sliding_window(cleaned_text_main, cached_result)
+            
             return cached_result
         
         # Cache miss - perform actual translation
@@ -842,6 +864,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 cleaned_text_main, source_lang, target_lang,
                 selected_translation_model, translated_api_text, **extra_params
             )
+            
+            # Change 1: Update Gemini sliding context window for all successful API translations
+            if selected_translation_model == 'gemini_api':
+                self._update_sliding_window(cleaned_text_main, translated_api_text)
         
         log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s")
         return translated_api_text
