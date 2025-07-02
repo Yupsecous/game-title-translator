@@ -215,6 +215,9 @@
         <a href="#translation-methods">Translation Methods</a>
       </li>
       <li>
+        <a href="#gemini-api-cost-effective-and-context-aware-translation">Gemini API - Cost-Effective and Context-Aware Translation</a>
+      </li>
+      <li>
         <a href="#keyboard-shortcuts">Keyboard Shortcuts</a>
       </li>
       <li>
@@ -554,6 +557,20 @@
         <strong>Target Window Font Size</strong> – Size of the translated text.</li>
     </ol>
     <h2 id="translation-methods">Translation Methods</h2>
+    <h3 id="gemini-api">Gemini API (Recommended)</h3>
+    <p>Gemini 2.5 Flash-Lite is Google's latest cost-efficient AI model that delivers exceptional translation quality with intelligent context awareness. This breakthrough technology combines premium translation quality with unprecedented affordability, making it ideal for translating massive projects like entire games for just a few dollars.</p>
+    
+    <p><strong>Key Advantages</strong>:</p>
+    <ul>
+      <li><strong>Context-Aware Translation</strong> – Uses sliding window context to maintain narrative coherence and improve grammar</li>
+      <li><strong>OCR Error Intelligence</strong> – Automatically corrects OCR imperfections, producing clean translations from garbled input</li>
+      <li><strong>Exceptional Cost-to-Quality Ratio</strong> – Translate entire games like Witcher 3 for under $5, even with multiple OCR attempts</li>
+      <li><strong>Built-in Cost Tracking</strong> – Real-time monitoring of translation costs and token usage</li>
+      <li><strong>Advanced Caching</strong> – Intelligent file caching to minimize API costs</li>
+    </ul>
+    
+    <p><strong>Gemini API is the recommended translation method</strong> for most users seeking the best balance of quality, intelligence, and affordability. For detailed configuration options, advanced features, and cost optimization strategies, see the <a href="#gemini-api-cost-effective-and-context-aware-translation">complete Gemini API guide</a>.</p>
+    
     <h3 id="marianmt-offline-and-free">MarianMT (offline and free)</h3>
     <ol>
       <li>No API key required – completely free to use.</li>
@@ -630,6 +647,160 @@
       </li>
     </ol>
     <p>Google Translate uses the same file caching system as DeepL. Please refer to the DeepL API section above for a detailed explanation of how the caching mechanism works, its dependencies on OCR quality, and its practical benefits and limitations. All the same considerations and notes apply to Google Translate's caching functionality.</p>
+    
+    <h2 id="gemini-api-cost-effective-and-context-aware-translation">Gemini API - Cost-Effective and Context-Aware Translation</h2>
+    
+    <p>Gemini 2.5 Flash-Lite represents a breakthrough in AI translation technology, offering premium-quality translations with unprecedented cost-effectiveness. This advanced model combines intelligent context awareness with remarkable affordability, making it possible to translate massive gaming projects for a fraction of traditional costs.</p>
+    
+    <h3 id="superior-translation-quality">Superior Translation Quality</h3>
+    
+    <p><strong>Context Window Technology</strong></p>
+    <p>Unlike traditional translation services that process each subtitle in isolation, Gemini API features a configurable sliding context window that maintains awareness of previous translations. This revolutionary approach ensures narrative coherence, improves grammar flow, and delivers translations that understand the broader context of conversations and storylines.</p>
+    
+    <p>The context window can be configured to include 0-2 previous subtitles, allowing the AI to:</p>
+    <ul>
+      <li>Maintain character voice consistency across dialogue</li>
+      <li>Preserve narrative continuity in story-driven content</li>
+      <li>Improve pronoun resolution and grammatical agreement</li>
+      <li>Deliver more natural, idiomatic translations</li>
+    </ul>
+    
+    <p><strong>OCR Error Intelligence</strong></p>
+    <p>One of Gemini's most impressive capabilities is its ability to interpret and correct OCR imperfections automatically. When text recognition produces garbled or incomplete results, Gemini's advanced language understanding can often deduce the intended meaning and provide clean, accurate translations without replicating OCR errors in the output.</p>
+    
+    <h3 id="exceptional-cost-effectiveness">Exceptional Cost-Effectiveness</h3>
+    
+    <p><strong>Real-World Cost Analysis</strong></p>
+    <p>Gemini API offers extraordinary value for large translation projects. Even massive games like The Witcher 3, with hundreds of hours of dialogue and subtitles, can be translated for under $5 total cost. This remains true even when accounting for:</p>
+    <ul>
+      <li>Multiple OCR attempts due to recognition variations</li>
+      <li>Context window overhead (sending 1-2 previous subtitles with each request)</li>
+      <li>Cache misses requiring fresh API calls</li>
+      <li>Complex narrative content requiring longer context</li>
+    </ul>
+    
+    <p><strong>Built-in Cost Tracking</strong></p>
+    <p>OCR Translator includes comprehensive cost monitoring specifically designed for Gemini API usage:</p>
+    <ul>
+      <li><strong>Real-time Cost Display</strong> – See cumulative costs update as you translate</li>
+      <li><strong>Token Usage Analytics</strong> – Track exact input/output token consumption</li>
+      <li><strong>API Call Logging</strong> – Optional detailed logging for complete transparency</li>
+      <li><strong>Word Count Tracking</strong> – Monitor total words translated across sessions</li>
+    </ul>
+    
+    <p><em><strong>Disclaimer</strong>: Cost tracking is provided for reference purposes only. This is free software with no guarantees regarding cost accuracy. Users are responsible for monitoring their own API usage and costs through Google's billing dashboard.</em></p>
+    
+    <h3 id="configuration-and-setup">Configuration and Setup</h3>
+    
+    <ol>
+      <li><strong>API Key Setup</strong> – Requires a Google AI Studio or Google Cloud account with Gemini API access</li>
+      <li><strong>Model Selection</strong> – Uses Gemini 2.5 Flash-Lite for optimal cost-quality balance</li>
+      <li><strong>Context Window</strong> – Choose between:
+        <ul>
+          <li><strong>0 (Disabled)</strong> – Fast, isolated translations</li>
+          <li><strong>1 (Last subtitle)</strong> – Basic context awareness</li>
+          <li><strong>2 (Two subtitles)</strong> – Maximum context for narrative coherence</li>
+        </ul>
+      </li>
+      <li><strong>Temperature Setting</strong> – Configurable from 0.0 (deterministic) to 1.0 (creative)</li>
+      <li><strong>File Caching</strong> – Enable to reduce API calls for repeated content</li>
+      <li><strong>API Logging</strong> – Optional detailed logging for cost analysis and debugging</li>
+    </ol>
+    
+    <h3 id="performance-optimization">Performance Optimization</h3>
+    
+    <p><strong>Intelligent Caching System</strong></p>
+    <p>Gemini API benefits from the same file caching system as DeepL and Google Translate. When caching is enabled, identical text segments are stored locally and retrieved without additional API calls. However, cache effectiveness depends on OCR consistency - even small recognition variations will trigger new API requests.</p>
+    
+    <p><strong>Cost Optimization Strategies</strong>:</p>
+    <ul>
+      <li>Use context window judiciously - higher settings provide better quality but increase token usage</li>
+      <li>Enable file caching for content with repeated elements</li>
+      <li>Position source areas precisely to improve OCR consistency</li>
+      <li>Use adaptive preprocessing modes for challenging text</li>
+      <li>Monitor the built-in cost tracker to understand usage patterns</li>
+    </ul>
+    
+    <h3 id="comparison-with-other-methods">Comparison with Other Methods</h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Gemini API</th>
+          <th>DeepL API</th>
+          <th>Google Translate</th>
+          <th>MarianMT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Translation Quality</strong></td>
+          <td>Excellent + Context</td>
+          <td>Excellent</td>
+          <td>Good</td>
+          <td>Good</td>
+        </tr>
+        <tr>
+          <td><strong>Cost (Large Projects)</strong></td>
+          <td>Very Low</td>
+          <td>Moderate</td>
+          <td>Moderate</td>
+          <td>Free</td>
+        </tr>
+        <tr>
+          <td><strong>Context Awareness</strong></td>
+          <td>✅ Advanced</td>
+          <td>❌ None</td>
+          <td>❌ None</td>
+          <td>❌ None</td>
+        </tr>
+        <tr>
+          <td><strong>OCR Error Handling</strong></td>
+          <td>✅ Intelligent</td>
+          <td>❌ Replicates errors</td>
+          <td>❌ Replicates errors</td>
+          <td>❌ Replicates errors</td>
+        </tr>
+        <tr>
+          <td><strong>Cost Tracking</strong></td>
+          <td>✅ Built-in</td>
+          <td>❌ External only</td>
+          <td>❌ External only</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td><strong>Language Support</strong></td>
+          <td>Very Good</td>
+          <td>Limited</td>
+          <td>Extensive</td>
+          <td>Limited pairs</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h3 id="gaming-and-large-project-applications">Gaming and Large Project Applications</h3>
+    
+    <p><strong>Ideal for Gaming Translation</strong></p>
+    <p>Gemini API excels in gaming scenarios where context and narrative flow are crucial:</p>
+    <ul>
+      <li><strong>RPGs and Story-Driven Games</strong> – Context window maintains character voice and story coherence</li>
+      <li><strong>Visual Novels</strong> – Superior handling of dialogue and narrative progression</li>
+      <li><strong>Subtitle-Heavy Content</strong> – Intelligent error correction handles imperfect OCR from overlaid text</li>
+      <li><strong>Multi-Character Dialogue</strong> – Context awareness improves pronoun resolution and speaker identification</li>
+    </ul>
+    
+    <p><strong>Cost Projections for Major Titles</strong></p>
+    <p>Based on real-world usage patterns, estimated translation costs for popular games:</p>
+    <ul>
+      <li><strong>The Witcher 3: Wild Hunt</strong> – Approximately $3-5 total (including all DLC)</li>
+      <li><strong>Cyberpunk 2077</strong> – Approximately $2-4 total</li>
+      <li><strong>Baldur's Gate 3</strong> – Approximately $4-6 total</li>
+      <li><strong>Typical Visual Novel</strong> – Approximately $0.50-2 total</li>
+    </ul>
+    
+    <p><em>Note: Actual costs may vary based on language pair, OCR accuracy, context window settings, and cache effectiveness. These estimates include context window overhead and multiple OCR attempts.</em></p>
+
     <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
     <p>These keyboard shortcuts are available:</p>
     <table>
