@@ -1244,6 +1244,10 @@ For more information, see the user manual."""
             self._clear_queue(self.ocr_queue)
             self._clear_queue(self.translation_queue)
 
+            # Reload file caches to ensure we have the most up-to-date cached translations
+            log_debug("Reloading file caches to ensure up-to-date translations...")
+            self.cache_manager.load_file_caches()
+
             self.is_running = True 
             self.start_stop_btn.config(text="Stop", state=tk.NORMAL)
             status_text_running = "Status: " + self.ui_lang.get_label("status_running", "Running (Press ~ to Stop)")
