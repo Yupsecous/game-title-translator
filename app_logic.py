@@ -237,7 +237,7 @@ class OCRTranslator:
         self.target_font_size_var = tk.IntVar(value=int(self.config['Settings'].get('target_font_size', '12')))
         
         # Initialize Handlers
-        self.cache_manager = CacheManager(self)
+        # self.cache_manager = CacheManager(self)
         self.configuration_handler = ConfigurationHandler(self)
         self.display_manager = DisplayManager(self)
         self.hotkey_handler = HotkeyHandler(self)
@@ -324,6 +324,8 @@ class OCRTranslator:
         self.deepl_file_cache = {}
         self.gemini_file_cache = {}
         self.translation_cache = {}
+        
+        self.cache_manager = CacheManager(self)
 
         pytesseract.pytesseract.tesseract_cmd = self.tesseract_path_var.get()
 
