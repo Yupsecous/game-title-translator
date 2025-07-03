@@ -40,14 +40,6 @@ class TranslationHandler:
         if not api_key_google:
             return "Google Translate API key missing"
         
-        # Check file cache if enabled
-        if self.app.google_file_cache_var.get():
-            cache_key_gt = f"google:{source_lang_gt}:{target_lang_gt}:{text_to_translate_gt}"
-            file_cached_gt = self.app.cache_manager.check_file_cache('google', cache_key_gt)
-            if file_cached_gt:
-                log_debug(f"Found in Google file cache: {text_to_translate_gt}")
-                return file_cached_gt
-        
         try:
             import requests
             import urllib.parse
@@ -98,14 +90,6 @@ class TranslationHandler:
         if not self.app.deepl_api_client:
             return "DeepL API client not initialized"
         
-        # Check file cache if enabled (include model_type in cache key)
-        if self.app.deepl_file_cache_var.get():
-            cache_key_dl = f"deepl:{source_lang_dl}:{target_lang_dl}:{model_type}:{text_to_translate_dl}"
-            file_cached_dl = self.app.cache_manager.check_file_cache('deepl', cache_key_dl)
-            if file_cached_dl:
-                log_debug(f"Found in DeepL file cache: {text_to_translate_dl}")
-                return file_cached_dl
-        
         try:
             api_call_start_time_dl = time.time()
             deepl_source_param = source_lang_dl if source_lang_dl and source_lang_dl.lower() != 'auto' else None
@@ -122,11 +106,6 @@ class TranslationHandler:
                 
                 if result_dl and hasattr(result_dl, 'text') and result_dl.text:
                     translated_text = result_dl.text
-                    
-                    # Save to file cache if successful and file caching enabled
-                    if self.app.deepl_file_cache_var.get():
-                        self.app.cache_manager.save_to_file_cache('deepl', cache_key_dl, translated_text)
-                    
                     return translated_text
                 else:
                     return "DeepL API returned empty or invalid result"
@@ -153,12 +132,6 @@ class TranslationHandler:
                         
                         if result_dl_fallback and hasattr(result_dl_fallback, 'text') and result_dl_fallback.text:
                             translated_text = result_dl_fallback.text
-                            
-                            # Save fallback result to cache with fallback model type
-                            if self.app.deepl_file_cache_var.get():
-                                fallback_cache_key = f"deepl:{source_lang_dl}:{target_lang_dl}:latency_optimized:{text_to_translate_dl}"
-                                self.app.cache_manager.save_to_file_cache('deepl', fallback_cache_key, translated_text)
-                            
                             return translated_text
                         else:
                             return "DeepL API fallback returned empty or invalid result"
@@ -384,14 +357,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         if not api_key_gemini:
             return "Gemini API key missing"
         
-        # Check file cache if enabled
-        if self.app.gemini_file_cache_var.get():
-            cache_key_gm = f"gemini:{source_lang_gm}:{target_lang_gm}:{text_to_translate_gm}"
-            file_cached_gm = self.app.cache_manager.check_file_cache('gemini', cache_key_gm)
-            if file_cached_gm:
-                log_debug(f"Found in Gemini file cache: {text_to_translate_gm}")
-                return file_cached_gm
-        
         try:
             import google.generativeai as genai
             
@@ -437,17 +402,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 actual_context_count = len(self.gemini_context_window) if hasattr(self, 'gemini_context_window') else 0
                 
                 if actual_context_count == 0:
-                    # Change 1: Empty context window - use simple format
                     instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
                 elif context_size == 1:
-                    # Context Window = 1: Always "second subtitle" when context exists
                     instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                 elif context_size == 2:
                     if actual_context_count == 1:
-                        # Change 2: Context Window = 2 but only 1 item stored
                         instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                     else:
-                        # Context Window = 2 and 2+ items stored
                         instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
@@ -517,10 +478,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Log the response, tokens, and costs to the API call log file
             self._log_gemini_response(translation_result, call_duration, input_tokens, output_tokens, text_to_translate_gm)
             
-            # Store successful translation in file cache
-            if self.app.gemini_file_cache_var.get():
-                self.app.cache_manager.save_to_file_cache('gemini', cache_key_gm, translation_result)
-            
             return translation_result
             
         except Exception as e_gm:
@@ -551,10 +508,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Gaming-appropriate safety settings
             from google.generativeai.types import HarmCategory, HarmBlockThreshold
             safety_settings = {
-                # HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                # HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                # HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                # HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
                 HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
                 HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
@@ -566,7 +519,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 model_name=model_name,           # Configurable model name
                 generation_config=generation_config,
                 safety_settings=safety_settings
-                # No system_instruction parameter - removed to reduce costs
             )
             
             # Store model directly for stateless calls (no chat session)
@@ -679,7 +631,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         source_lang = getattr(self, 'gemini_current_source_lang', 'en')
         target_lang = getattr(self, 'gemini_current_target_lang', 'pl')
         
-        # Change 3: Check if new translation is identical to the most recent one
+        # Check if new translation is identical to the most recent one
         if self.gemini_context_window:
             most_recent_translation = self.gemini_context_window[-1][1]  # Get target_text from last entry
             if target_text == most_recent_translation:
@@ -691,8 +643,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         # Keep only last 5 pairs (more than the max context window setting)
         self.gemini_context_window = self.gemini_context_window[-5:]
-
-
 
     def _get_ordinal_number(self, number):
         """Convert number to ordinal string (1->first, 2->second, etc.)."""
@@ -733,139 +683,143 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         selected_translation_model = self.app.translation_model_var.get()
         log_debug(f"Translate request for \"{cleaned_text_main}\" using {selected_translation_model}")
         
-        # Determine source and target languages and provider-specific parameters
+        # --- Start: Setup provider-specific parameters ---
+        source_lang, target_lang, extra_params = None, None, {}
+        beam_val = None
+        
         if selected_translation_model == 'marianmt':
-            if not self.app.MARIANMT_AVAILABLE:
-                return "MarianMT libraries not available."
-            elif self.app.marian_translator is None:
-                self.initialize_marian_translator() # Attempt init
-                if self.app.marian_translator is None:
-                    return "MarianMT initialization failed."
+            if not self.app.MARIANMT_AVAILABLE: return "MarianMT libraries not available."
+            if self.app.marian_translator is None:
+                self.initialize_marian_translator()
+                if self.app.marian_translator is None: return "MarianMT initialization failed."
             
-            if self.app.marian_translator:
-                source_lang = self.app.marian_source_lang
-                target_lang = self.app.marian_target_lang
-                if not source_lang or not target_lang:
-                    return "MarianMT source/target language not determined. Select a model."
-                
-                beam_val = self.app.num_beams_var.get()
-                extra_params = {"beam_size": beam_val}
-            else:
-                return "MarianMT translator initialization failed."
+            source_lang = self.app.marian_source_lang
+            target_lang = self.app.marian_target_lang
+            if not source_lang or not target_lang: return "MarianMT source/target language not determined. Select a model."
+            
+            beam_val = self.app.num_beams_var.get()
+            extra_params = {"beam_size": beam_val}
         
         elif selected_translation_model == 'google_api':
-            api_key_google = self.app.google_api_key_var.get().strip()
-            if not api_key_google:
-                return "Google Translate API key missing."
-            
+            if not self.app.google_api_key_var.get().strip(): return "Google Translate API key missing."
             source_lang = self.app.google_source_lang
             target_lang = self.app.google_target_lang
-            extra_params = {}
         
         elif selected_translation_model == 'deepl_api':
-            if not self.app.DEEPL_API_AVAILABLE:
-                return "DeepL API libraries not available."
-            
-            api_key_deepl = self.app.deepl_api_key_var.get().strip()
-            if not api_key_deepl:
-                return "DeepL API key missing."
-            
+            if not self.app.DEEPL_API_AVAILABLE: return "DeepL API libraries not available."
+            if not self.app.deepl_api_key_var.get().strip(): return "DeepL API key missing."
             if self.app.deepl_api_client is None:
                 try:
                     import deepl
-                    self.app.deepl_api_client = deepl.Translator(api_key_deepl)
-                except Exception as e:
-                    return f"DeepL Client init error: {e}"
+                    self.app.deepl_api_client = deepl.Translator(self.app.deepl_api_key_var.get().strip())
+                except Exception as e: return f"DeepL Client init error: {e}"
             
             source_lang = self.app.deepl_source_lang 
             target_lang = self.app.deepl_target_lang
-            model_type = self.app.deepl_model_type_var.get()
-            log_debug(f"DeepL translation request with model_type={model_type}, {source_lang}->{target_lang}")
-            extra_params = {"model_type": model_type}
+            extra_params = {"model_type": self.app.deepl_model_type_var.get()}
         
         elif selected_translation_model == 'gemini_api':
-            if not self.app.GEMINI_API_AVAILABLE:
-                return "Gemini API libraries not available."
-            
-            api_key_gemini = self.app.gemini_api_key_var.get().strip()
-            if not api_key_gemini:
-                return "Gemini API key missing."
+            if not self.app.GEMINI_API_AVAILABLE: return "Gemini API libraries not available."
+            if not self.app.gemini_api_key_var.get().strip(): return "Gemini API key missing."
             
             source_lang = self.app.gemini_source_lang
             target_lang = self.app.gemini_target_lang
-            context_window = self.app.gemini_context_window_var.get()
-            extra_params = {
-                "context_window": context_window
-            }
-            log_debug(f"Gemini translation request with context_window={context_window}, {source_lang}->{target_lang}")
+            extra_params = {"context_window": self.app.gemini_context_window_var.get()}
         
         else:
             return f"Error: Unknown translation model '{selected_translation_model}'"
-        
-        # Check unified cache first
+        # --- End: Setup ---
+
+        # 1. Check Unified Cache (In-Memory LRU)
         cached_result = self.unified_cache.get(
             cleaned_text_main, source_lang, target_lang, 
             selected_translation_model, **extra_params
         )
         if cached_result:
-            if selected_translation_model == 'deepl_api':
-                log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache (DeepL model_type={extra_params.get('model_type', 'unknown')})")
-            else:
-                log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
+            log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
             
-            # Change 2: Synchronize file cache with LRU cache for API services
-            if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
-                cache_key_gemini = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
-                if not self.app.cache_manager.check_file_cache('gemini', cache_key_gemini):
-                    self.app.cache_manager.save_to_file_cache('gemini', cache_key_gemini, cached_result)
-                    log_debug(f"Synchronized Gemini translation to file cache from LRU cache")
-            elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
-                cache_key_google = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
-                if not self.app.cache_manager.check_file_cache('google', cache_key_google):
-                    self.app.cache_manager.save_to_file_cache('google', cache_key_google, cached_result)
-                    log_debug(f"Synchronized Google translation to file cache from LRU cache")
-            elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
-                model_type = extra_params.get('model_type', 'latency_optimized')
-                cache_key_deepl = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
-                if not self.app.cache_manager.check_file_cache('deepl', cache_key_deepl):
-                    self.app.cache_manager.save_to_file_cache('deepl', cache_key_deepl, cached_result)
-                    log_debug(f"Synchronized DeepL translation to file cache from LRU cache")
-            
-            # Change 1: Update Gemini sliding context window for all successful translations
+            # ### FIX: Added cache synchronization logic here. ###
+            # If we found it in memory, ensure it's also saved to disk for future sessions.
+            if not self._is_error_message(cached_result):
+                if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+                    cache_key = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+                    if not self.app.cache_manager.check_file_cache('gemini', cache_key):
+                        log_debug(f"Syncing LRU cache hit to Gemini file cache for: {cleaned_text_main}")
+                        self.app.cache_manager.save_to_file_cache('gemini', cache_key, cached_result)
+                elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
+                    cache_key = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+                    if not self.app.cache_manager.check_file_cache('google', cache_key):
+                        log_debug(f"Syncing LRU cache hit to Google file cache for: {cleaned_text_main}")
+                        self.app.cache_manager.save_to_file_cache('google', cache_key, cached_result)
+                elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+                    model_type = extra_params.get('model_type', 'latency_optimized')
+                    cache_key = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+                    if not self.app.cache_manager.check_file_cache('deepl', cache_key):
+                        log_debug(f"Syncing LRU cache hit to DeepL file cache for: {cleaned_text_main}")
+                        self.app.cache_manager.save_to_file_cache('deepl', cache_key, cached_result)
+
+            # Update Gemini context window if the translation was for Gemini
             if selected_translation_model == 'gemini_api' and not self._is_error_message(cached_result):
                 self._update_sliding_window(cleaned_text_main, cached_result)
             
             return cached_result
+
+        # 2. Check File Cache
+        file_cache_hit = None
+        if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+            key = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('gemini', key)
+        elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
+            key = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('google', key)
+        elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+            model_type = extra_params.get('model_type', 'latency_optimized')
+            key = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('deepl', key)
         
-        # Cache miss - perform actual translation
+        if file_cache_hit:
+            log_debug(f"Found \"{cleaned_text_main}\" in {selected_translation_model} file cache.")
+            self.unified_cache.store(
+                cleaned_text_main, source_lang, target_lang,
+                selected_translation_model, file_cache_hit, **extra_params
+            )
+            if selected_translation_model == 'gemini_api' and not self._is_error_message(file_cache_hit):
+                self._update_sliding_window(cleaned_text_main, file_cache_hit)
+            return file_cache_hit
+
+        # 3. All Caches Miss - Perform API Call
+        log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API.")
+        translated_api_text = None
         if selected_translation_model == 'marianmt':
             translated_api_text = self._marian_translate(cleaned_text_main, source_lang, target_lang, beam_val)
         elif selected_translation_model == 'google_api':
             translated_api_text = self._google_translate(cleaned_text_main, source_lang, target_lang)
-            # Save to file cache if successful and file caching enabled
-            if (not (isinstance(translated_api_text, str) and translated_api_text.startswith("Google Translate API error")) 
-                and self.app.google_file_cache_var.get()):
-                cache_key_google = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
-                self.app.cache_manager.save_to_file_cache('google', cache_key_google, translated_api_text)
         elif selected_translation_model == 'gemini_api':
             translated_api_text = self._gemini_translate(cleaned_text_main, source_lang, target_lang)
-            # Save to file cache if successful and file caching enabled
-            if (not self._is_error_message(translated_api_text) 
-                and self.app.gemini_file_cache_var.get()):
-                cache_key_gemini = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
-                self.app.cache_manager.save_to_file_cache('gemini', cache_key_gemini, translated_api_text)
         elif selected_translation_model == 'deepl_api':
             translated_api_text = self._deepl_translate(cleaned_text_main, source_lang, target_lang)
-            # File cache is handled inside _deepl_translate method to include model_type
         
-        # Store successful translation in unified cache
+        # 4. Store successful API translation in both caches and update context
         if translated_api_text and not self._is_error_message(translated_api_text):
+            # Store in file cache (if enabled for the specific provider)
+            if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+                cache_key_to_save = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('gemini', cache_key_to_save, translated_api_text)
+            elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
+                cache_key_to_save = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('google', cache_key_to_save, translated_api_text)
+            elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+                model_type = extra_params.get('model_type', 'latency_optimized')
+                cache_key_to_save = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('deepl', cache_key_to_save, translated_api_text)
+
+            # Store in unified cache
             self.unified_cache.store(
                 cleaned_text_main, source_lang, target_lang,
                 selected_translation_model, translated_api_text, **extra_params
             )
             
-            # Change 1: Update Gemini sliding context window for all successful API translations
+            # Update Gemini context window if the translation was for Gemini
             if selected_translation_model == 'gemini_api':
                 self._update_sliding_window(cleaned_text_main, translated_api_text)
         
@@ -892,7 +846,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         if not text_content: return True
         text_lower_content = text_content.lower().strip()
         
-        # Only filter out obvious UI placeholders and empty content
         placeholders_list = [
             "source text will appear here", "translation will appear here",
             "translation...", "ocr source", "source text", "loading...",
@@ -901,12 +854,11 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         if text_lower_content in placeholders_list or text_lower_content.startswith("translation error:"):
             return True
         
-        # Only filter truly obvious UI artifacts - be very conservative
         ui_patterns_list = [
-            r'^[_\-=<>/\s\.\\|\[\]\{\}]+$',  # Special characters only (no letters/numbers)
+            r'^[_\-=<>/\s\.\\|\[\]\{\}]+$',
             r'^ocr\s+source', r'^source\s+text', 
             r'^translat(ion|ing)', r'appear\s+here$', 
-            r'[×✖️]',  # Close/delete symbols only
+            r'[×✖️]',
         ]
         
         for pattern_re in ui_patterns_list:
@@ -959,30 +911,22 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             self.app.marian_translator = MarianMTTranslator(cache_dir=cache_dir, num_beams=current_beam_value)
             log_debug(f"MarianMT translator initialized (cache: {cache_dir}, beams: {current_beam_value})")
 
-            # Preload if MarianMT is the active model and a specific model is selected
             if self.app.translation_model_var.get() == 'marianmt' and self.app.marian_model_var.get():
                 log_debug("MarianMT is active model, attempting to preload selected Marian model.")
-                # This will call on_marian_model_selection_changed which handles parsing and loading
                 self.app.ui_interaction_handler.on_marian_model_selection_changed(preload=True)
         except ImportError as e_imt_imp:
             log_debug(f"MarianMT initialization failed - missing dependencies: {e_imt_imp}")
-            # Error shown by ui_interaction_handler if MarianMT is selected
         except Exception as e_imt:
             log_debug(f"Error initializing MarianMT translator: {e_imt}\n{traceback.format_exc()}")
-            # Error shown by ui_interaction_handler
 
     def update_marian_active_model(self, model_name_uam, source_lang_uam=None, target_lang_uam=None):
         if self.app.marian_translator is None:
-            # Try to initialize if not already
             self.initialize_marian_translator()
-            if self.app.marian_translator is None: # Still None after attempt
+            if self.app.marian_translator is None:
                 log_debug("Cannot update MarianMT model - translator not initialized and init failed.")
                 return False
         
         try:
-            # Source/target langs should have been parsed by ui_interaction_handler.on_marian_model_selection_changed
-            # and stored in self.app.marian_source_lang / self.app.marian_target_lang
-            # If they are passed explicitly here, use them.
             final_source_lang = source_lang_uam if source_lang_uam else self.app.marian_source_lang
             final_target_lang = target_lang_uam if target_lang_uam else self.app.marian_target_lang
 
@@ -998,7 +942,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if hasattr(self.app.marian_translator, 'direct_pairs'):
                 self.app.marian_translator.direct_pairs[(final_source_lang, final_target_lang)] = model_name_uam
             
-            # Clear unified cache for MarianMT instead of specific method cache
             self.unified_cache.clear_provider('marianmt')
 
             if hasattr(self.app.marian_translator, '_try_load_direct_model'):
