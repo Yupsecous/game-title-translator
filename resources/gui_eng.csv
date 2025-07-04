@@ -115,3 +115,5 @@ gemini_total_cost_label,Total Cost
 gemini_enable_api_log_checkbox,Enable API Log
 gemini_reset_log_button,Reset
 gemini_refresh_stats_button,Refresh
+deepl_usage_label,Free Monthly Usage
+deepl_usage_loading,Loading...

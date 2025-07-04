@@ -162,6 +162,7 @@ class OCRTranslator:
         self.deepl_api_key_var = tk.StringVar(value=self.config['Settings'].get('deepl_api_key', ''))
         self.gemini_api_key_var = tk.StringVar(value=self.config['Settings'].get('gemini_api_key', ''))
         self.deepl_model_type_var = tk.StringVar(value=self.config['Settings'].get('deepl_model_type', 'latency_optimized'))
+        self.deepl_usage_var = tk.StringVar(value="Loading...")
         
         translation_model_val = self.config['Settings'].get('translation_model', 'gemini_api')
         # Fallback logic if configured model's library is not available
@@ -476,9 +477,13 @@ For more information, see the user manual."""
         self._fully_initialized = True
         log_debug("OCRTranslator fully initialized.")
         
-        # Update Gemini stats if Gemini model is selected - use after_idle to ensure GUI is ready
-        if hasattr(self, 'translation_model_var') and self.translation_model_var.get() == 'gemini_api':
-            self.root.after_idle(lambda: self._delayed_gemini_stats_update())
+        # Update usage statistics for selected models - use after_idle to ensure GUI is ready
+        if hasattr(self, 'translation_model_var'):
+            selected_model = self.translation_model_var.get()
+            if selected_model == 'gemini_api':
+                self.root.after_idle(lambda: self._delayed_gemini_stats_update())
+            elif selected_model == 'deepl_api':
+                self.root.after_idle(lambda: self._delayed_deepl_usage_update())
 
     def ensure_window_visible(self):
         """Ensure the main window is visible after all initialization is complete."""
@@ -700,6 +705,68 @@ For more information, see the user manual."""
             self.update_gemini_stats()
         except Exception as e:
             log_debug(f"Error in delayed Gemini stats update: {e}")
+
+    def update_deepl_usage(self):
+        """Update the DeepL usage display by calling the usage API."""
+        try:
+            # Check if all required components are available
+            if not hasattr(self, 'deepl_usage_var') or self.deepl_usage_var is None:
+                log_debug("DeepL usage variable not initialized yet")
+                return
+            
+            # Only check usage if DeepL is available and we have translation handler
+            if not hasattr(self, 'translation_handler') or not hasattr(self.translation_handler, 'get_deepl_usage'):
+                log_debug("DeepL usage checking not available")
+                self.deepl_usage_var.set("N/A")
+                return
+            
+            usage_data = self.translation_handler.get_deepl_usage()
+            
+            if usage_data and isinstance(usage_data, dict):
+                character_count = usage_data.get('character_count', 0)
+                character_limit = usage_data.get('character_limit', 0)
+                
+                # Calculate usage percentage
+                if character_limit > 0:
+                    usage_percentage = (character_count / character_limit) * 100
+                else:
+                    usage_percentage = 0
+                
+                # Format according to UI language
+                if self.ui_lang.current_lang == 'pol':
+                    # Polish format: "Darmowy limit: 1 445 / 500 000 znaków (0,3%)"
+                    used_formatted = f"{character_count:,}".replace(',', ' ')
+                    limit_formatted = f"{character_limit:,}".replace(',', ' ')
+                    percentage_formatted = f"{usage_percentage:.1f}".replace('.', ',')
+                    usage_text = f"{used_formatted} / {limit_formatted} znaków ({percentage_formatted}%)"
+                else:
+                    # English format: "Free usage: 1,445 / 500,000 characters (0.3%)"
+                    usage_text = f"{character_count:,} / {character_limit:,} characters ({usage_percentage:.1f}%)"
+                
+                self.deepl_usage_var.set(usage_text)
+                log_debug(f"Updated DeepL usage: {character_count}/{character_limit} characters ({usage_percentage:.1f}%)")
+            else:
+                # Set fallback message if API call failed
+                if self.ui_lang.current_lang == 'pol':
+                    self.deepl_usage_var.set("Nie można pobrać danych użycia")
+                else:
+                    self.deepl_usage_var.set("Unable to retrieve usage data")
+                log_debug("DeepL usage API call failed or returned invalid data")
+        except Exception as e:
+            log_debug(f"Error updating DeepL usage: {e}")
+            # Set error fallback
+            if hasattr(self, 'deepl_usage_var') and self.deepl_usage_var is not None:
+                if hasattr(self, 'ui_lang') and self.ui_lang.current_lang == 'pol':
+                    self.deepl_usage_var.set("Błąd podczas pobierania danych")
+                else:
+                    self.deepl_usage_var.set("Error retrieving usage data")
+
+    def _delayed_deepl_usage_update(self):
+        """Delayed DeepL usage update to ensure GUI is fully ready."""
+        try:
+            self.update_deepl_usage()
+        except Exception as e:
+            log_debug(f"Error in delayed DeepL usage update: {e}")
 
     def toggle_debug_logging(self):
         """Toggle debug logging on/off and update button text."""
@@ -1139,6 +1206,12 @@ For more information, see the user manual."""
                 hasattr(self.translation_handler, '_clear_gemini_context')):
                 self.translation_handler._clear_gemini_context()
             
+            # Update usage statistics when translation stops
+            if hasattr(self, 'update_gemini_stats'):
+                self.update_gemini_stats()
+            if hasattr(self, 'update_deepl_usage'):
+                self.update_deepl_usage()
+            
             self.start_stop_btn.config(text="Start", state=tk.DISABLED)
             self.status_label.config(text="Status: Stopping...")
             self.root.update_idletasks()
@@ -1393,6 +1466,10 @@ For more information, see the user manual."""
             # Update Gemini labels if they exist
             if hasattr(self, 'update_gemini_labels_for_language'):
                 self.update_gemini_labels_for_language()
+            
+            # Update DeepL usage labels if they exist
+            if hasattr(self, 'update_deepl_usage_for_language'):
+                self.update_deepl_usage_for_language()
             
             # Restore the tab change handler for focus behavior
             def on_tab_changed(event):

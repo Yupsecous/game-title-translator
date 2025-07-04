@@ -485,6 +485,13 @@ def create_settings_tab(app):
 
     # Store the options for later use when updating language
     app.deepl_model_options = deepl_model_options
+
+    # DeepL Usage Display (only visible when DeepL is selected)
+    app.deepl_usage_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
+    app.deepl_usage_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_usage_var = tk.StringVar(value=app.ui_lang.get_label("deepl_usage_loading", "Loading..."))
+    app.deepl_usage_entry = ttk.Entry(frame, textvariable=app.deepl_usage_var, width=40, state='readonly')
+    app.deepl_usage_entry.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
     
     # Function to update DeepL model type options when language changes
     def update_deepl_model_type_for_language():
@@ -582,6 +589,20 @@ def create_settings_tab(app):
     # Store function reference for calling during language updates
     app.update_gemini_labels_for_language = update_gemini_labels_for_language
 
+    # Function to update DeepL usage labels when language changes
+    def update_deepl_usage_for_language():
+        if hasattr(app, 'deepl_usage_label') and app.deepl_usage_label.winfo_exists():
+            app.deepl_usage_label.config(text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
+        
+        # Refresh DeepL usage display with new language formatting if DeepL is currently selected
+        if (hasattr(app, 'translation_model_var') and app.translation_model_var.get() == 'deepl_api' and
+            hasattr(app, 'update_deepl_usage')):
+            app.root.after_idle(app.update_deepl_usage)
+        
+        log_debug("Updated DeepL usage labels for language change")
+    
+    # Store function reference for calling during language updates
+    app.update_deepl_usage_for_language = update_deepl_usage_for_language
 
     app.models_file_label = ttk.Label(frame, text=app.ui_lang.get_label("models_file_label")) 
     app.models_file_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
@@ -608,7 +629,7 @@ def create_settings_tab(app):
     app.beam_spinbox.bind("<FocusOut>", on_beam_spinbox_focus_out)
 
     app.marian_explanation_labels = [] 
-    row_offset = 9
+    row_offset = 11  # Adjusted from 9 to account for new Gemini stats (row 8) and DeepL usage (row 10) rows
     if app.MARIANMT_AVAILABLE:
         texts = [
             app.ui_lang.get_label("marian_beam_explanation", "Higher beam values = better but slower translations"),
