@@ -145,6 +145,54 @@ class TranslationHandler:
         except Exception as e_cdl:
             return f"DeepL API error: {type(e_cdl).__name__} - {str(e_cdl)}"
 
+    def get_deepl_usage(self):
+        """Get DeepL API usage statistics from the usage endpoint."""
+        if not self.app.DEEPL_API_AVAILABLE:
+            log_debug("DeepL API libraries not available for usage check")
+            return None
+            
+        api_key = self.app.deepl_api_key_var.get().strip()
+        if not api_key:
+            log_debug("DeepL API key missing for usage check")
+            return None
+        
+        try:
+            import requests
+            
+            # API endpoint for Free users (works for both Free and Pro)
+            url = "https://api-free.deepl.com/v2/usage"
+            
+            # Headers with authentication
+            headers = {
+                "Authorization": f"DeepL-Auth-Key {api_key}",
+                "User-Agent": "OCR-Translator/1.1.0"
+            }
+            
+            log_debug("Checking DeepL API usage...")
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            # Check if request was successful
+            if response.status_code == 200:
+                usage_data = response.json()
+                log_debug(f"DeepL usage retrieved: {usage_data}")
+                return usage_data
+            elif response.status_code == 403:
+                log_debug("DeepL API: Invalid API key or unauthorized access")
+                return None
+            elif response.status_code == 456:
+                log_debug("DeepL API: Quota exceeded")
+                return None
+            else:
+                log_debug(f"DeepL API error: HTTP {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            log_debug(f"DeepL usage API network error: {e}")
+            return None
+        except Exception as e:
+            log_debug(f"DeepL usage API error: {e}")
+            return None
+
     def _marian_translate(self, text_to_translate_mm, source_lang_mm, target_lang_mm, beam_value_mm):
         """MarianMT translation call (no longer cached here - handled by unified cache)."""
         log_debug(f"MarianMT translation call for: {text_to_translate_mm} (beam={beam_value_mm})")
@@ -396,20 +444,20 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Build instruction line based on actual context window content
             if context_size == 0:
-                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
             else:
                 # Check actual number of stored context pairs
                 actual_context_count = len(self.gemini_context_window) if hasattr(self, 'gemini_context_window') else 0
                 
                 if actual_context_count == 0:
-                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
                 elif context_size == 1:
-                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
                 elif context_size == 2:
                     if actual_context_count == 1:
-                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
                     else:
-                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_size = self.app.gemini_context_window_var.get()

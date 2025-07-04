@@ -155,6 +155,12 @@ class UIInteractionHandler:
         if hasattr(self.app, 'deepl_model_type_combobox'):
             manage_grid(self.app.deepl_model_type_combobox, show=is_deepl)
         
+        # DeepL Usage visibility
+        if hasattr(self.app, 'deepl_usage_label'):
+            manage_grid(self.app.deepl_usage_label, show=is_deepl)
+        if hasattr(self.app, 'deepl_usage_entry'):
+            manage_grid(self.app.deepl_usage_entry, show=is_deepl)
+        
         manage_grid(self.app.marian_model_label, show=is_marian)
         manage_grid(self.app.marian_model_combobox, show=is_marian)
         manage_grid(self.app.models_file_label, show=is_marian)
@@ -166,10 +172,14 @@ class UIInteractionHandler:
             for lbl in self.app.marian_explanation_labels:
                 manage_grid(lbl, show=is_marian)
         
-        # Update Gemini statistics when Gemini model is selected
+        # Update statistics when respective models are selected
         if is_gemini and hasattr(self.app, 'update_gemini_stats'):
             # Use after_idle to ensure all GUI elements are ready
             self.app.root.after_idle(self.app.update_gemini_stats)
+        
+        if is_deepl and hasattr(self.app, 'update_deepl_usage'):
+            # Use after_idle to ensure all GUI elements are ready
+            self.app.root.after_idle(self.app.update_deepl_usage)
     
     def update_marian_models_dropdown_for_language(self, ui_language=None):
         """Update MarianMT models dropdown with localized display names."""
