@@ -182,6 +182,30 @@
         .marianmt-note-content {
             flex: 1;
         }
+
+        /* Disclaimer note style */
+        .disclaimer-note {
+            background-color: #ffebee;
+            border: 2px solid #d32f2f;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 100%;
+        }
+        
+        .disclaimer-note-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: #d32f2f;
+        }
+        
+        .disclaimer-note-content {
+            flex: 1;
+        }
     </style>
   </head>
   <body>
@@ -213,6 +237,9 @@
       </li>
       <li>
         <a href="#translation-methods">Metody tłumaczenia</a>
+      </li>
+      <li>
+        <a href="#gemini-api-cost-effective-and-context-aware-translation">Gemini API - Ekonomiczne i kontekstowe tłumaczenie</a>
       </li>
       <li>
         <a href="#keyboard-shortcuts">Skróty klawiszowe</a>
@@ -295,6 +322,8 @@
         <strong>Jakość</strong> – wybierz między opcjami <strong>Klasyczna</strong> (szybsze tłumaczenie) lub <strong>Nowej generacji</strong> (potencjalnie lepsza jakość) (tylko DeepL).</li>
       <li>
         <strong>Opcje MarianMT</strong> – lokalne tłumaczenie neuronowe (tylko model MarianMT).</li>
+      <li>
+        <strong>Opcje Gemini</strong> – tanie tłumaczenie modelem LLM z uwzględnieniem kontekstu (tylko Gemini).</li>
       <li>
         <strong>Ścieżka do Tesseract</strong> – ścieżka do pliku wykonywalnego Tesseract OCR.</li>
       <li>
@@ -553,6 +582,20 @@
         <strong>Rozmiar czcionki okna tłumaczenia</strong> – wielkość przetłumaczonego tekstu.</li>
     </ol>
     <h2 id="translation-methods">Metody tłumaczenia</h2>
+    <h3 id="gemini-api">Gemini API (zalecane)</h3>
+    <p>Gemini 2.5 Flash-Lite to najnowszy ekonomiczny model sztucznej inteligencji firmy Google, który zapewnia wyjątkową jakość tłumaczeń z inteligentnym uwzględnianiem kontekstu. Ta przełomowa technologia łączy wysokiej klasy tłumaczenia z wyjątkowo niską ceną, dzięki czemu umożliwia tłumaczenie dużych ilości tekstu, na przykład wszystkich napisów w grze, za zaledwie kilka dolarów.</p>
+    
+    <p><strong>Kluczowe zalety</strong>:</p>
+    <ul>
+      <li><strong>Uwzględnianie kontekstu</strong> – używa przesuwnego okna kontekstu w celu zachowania spójności narracji i poprawy gramatyki.</li>
+      <li><strong>Inteligentna korekta błędów OCR</strong> – automatycznie koryguje niektóre błędy OCR, zapewniając poprawne tłumaczenia zniekształconego tekstu źródłowego.</li>
+      <li><strong>Wyjątkowy stosunek jakości do ceny</strong> – tłumaczenie całych gier, np. Wiedźmin 3, za kilka dolarów, nawet przy wielokrotnym tłumaczeniu tych samych zdań z uwagi na niedoskonałości OCR.</li>
+      <li><strong>Wbudowane monitorowanie kosztów</strong> – monitorowanie kosztów tłumaczeń i zużytych tokenów w czasie rzeczywistym.</li>
+      <li><strong>Zaawansowane buforowanie</strong> – inteligentne buforowanie tłumaczeń w pliku w celu minimalizacji kosztów API.</li>
+    </ul>
+    
+    <p><strong>Gemini API to zalecana metoda tłumaczenia</strong> dla większości użytkowników poszukujących najlepszego kompromisu między jakością, inteligencją i ceną. Szczegółowe opcje konfiguracji, zaawansowane funkcje i strategie optymalizacji kosztów znajdziesz w <a href="#gemini-api-cost-effective-and-context-aware-translation">szczegółowym przewodniku po Gemini API</a>.</p>
+    
     <h3 id="marianmt-offline-and-free">MarianMT (lokalny i bezpłatny)</h3>
     <ol>
       <li>Nie wymaga klucza API – całkowicie bezpłatny w użyciu.</li>
@@ -590,6 +633,7 @@
       <li>Zapewnia tłumaczenia premium, ale obsługuje mniej języków.</li>
       <li>Uznawany przez wielu za lidera branży pod względem jakości tłumaczenia.</li>
       <li>Darmowy plan DeepL API pozwala na tłumaczenie 500 000 znaków miesięcznie bez opłat (stan na maj 2025 r.).</li>
+      <li>W zakładce <strong>Ustawienia</strong> pole <strong>Darmowy miesięczny limit</strong> śledzi oficjalne wykorzystanie darmowej miesięcznej kvoty dla kont DeepL API Free.</li>
       <li>Konfiguracja:
         <ul>
           <li>Wybierz <strong>DeepL API</strong> jako model tłumaczenia.</li>
@@ -629,6 +673,333 @@
       </li>
     </ol>
     <p>Google Translate wykorzystuje ten sam system pamięci podręcznej plików co DeepL. W sekcji na temat DeepL powyżej znajduje się szczegółowe wyjaśnienie działania mechanizmu buforowania, jego zależności od jakości OCR oraz praktycznych korzyści i ograniczeń. Wszystkie te same uwagi i zastrzeżenia dotyczą funkcji buforowania Google Translate.</p>
+    
+    <h2 id="gemini-api-cost-effective-and-context-aware-translation">Gemini API – tanie tłumaczenie kontekstowe</h2>
+    
+    <p>Gemini 2.5 Flash-Lite reprezentuje przełom w technologii tłumaczenia za pomocą sztucznej inteligencji, zapewniając wysokiej jakości tłumaczenia w niespotykanie niskiej cenie. Ten zaawansowany model inteligentnie uwzględnia kontekst poprzednich zdań, umożliwiając tanie tłumaczenie napisów w ogromnych grach za ułamek tradycyjnych kosztów.</p>
+    
+    <h3 id="superior-translation-quality">Doskonała jakość tłumaczeń</h3>
+    
+    <p><strong>Technologia okna kontekstu</strong></p>
+    <p>W przeciwieństwie do tradycyjnych metod, które tłumaczą każdy napis osobno, Gemini API zapewnia konfigurowalne przesuwne okno kontekstu, które uwzględnia tłumaczenie poprzednich zdań. To rewolucyjne podejście zapewnia spójność narracji, poprawia płynność gramatyczną i umożliwia bardziej naturalne i poprawne tłumaczenie dialogów.</p>
+    
+    <p>Okno kontekstu może obejmować 0–2 poprzednie napisy, co umożliwia sztucznej inteligencji:</p>
+    <ul>
+      <li>utrzymanie spójnego stylu wypowiedzi postaci w dialogach;</li>
+      <li>zachowanie ciągłości narracyjnej w treściach fabularnych;</li>
+      <li>poprawne stosowanie zaimków i odmian gramatycznych;</li>
+      <li>wyświetlanie bardziej naturalnych, idiomatycznych tłumaczeń.</li>
+    </ul>
+    
+    <p><strong>Przykład: tłumaczenie z uwzględnieniem kontekstu</strong></p>
+    <p>Poniższy przykład dobrze pokazuje, jak kontekst poprzednich zdań umożliwia zastosowanie poprawnych form gramatycznych przy tłumaczeniu z czeskiego na polski:</p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Oryginał czeski</th>
+          <th>DeepL (bez kontekstu)</th>
+          <th>Gemini (z kontekstem)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>A vodkaď se podle tebe teda známe?</code></td>
+          <td>A skąd się znamy, według ciebie?</td>
+          <td>A skąd niby się znamy?</td>
+        </tr>
+        <tr>
+          <td><code>Viděli jsme se přece u toho rybníka!</code></td>
+          <td>Widzieliśmy się przecież nad stawem!</td>
+          <td>Widzieliśmy się przecież nad tamtym stawem!</td>
+        </tr>
+        <tr>
+          <td><code>Jakýho rybníka? Já u žádnýho rybníka nebyla!</code></td>
+          <td><strong style="color: #d32f2f;">Jakiego stawu?</strong> Nie byłam przy żadnym stawie!</td>
+          <td><strong style="color: #2e7d32;">Nad jakim stawem?</strong> Ja nad żadnym stawem nie byłam!</td>
+        </tr>
+        <tr>
+          <td><code>Ale jo, byla!</code></td>
+          <td>Ale tak, <strong style="color: #d32f2f;">była!</strong></td>
+          <td>Ale tak, <strong style="color: #2e7d32;">byłaś!</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <p><strong>Kluczowe poprawki wynikające z kontekstu:</strong></p>
+    <ul>
+      <li><strong>"<span style="color: #d32f2f;">Jakiego stawu?</span>" zastąpione "<span style="color: #2e7d32;">Nad jakim stawem?</span>"</strong> – Gemini poprawnie używa "nad" (przy/nad), aby dopasować się do odniesienia z poprzedniego zdania "nad stawem", podczas gdy DeepL używa rodzaju dopełniacza.</li>
+      <li><strong>"<span style="color: #d32f2f;">była!</span>" zastąpione "<span style="color: #2e7d32;">byłaś!</span>"</strong> – Gemini poprawnie używa formy drugiej osoby żeńskiej "byłaś" (ty byłaś), aby zachować spójność dialogu, podczas gdy DeepL używa formy trzeciej osoby "była" (ona była).</li>
+    </ul>
+    
+    <p>Te przykłady wyraźnie pokazują, jak okno kontekstu Gemini pomaga utrzymać spójność gramatyczną i płynność dialogów, co byłoby niemożliwe przy tłumaczeniu zdanie po zdaniu.</p>
+    
+    <p><strong>Inteligencja błędów OCR</strong></p>
+    <p>Jedną z najbardziej imponujących możliwości Gemini jest zdolność do interpretacji i automatycznego korygowania niedoskonałości OCR. Gdy rozpoznawanie tekstu generuje zniekształcone lub niepełne wyniki, zaawansowane rozumienie języka Gemini często może dedukować zamierzone znaczenie i dostarczyć czyste, dokładne tłumaczenia bez powielania błędów OCR w wyniku.</p>
+    
+    <p><strong>Przykład: Korekta błędów OCR</strong></p>
+    <p>Oto rzeczywisty przykład pokazujący, jak Gemini radzi sobie z błędami OCR w porównaniu z DeepL przy tłumaczeniu z francuskiego na angielski:</p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Wejście OCR</th>
+          <th>Wynik DeepL</th>
+          <th>Wynik Gemini</th>
+          <th>Analiza</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Vraiment ?</code></td>
+          <td>Really?</td>
+          <td>Really?</td>
+          <td>Czyste OCR, oba działają dobrze</td>
+        </tr>
+        <tr>
+          <td><code>| Vraiment ?</code></td>
+          <td>| Really?</td>
+          <td>Really?</td>
+          <td>Gemini usuwa artefakt OCR "|", DeepL go powieli</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h3 id="exceptional-cost-effectiveness">Wyjątkowa opłacalność</h3>
+    
+    <p><strong>Analiza kosztów w rzeczywistości</strong></p>
+    <p>Gemini API oferuje niezwykłą wartość dla dużych projektów tłumaczeniowych. Nawet masywne gry jak Wiedźmin 3, z setkami godzin dialogów i napisów, można przetłumaczyć za łączny koszt poniżej 5 dolarów. Pozostaje to prawdą nawet przy uwzględnieniu:</p>
+    <ul>
+      <li>Wielokrotnych prób OCR z powodu różnic w rozpoznawaniu.</li>
+      <li>Narzutu okna kontekstu (wysyłanie 1-2 poprzednich napisów z każdym żądaniem).</li>
+      <li>Braków w pamięci podręcznej wymagających świeżych wywołań API.</li>
+      <li>Złożonej treści narracyjnej wymagającej dłuższego kontekstu.</li>
+    </ul>
+    
+    <p><strong>Szacowanie kosztów: Tłumaczenie Wiedźmina 3</strong></p>
+    <p>Oto szczegółowa analiza kosztów tłumaczenia napisów Wiedźmina 3 za pomocą DeepL i Gemini 2.5 Flash-Lite:</p>
+    
+    <p><strong>Założenia:</strong></p>
+    <ul>
+      <li><strong>Liczba słów:</strong> 450 000 słów.</li>
+      <li><strong>Niedokładność OCR:</strong> Każdy napis jest wysyłany 3 razy do tłumaczenia.</li>
+      <li><strong>Średnia długość słowa:</strong> 5 znaków.</li>
+      <li><strong>Tokeny na słowo:</strong> 2 tokeny na słowo.</li>
+      <li><strong>Kontekst Gemini:</strong> Każda wiadomość wejściowa jest 4 razy dłuższa niż rzeczywisty napis.</li>
+      <li><strong>Koszt DeepL API Pro:</strong> 20,00 € za 1 milion znaków.</li>
+      <li><strong>Koszt Gemini 2.5 Flash-Lite:</strong> 0,10 $ za 1 milion tokenów wejściowych i 0,40 $ za 1 milion tokenów wyjściowych.</li>
+      <li><strong>Kurs EUR do USD:</strong> 1,08.</li>
+    </ul>
+    
+    <p><strong>Rozkład kosztów:</strong></p>
+    
+    <p><strong>DeepL:</strong></p>
+    <ul>
+      <li><strong>Całkowita liczba znaków:</strong> 450 000 słów × 5 znaków/słowo = 2 250 000 znaków.</li>
+      <li><strong>Całkowita liczba znaków z niedokładnością OCR:</strong> 2 250 000 × 3 = 6 750 000 znaków.</li>
+      <li><strong>Szacowany koszt (EUR):</strong> (6 750 000 ÷ 1 000 000) × 20,00 € = <strong>135,00 €</strong>.</li>
+      <li><strong>Szacowany koszt (USD):</strong> 135,00 € × 1,08 = <strong>145,80 $</strong>.</li>
+    </ul>
+    
+    <p><strong>Gemini 2.5 Flash-Lite:</strong></p>
+    <ul>
+      <li><strong>Całkowita liczba tokenów:</strong> 450 000 słów × 2 tokeny/słowo = 900 000 tokenów.</li>
+      <li><strong>Całkowita liczba tokenów z niedokładnością OCR:</strong> 900 000 × 3 = 2 700 000 tokenów.</li>
+      <li><strong>Tokeny wejściowe:</strong> 2 700 000 × 4 = 10 800 000 tokenów.</li>
+      <li><strong>Koszt wejściowy:</strong> (10 800 000 ÷ 1 000 000) × 0,10 $ = <strong>1,08 $</strong>.</li>
+      <li><strong>Tokeny wyjściowe:</strong> 2 700 000 tokenów.</li>
+      <li><strong>Koszt wyjściowy:</strong> (2 700 000 ÷ 1 000 000) × 0,40 $ = <strong>1,08 $</strong>.</li>
+      <li><strong>Całkowity szacowany koszt (USD):</strong> 1,08 $ (wejście) + 1,08 $ (wyjście) = <strong>2,16 $</strong>.</li>
+    </ul>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Usługa</th>
+          <th>Szacowany koszt (EUR)</th>
+          <th>Szacowany koszt (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DeepL</strong></td>
+          <td>135,00 €</td>
+          <td>145,80 $</td>
+        </tr>
+        <tr>
+          <td><strong>Gemini 2.5 Flash-Lite</strong></td>
+          <td>—</td>
+          <td>2,16 $</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <p><em>Uwaga: To są przybliżone szacunki. Rzeczywiste koszty zależą od pary językowej, dokładności OCR, ustawień kontekstu i skuteczności pamięci podręcznej.</em></p>
+
+    <div class="disclaimer-note">
+      <div class="disclaimer-note-icon">❗</div>
+      <div class="disclaimer-note-content">
+        <strong>Zastrzeżenie:</strong> Śledzenie kosztów jest dostarczane tylko w celach referencyjnych. To jest darmowe oprogramowanie bez gwarancji dotyczących dokładności kosztów. Użytkownicy są odpowiedzialni za monitorowanie własnego użycia API i kosztów poprzez panel rozliczeniowy Google.
+      </div>
+    </div>
+    
+    <p><strong>Wbudowane śledzenie kosztów</strong></p>
+    <p>OCR Translator zawiera kompleksowe monitorowanie kosztów specjalnie zaprojektowane dla użycia Gemini API:</p>
+    <ul>
+      <li><strong>Wyświetlanie kosztów w czasie rzeczywistym</strong> – zobacz aktualizujące się koszty łączne podczas tłumaczenia.</li>
+      <li><strong>Analityka użycia tokenów</strong> – śledź dokładne zużycie tokenów wejściowych/wyjściowych.</li>
+      <li><strong>Rejestrowanie wywołań API</strong> – opcjonalne szczegółowe logowanie dla pełnej przejrzystości.</li>
+      <li><strong>Śledzenie liczby słów</strong> – monitoruj łączną liczbę przetłumaczonych słów w sesjach.</li>
+    </ul>
+    
+    <p><strong>Szczegółowy przykład wywołania API</strong></p>
+    <p>Oto rzeczywisty przykład działania logowania wywołań API, pokazujący kompletny proces tłumaczenia:</p>
+    
+    <pre><code>=== DZIENNIK WYWOŁAŃ GEMINI API ===
+Znacznik czasu: 2025-07-06 17:19:03
+Para językowa: fr -> en
+Tekst oryginalny: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+
+SZCZEGÓŁY WYWOŁANIA:
+- Długość wiadomości: 695 znaków
+- Liczba słów: 119 słów
+- Liczba linii: 9 linii
+
+PEŁNA TREŚĆ WIADOMOŚCI WYSŁANA DO GEMINI:
+---POCZĄTEK WIADOMOŚCI---
+&lt;Translate idiomatically the third subtitle from French to English. Return translation only.&gt;
+
+FRENCH: C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à mes fins.
+FRENCH: Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici. Que voulez-vous ?
+FRENCH: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+
+ENGLISH: That was my goal. The rest... was merely a means to an end.
+ENGLISH: You say you came all this way to find me. Here I am. What do you want?
+ENGLISH:
+---KONIEC WIADOMOŚCI---
+
+
+OTRZYMANA ODPOWIEDŹ:
+Znacznik czasu: 2025-07-06 17:19:03
+Czas trwania wywołania: 0,385 sekundy
+
+---POCZĄTEK ODPOWIEDZI---
+You manipulated entire civilizations, caused decades of war, destroyed Ziost... and fled. You're going to tell me why.
+---KONIEC ODPOWIEDZI---
+
+ANALIZA TOKENÓW I KOSZTÓW (BIEŻĄCE WYWOŁANIE):
+- Przetłumaczone słowa: 22
+- Dokładne tokeny wejściowe: 173
+- Dokładne tokeny wyjściowe: 26
+- Koszt wejściowy: 0,00001730 $
+- Koszt wyjściowy: 0,00001040 $
+- Łączny koszt tego wywołania: 0,00002770 $
+
+SUMY ŁĄCZNE (WŁĄCZNIE Z TYM WYWOŁANIEM, OD POCZĄTKU DZIENNIKA):
+- Łączna liczba przetłumaczonych słów (do tej pory): 18460
+- Łączne tokeny wejściowe (do tej pory): 213723
+- Łączne tokeny wyjściowe (do tej pory): 30987
+- Łączny koszt wejściowy (do tej pory): 0,02137230 $
+- Łączny koszt wyjściowy (do tej pory): 0,01239480 $
+- Łączny koszt dziennika: 0,03376710 $
+
+========================================</code></pre>
+    
+    <p>To szczegółowe logowanie jest zapisywane w pliku <code>Gemini_API_call_logs.txt</code>. W zakładce <strong>Ustawienia</strong> znajdziesz pola <strong>Łącznie słów</strong> i <strong>Łączny koszt</strong>, które wyświetlają sumy łączne oparte wyłącznie na tym pliku dziennika. Jeśli plik zostanie wyczyszczony lub usunięty, te sumy odpowiednio się zresetują.</p>
+    
+    <h3 id="configuration-and-setup">Konfiguracja i instalacja</h3>
+    
+    <ol>
+      <li><strong>Konfiguracja klucza API</strong> – wymaga konta Google AI Studio lub Google Cloud z dostępem do Gemini API. Przejdź do Google AI Studio i kliknij przycisk "Get API key", aby skonfigurować klucz API dla modeli Gemini.</li>
+      <li><strong>Wybór modelu</strong> – używa Gemini 2.5 Flash-Lite dla optymalnej równowagi kosztów i jakości.</li>
+      <li><strong>Okno kontekstu</strong> – wybierz między:
+        <ul>
+          <li><strong>0 (brak)</strong> – szybkie, izolowane tłumaczenia.</li>
+          <li><strong>1 (ostatni napis)</strong> – podstawowa świadomość kontekstu.</li>
+          <li><strong>2 (dwa napisy)</strong> – maksymalny kontekst dla spójności narracji.</li>
+        </ul>
+      </li>
+      <li><strong>Włącz rejestr API</strong> – opcjonalne szczegółowe logowanie do analizy kosztów i debugowania (wywołania API są zapisywane w <strong>Gemini_API_call_logs.txt</strong>).</li>
+      <li><strong>Włącz bufor Gemini</strong> – włącz, aby zmniejszyć wywołania API dla powtarzającej się treści (tłumaczenia są zapisywane w <strong>gemini_cache.txt</strong>).</li>
+      <li><strong>Ustawienie temperatury</strong> – to ustawienie można zmienić tylko ręcznie w pliku <code>ocr_translator_config.ini</code>. Jest ustawione domyślnie na 0.0 (<code>gemini_model_temp = 0.0</code>), co jest zalecanym ustawieniem dla spójnych, deterministycznych tłumaczeń.</li>
+    </ol>
+    
+    <h3 id="performance-optimization">Optymalizacja wydajności</h3>
+    
+    <p><strong>Inteligentny system buforowania</strong></p>
+    <p>Gemini API korzysta z tego samego systemu buforowania plików co DeepL i Google Translate. Gdy buforowanie jest włączone, identyczne segmenty tekstu są przechowywane lokalnie i pobierane bez dodatkowych wywołań API. Jednak skuteczność pamięci podręcznej zależy od spójności OCR - nawet małe różnice w rozpoznawaniu wyzwolą nowe żądania API.</p>
+    
+    <p><strong>Strategie optymalizacji kosztów</strong>:</p>
+    <ul>
+      <li>Używaj okna kontekstu rozważnie - wyższe ustawienia zapewniają lepszą jakość, ale zwiększają użycie tokenów.</li>
+      <li>Włącz buforowanie plików dla treści z powtarzającymi się elementami.</li>
+      <li>Umieść obszary źródłowe precyzyjnie, aby poprawić spójność OCR.</li>
+      <li>Używaj adaptacyjnych trybów przetwarzania dla trudnego tekstu.</li>
+      <li>Monitoruj wbudowany śledzić kosztów, aby zrozumieć wzorce użycia.</li>
+    </ul>
+    
+    <h3 id="comparison-with-other-methods">Porównanie z innymi metodami</h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Funkcja</th>
+          <th>Gemini API</th>
+          <th>DeepL API</th>
+          <th>Google Translate</th>
+          <th>MarianMT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Jakość tłumaczenia</strong></td>
+          <td>Doskonała + Kontekst</td>
+          <td>Doskonała</td>
+          <td>Dobra</td>
+          <td>Średnia do dobrej</td>
+        </tr>
+        <tr>
+          <td><strong>Koszt (duże projekty)</strong></td>
+          <td>Bardzo niski</td>
+          <td>Umiarkowany</td>
+          <td>Umiarkowany</td>
+          <td>Darmowy</td>
+        </tr>
+        <tr>
+          <td><strong>Świadomość kontekstu</strong></td>
+          <td>✅ Zaawansowana</td>
+          <td>❌ Brak</td>
+          <td>❌ Brak</td>
+          <td>❌ Brak</td>
+        </tr>
+        <tr>
+          <td><strong>Obsługa błędów OCR</strong></td>
+          <td>✅ Często usuwa błędy</td>
+          <td>❌ Często powtarza błędy</td>
+          <td>❌ Często powtarza błędy</td>
+          <td>❌ Często powtarza błędy</td>
+        </tr>
+        <tr>
+          <td><strong>Śledzenie kosztów</strong></td>
+          <td>✅ Wbudowane</td>
+          <td>✅ Śledzenie darmowego użycia</td>
+          <td>❌ Tylko zewnętrzne</td>
+          <td>N/A</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h3 id="gaming-and-large-project-applications">Zastosowania w grach i dużych projektach</h3>
+    
+    <p><strong>Idealne do tłumaczenia gier</strong></p>
+    <p>Gemini API doskonale sprawdza się w scenariuszach gier, gdzie kontekst i płynność narracji są kluczowe:</p>
+    <ul>
+      <li><strong>RPG i gry fabularne</strong> – okno kontekstu utrzymuje głos postaci i spójność fabuły.</li>
+      <li><strong>Powieści wizualne</strong> – doskonała obsługa dialogów i progresji narracyjnej.</li>
+      <li><strong>Treści z wieloma napisami</strong> – inteligentna korekta błędów radzi sobie z niedoskonałym OCR z nakładanego tekstu.</li>
+      <li><strong>Dialogi wielopostaciowe</strong> – świadomość kontekstu poprawia rozwiązywanie zaimków i identyfikację mówiącego.</li>
+    </ul>
+    
     <h2 id="keyboard-shortcuts">Skróty klawiszowe</h2>
     <p>Dostępne są następujące skróty klawiszowe:</p>
     <table>
