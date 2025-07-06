@@ -444,20 +444,20 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Build instruction line based on actual context window content
             if context_size == 0:
-                instruction_line = f"<Correct OCR errors and typos in the source text. Translate idiomatically from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
+                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
             else:
                 # Check actual number of stored context pairs
                 actual_context_count = len(self.gemini_context_window) if hasattr(self, 'gemini_context_window') else 0
                 
                 if actual_context_count == 0:
-                    instruction_line = f"<Correct OCR errors and typos in the source text. Translate idiomatically from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
                 elif context_size == 1:
-                    instruction_line = f"<Correct OCR errors and typos in the source text. Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                 elif context_size == 2:
                     if actual_context_count == 1:
-                        instruction_line = f"<Correct OCR errors and typos in the source text. Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                     else:
-                        instruction_line = f"<Correct OCR errors and typos in the source text. Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}, accounting for OCR errors and typos in the source text. Return translation only.>"
+                        instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_size = self.app.gemini_context_window_var.get()
