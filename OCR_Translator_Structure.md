@@ -49,6 +49,8 @@
 - **resources/google_trans_target.csv** - Target language codes for Google Translate API
 - **resources/deepl_trans_source.csv** - Source language codes for DeepL API
 - **resources/deepl_trans_target.csv** - Target language codes for DeepL API
+- **resources/gemini_trans_source.csv** - Source language codes for Gemini API
+- **resources/gemini_trans_target.csv** - Target language codes for Gemini API
 - **resources/language_display_names.csv** - Localized language display names for UI (English/Polish)
 - **resources/MarianMT_select_models.csv** - Available MarianMT translation models
 - **resources/MarianMT_models_short_list.csv** - Preferred/recommended MarianMT models
@@ -64,35 +66,29 @@
 - **CHANGELOG.md** - Version history and changes
 - **LICENSE** - GPL v3 license file
 - **OCR_Translator_Structure.md** - This file - application structure documentation
-- **docs/user-manual.html** - Comprehensive user manual
-- **docs/user-manual.md** - User manual in Markdown format
+- **docs/user-manual.html** - Comprehensive user manual in English
+- **docs/user-manual_pl.html** - Comprehensive user manual in Polish
+- **docs/installation.html** - Installation guide in English
+- **docs/installation_pl.html** - Installation guide in Polish
+- **docs/gallery.html** - Application gallery in English
+- **docs/gallery_pl.html** - Application gallery in Polish
 - **docs/developer-guide.md** - Developer documentation
-- **docs/installation.md** - Installation guide
 - **docs/troubleshooting.md** - Troubleshooting guide
-- **docs/user-manual_pl*.html** - Polish language user manuals (multiple versions)
-- **docs/screenshot1.jpg** - Screenshot for documentation
-- **docs/screenshots/** - Directory containing additional application screenshots
 
 ## Cache and Data Files (Generated at Runtime)
 - **deepl_cache.txt** - Cached translations from DeepL API
 - **googletrans_cache.txt** - Cached translations from Google Translate API (if file caching enabled)
+- **gemini_cache.txt** - Cached translations from Gemini API (if file caching enabled)
+- **Gemini_API_call_logs.txt** - Detailed Gemini API call logging with cost tracking and token analysis
 - **marian_models_cache/** - Directory for cached MarianMT models
 - **translator_debug.log** - Application debug log file
 - **debug_images/** - Directory for saving debug images (created when debug mode is enabled)
-
-## Development Files (Optional/Generated)
-- **.git/** - Git version control directory
-- **.gitignore** - Git ignore file
-- **__pycache__/** - Python compiled bytecode cache (generated)
-- **build/** - PyInstaller build directory (generated)
-- **dist/** - PyInstaller distribution directory (generated)
-- **screenshots/** - Directory containing application screenshots for documentation
 
 ---
 
 ## Notes
 
-- Cache files (`deepl_cache.txt`, `googletrans_cache.txt`) and log files are generated during runtime
+- Cache files (`deepl_cache.txt`, `googletrans_cache.txt`, `gemini_cache.txt`) and log files are generated during runtime
 - The `marian_models_cache/` directory is created automatically when MarianMT models are downloaded
 - Debug images are saved to `debug_images/` only when debug mode is enabled
 - All CSV files are organized in the `resources/` directory for consistency and better organization
@@ -164,3 +160,65 @@ This architecture provides:
 - ✅ **Consistent behavior** across all translation providers
 - ✅ **Thread safety** improvements with proper locking
 - ✅ **Preserved compatibility** - existing file caches remain intact
+
+## Gemini API Integration Files
+
+### Gemini API Call Logs (`Gemini_API_call_logs.txt`)
+The Gemini API call logging system provides comprehensive tracking and analysis of all API interactions when enabled in settings. This file contains detailed information for cost monitoring, debugging, and usage analysis.
+
+**Log Entry Structure:**
+Each API call generates a detailed log entry with the following information:
+- **Timestamp and Language Pair** - Precise timing and translation direction
+- **Original Text** - The text being translated
+- **Complete Message Content** - Full context window sent to Gemini API, including previous subtitles for context-aware translation
+- **Response Content** - Complete translation received from Gemini
+- **Token Analysis** - Exact input/output token counts for precise cost calculation
+- **Cost Breakdown** - Per-call and cumulative cost tracking with separate input/output costs
+- **Performance Metrics** - API call duration and word count analysis
+
+**Cost Tracking Features:**
+- Real-time cumulative cost tracking across sessions
+- Separate input/output token cost analysis using Gemini 2.5 Flash-Lite pricing ($0.10 per 1M input tokens, $0.40 per 1M output tokens)
+- Total words translated counter for usage analytics
+- Cost-per-word analysis for budget planning
+
+**Context Window Documentation:**
+The logs show the complete context window implementation, demonstrating how previous subtitles are included for narrative coherence:
+```
+ENGLISH: [Previous subtitle 1]
+ENGLISH: [Previous subtitle 2] 
+ENGLISH: [Current subtitle to translate]
+
+POLISH: [Previous translation 1]
+POLISH: [Previous translation 2]
+POLISH: [Space for current translation]
+```
+
+### Gemini Translation Cache (`gemini_cache.txt`)
+The Gemini cache file stores translations in a structured format for efficient retrieval and API cost reduction.
+
+**Cache Format:**
+```
+Gemini(LANG_PAIR,timestamp):original_text:==:translated_text
+```
+
+**Format Components:**
+- **Provider Identifier**: "Gemini" to distinguish from other translation caches
+- **Language Pair**: Source-target language codes (e.g., "CS-PL", "FR-EN")
+- **Timestamp**: Creation timestamp for cache entry management
+- **Original Text**: Source text as recognized by OCR
+- **Translated Text**: Gemini's translation result
+
+**Cache Efficiency:**
+- Reduces API calls for repeated text segments
+- Survives application restarts for long-term cost savings
+- Integrates with unified in-memory cache for optimal performance
+- Particularly effective for static UI elements and repeated dialogue
+
+**Example Cache Entries:**
+```
+Gemini(CS-PL,2025-07-06 21:12:00):A vodkaď se podle tebe teda známe?:==:A skąd niby się znamy?
+Gemini(FR-EN,2025-07-06 21:13:31):Sa glorieuse Majesté:==:His Glorious Majesty
+```
+
+The cache effectiveness depends on OCR consistency - identical OCR results enable cache hits, while variations trigger new API calls.

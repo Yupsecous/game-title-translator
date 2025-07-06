@@ -195,7 +195,7 @@ class OCRTranslator:
         # Define translation model names and values earlier
         # Initialize with default values, will be updated with localized versions
         self.translation_model_names = {
-            'gemini_api': 'Gemini 2.5 Flash Lite',
+            'gemini_api': 'Gemini 2.5 Flash-Lite',
             'google_api': 'Google Translate API',
             'deepl_api': 'DeepL API',
             'marianmt': 'MarianMT (offline and free)'
@@ -1366,7 +1366,7 @@ For more information, see the user manual."""
     def update_translation_model_names(self):
         """Update translation model names with localized strings from CSV files."""
         self.translation_model_names = {
-            'gemini_api': 'Gemini 2.5 Flash Lite',  # Keep English as these are API names
+            'gemini_api': 'Gemini 2.5 Flash-Lite',  # Keep English as these are API names
             'google_api': 'Google Translate API',  # Keep English as these are API names
             'deepl_api': 'DeepL API',  # Keep English as these are API names
             'marianmt': self.ui_lang.get_label('translation_model_marianmt_offline', 'MarianMT (offline and free)')

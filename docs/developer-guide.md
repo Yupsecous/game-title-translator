@@ -102,6 +102,8 @@ ocr-translator/
     ├── google_trans_target.csv    # Target language codes for Google Translate API
     ├── deepl_trans_source.csv     # Source language codes for DeepL API
     ├── deepl_trans_target.csv     # Target language codes for DeepL API
+    ├── gemini_trans_source.csv    # Source language codes for Gemini API
+    ├── gemini_trans_target.csv    # Target language codes for Gemini API
     ├── MarianMT_select_models.csv # Available MarianMT translation models
     ├── MarianMT_models_short_list.csv # Preferred/recommended MarianMT models
     ├── language_display_names.csv # Localized language display names
@@ -115,6 +117,8 @@ ocr-translator/
 ocr-translator/
 ├── deepl_cache.txt                # Cached translations from DeepL API
 ├── googletrans_cache.txt          # Cached translations from Google Translate API
+├── gemini_cache.txt               # Cached translations from Gemini API
+├── Gemini_API_call_logs.txt       # Detailed Gemini API call logging with cost tracking
 ├── marian_models_cache/           # Directory for cached MarianMT models
 └── translator_debug.log           # Application debug log file
 ```
@@ -170,12 +174,132 @@ Translation Request
 - **Memory waste**: Multiple caches storing the same translations
 - **Thread safety issues**: Inconsistent locking mechanisms across different cache implementations
 
+### Gemini API Integration and Logging
+
+The application features sophisticated Gemini API integration with comprehensive logging and cost tracking capabilities designed for the Gemini 2.5 Flash-Lite model.
+
+#### Gemini API Call Logging System (`Gemini_API_call_logs.txt`)
+
+When enabled in settings, the application generates detailed logs of all Gemini API interactions for cost monitoring, debugging, and usage analysis.
+
+**Log Structure and Content:**
+Each API call creates a comprehensive log entry containing:
+
+1. **Call Metadata:**
+   - Precise timestamp and language pair
+   - Message character/word/line counts
+   - API call duration for performance analysis
+
+2. **Complete Context Window:**
+   - Full message content sent to Gemini API
+   - Shows context-aware translation implementation
+   - Demonstrates how previous subtitles are included for narrative coherence
+
+3. **Token and Cost Analysis:**
+   - Exact input/output token counts from Gemini API
+   - Per-call cost breakdown using Gemini 2.5 Flash-Lite pricing
+   - Cumulative cost tracking across sessions
+   - Cost-per-word analysis for budget planning
+
+**Example Log Entry Format:**
+```
+=== GEMINI API CALL LOG ===
+Timestamp: 2025-07-03 01:10:10
+Language Pair: en -> pl
+Original Text: [source text]
+
+CALL DETAILS:
+- Message Length: 117 characters
+- Word Count: 17 words
+- Line Count: 4 lines
+
+COMPLETE MESSAGE CONTENT SENT TO GEMINI:
+---BEGIN MESSAGE---
+<Translate idiomatically from English to Polish. Return translation only.>
+
+ENGLISH: [source text]
+POLISH:
+---END MESSAGE---
+
+RESPONSE RECEIVED:
+[translation result]
+
+TOKEN & COST ANALYSIS (CURRENT CALL):
+- Translated Words: 6
+- Exact Input Tokens: 28
+- Exact Output Tokens: 11
+- Input Cost: $0.00000280
+- Output Cost: $0.00000440
+- Total Cost for this Call: $0.00000720
+
+CUMULATIVE TOTALS:
+- Total Translated Words (so far): 6
+- Total Input Tokens (so far): 28
+- Total Output Tokens (so far): 11
+- Cumulative Log Cost: $0.00000720
+```
+
+**Context Window Implementation:**
+The logs demonstrate the sophisticated context-aware translation system:
+```
+ENGLISH: [Previous subtitle 1]
+ENGLISH: [Previous subtitle 2]
+ENGLISH: [Current subtitle to translate]
+
+POLISH: [Previous translation 1]
+POLISH: [Previous translation 2]
+POLISH: [Space for current translation]
+```
+
+This context window (configurable 0-2 previous subtitles) enables narrative coherence and improved grammar flow.
+
+#### Gemini Translation Cache (`gemini_cache.txt`)
+
+**Cache Format:**
+```
+Gemini(LANG_PAIR,timestamp):original_text:==:translated_text
+```
+
+**Format Components:**
+- **Provider**: "Gemini" identifier
+- **Language Pair**: Source-target codes (e.g., "CS-PL", "FR-EN")  
+- **Timestamp**: Cache entry creation time
+- **Delimiter**: ":==:" separates original from translated text
+
+**Integration with Unified Cache:**
+- Level 2 persistent storage in two-tier caching system
+- Works alongside unified in-memory cache (Level 1)
+- Reduces API costs through intelligent caching
+- Cache effectiveness depends on OCR consistency
+
 ### Multi-Language UI Support
 
 The application supports multiple UI languages through:
 - `language_ui.py` - UILanguageManager class that loads translations
 - CSV files in `resources/` directory containing UI text translations
 - Dynamic UI rebuilding when language changes
+
+### Working with Gemini API Files
+
+**Monitoring API Usage:**
+Developers can analyze the `Gemini_API_call_logs.txt` file to:
+- Track exact API costs with token-level precision
+- Monitor context window effectiveness
+- Debug translation quality issues
+- Analyze performance patterns (call duration, token efficiency)
+
+**Cache Management:**
+The `gemini_cache.txt` file enables:
+- API cost reduction through intelligent caching
+- Long-term storage of translation pairs
+- Integration with unified in-memory cache system
+- Manual cache analysis for optimization
+
+**Cost Optimization Strategies:**
+- Monitor cumulative costs through log analysis
+- Analyze cache hit rates for different content types
+- Optimize OCR settings to improve cache consistency
+- Configure context window size based on cost/quality trade-offs
 
 ### Modular Handler Architecture
 
@@ -298,6 +422,31 @@ This test verifies:
 - Full cache clearing
 - Cache statistics and utilization
 
+### Testing Gemini API Integration
+
+When testing Gemini API functionality, verify:
+
+1. **API Call Logging:**
+   - Enable API logging in settings
+   - Perform test translations
+   - Verify `Gemini_API_call_logs.txt` contains complete log entries
+   - Check token counts and cost calculations for accuracy
+
+2. **Cache Functionality:**
+   - Test cache file creation and format in `gemini_cache.txt`
+   - Verify cache hits for identical OCR text
+   - Test cache persistence across application restarts
+
+3. **Context Window:**
+   - Test different context window settings (0, 1, 2 previous subtitles)
+   - Verify context is included in API call logs
+   - Check translation quality with and without context
+
+4. **Cost Tracking:**
+   - Monitor cumulative cost tracking accuracy
+   - Verify per-call cost calculations match expected Gemini pricing
+   - Test cost reset functionality when logs are cleared
+
 ### Manual Testing Areas
 
 When adding new functionality, be sure to:
@@ -335,7 +484,14 @@ The application uses multiple threads for capture, OCR, and translation with imp
 
 The application has been enhanced with several recent features:
 
-### Unified Translation Cache System (Latest)
+### Gemini API Integration (Latest)
+- **Context-aware translation** with configurable sliding window for narrative coherence
+- **Comprehensive API call logging** with detailed cost tracking and token analysis
+- **OCR error intelligence** that automatically corrects recognition imperfections
+- **Cost-effective translation** using Gemini 2.5 Flash-Lite pricing model
+- **Advanced caching integration** with both in-memory and persistent file storage
+
+### Unified Translation Cache System
 - **Single LRU cache** replacing multiple overlapping cache layers
 - **Thread-safe design** with proper locking mechanisms  
 - **Fixed cache clearing bugs** that previously left stale data
