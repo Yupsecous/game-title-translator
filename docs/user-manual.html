@@ -182,6 +182,30 @@
         .marianmt-note-content {
             flex: 1;
         }
+
+        /* Disclaimer note style */
+        .disclaimer-note {
+            background-color: #ffebee;
+            border: 2px solid #d32f2f;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 100%;
+        }
+        
+        .disclaimer-note-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: #d32f2f;
+        }
+        
+        .disclaimer-note-content {
+            flex: 1;
+        }
     </style>
   </head>
   <body>
@@ -299,6 +323,8 @@
         <strong>Quality</strong> – Choose between <strong>Classic</strong> (faster) or <strong>Next-gen</strong> (potentially better quality) models (DeepL only).</li>
       <li>
         <strong>MarianMT Options</strong> – For offline neural translation (MarianMT-specific).</li>
+      <li>
+        <strong>Gemini Options</strong> – For cost-effective AI translation with context awareness (Gemini-specific).</li>
       <li>
         <strong>Tesseract Path</strong> – Path to the Tesseract OCR executable.</li>
       <li>
@@ -562,11 +588,11 @@
     
     <p><strong>Key Advantages</strong>:</p>
     <ul>
-      <li><strong>Context-Aware Translation</strong> – Uses sliding window context to maintain narrative coherence and improve grammar</li>
-      <li><strong>OCR Error Intelligence</strong> – Automatically corrects OCR imperfections, producing clean translations from garbled input</li>
-      <li><strong>Exceptional Cost-to-Quality Ratio</strong> – Translate entire games like Witcher 3 for under $5, even with multiple OCR attempts</li>
-      <li><strong>Built-in Cost Tracking</strong> – Real-time monitoring of translation costs and token usage</li>
-      <li><strong>Advanced Caching</strong> – Intelligent file caching to minimize API costs</li>
+      <li><strong>Context-Aware Translation</strong> – Uses sliding window context to maintain narrative coherence and improve grammar.</li>
+      <li><strong>OCR Error Intelligence</strong> – Automatically corrects OCR imperfections, producing clean translations from garbled input.</li>
+      <li><strong>Exceptional Cost-to-Quality Ratio</strong> – Translate entire games like Witcher 3 for under $5, even with multiple OCR attempts.</li>
+      <li><strong>Built-in Cost Tracking</strong> – Real-time monitoring of translation costs and token usage.</li>
+      <li><strong>Advanced Caching</strong> – Intelligent file caching to minimize API costs.</li>
     </ul>
     
     <p><strong>Gemini API is the recommended translation method</strong> for most users seeking the best balance of quality, intelligence, and affordability. For detailed configuration options, advanced features, and cost optimization strategies, see the <a href="#gemini-api-cost-effective-and-context-aware-translation">complete Gemini API guide</a>.</p>
@@ -608,6 +634,7 @@
       <li>Offers premium-quality translations but supports fewer languages.</li>
       <li>Regarded by many as the industry leader in translation quality.</li>
       <li>The DeepL API Free plan allows for the translation of 500,000 characters per month free of charge (as at May, 2025).</li>
+      <li>In the <strong>Settings</strong> tab, the <strong>Free Monthly Usage</strong> field tracks your official usage of the free monthly quota for DeepL API Free accounts.</li>
       <li>Configure by:
         <ul>
           <li>Selecting <strong>DeepL API</strong> as Translation Model.</li>
@@ -659,52 +686,248 @@
     
     <p>The context window can be configured to include 0-2 previous subtitles, allowing the AI to:</p>
     <ul>
-      <li>Maintain character voice consistency across dialogue</li>
-      <li>Preserve narrative continuity in story-driven content</li>
-      <li>Improve pronoun resolution and grammatical agreement</li>
-      <li>Deliver more natural, idiomatic translations</li>
+      <li>Maintain character voice consistency across dialogue.</li>
+      <li>Preserve narrative continuity in story-driven content.</li>
+      <li>Improve pronoun resolution and grammatical agreement.</li>
+      <li>Deliver more natural, idiomatic translations.</li>
     </ul>
+    
+    <p><strong>Example: Context-Aware Translation</strong></p>
+    <p>This example demonstrates how context awareness helps maintain proper grammar when translating Czech to Polish:</p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Czech Original</th>
+          <th>DeepL (No Context)</th>
+          <th>Gemini (With Context)</th>
+          <th>English Translation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>A vodkaď se podle tebe teda známe?</code></td>
+          <td>A skąd się znamy, według ciebie?</td>
+          <td>A skąd niby się znamy?</td>
+          <td>And how do we supposedly know each other?</td>
+        </tr>
+        <tr>
+          <td><code>Viděli jsme se přece u toho rybníka!</code></td>
+          <td>Widzieliśmy się przecież nad stawem!</td>
+          <td>Widzieliśmy się przecież nad tamtym stawem!</td>
+          <td>We saw each other at that pond!</td>
+        </tr>
+        <tr>
+          <td><code>Jakýho rybníka? Já u žádnýho rybníka nebyla!</code></td>
+          <td><strong style="color: #d32f2f;">Jakiego stawu?</strong> Nie byłam przy żadnym stawie!</td>
+          <td><strong style="color: #2e7d32;">Nad jakim stawem?</strong> Ja nad żadnym stawem nie byłam!</td>
+          <td>What pond? I wasn't at any pond!</td>
+        </tr>
+        <tr>
+          <td><code>Ale jo, byla!</code></td>
+          <td>Ale tak, <strong style="color: #d32f2f;">była!</strong></td>
+          <td>Ale tak, <strong style="color: #2e7d32;">byłaś!</strong></td>
+          <td>But yes, you were!</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <p><strong>Key Improvements with Context:</strong></p>
+    <ul>
+      <li><strong>"<span style="color: #d32f2f;">Jakiego stawu?</span>" vs "<span style="color: #2e7d32;">Nad jakim stawem?</span>"</strong> – Gemini correctly uses "nad" (at/by) to match the previous sentence's reference to being "nad stawem", while DeepL uses the generic genitive case.</li>
+      <li><strong>"<span style="color: #d32f2f;">była!</span>" vs "<span style="color: #2e7d32;">byłaś!</span>"</strong> – Gemini correctly uses the second person feminine form "byłaś" (you were) to maintain dialogue consistency, while DeepL uses the third person form "była" (she was).</li>
+    </ul>
+    
+    <p>These examples clearly demonstrate how Gemini's context window helps maintain grammatical consistency and dialogue flow that would be impossible with sentence-by-sentence translation.</p>
     
     <p><strong>OCR Error Intelligence</strong></p>
     <p>One of Gemini's most impressive capabilities is its ability to interpret and correct OCR imperfections automatically. When text recognition produces garbled or incomplete results, Gemini's advanced language understanding can often deduce the intended meaning and provide clean, accurate translations without replicating OCR errors in the output.</p>
+    
+    <p><strong>Example: OCR Error Correction</strong></p>
+    <p>Here's a real-world example showing how Gemini handles OCR errors compared to DeepL when translating French to English:</p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>OCR Input</th>
+          <th>DeepL Output</th>
+          <th>Gemini Output</th>
+          <th>Analysis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Vraiment ?</code></td>
+          <td>Really?</td>
+          <td>Really?</td>
+          <td>Clean OCR, both work well</td>
+        </tr>
+        <tr>
+          <td><code>| Vraiment ?</code></td>
+          <td>| Really?</td>
+          <td>Really?</td>
+          <td>Gemini removes OCR artifact "|", DeepL replicates it</td>
+        </tr>
+      </tbody>
+    </table>
     
     <h3 id="exceptional-cost-effectiveness">Exceptional Cost-Effectiveness</h3>
     
     <p><strong>Real-World Cost Analysis</strong></p>
     <p>Gemini API offers extraordinary value for large translation projects. Even massive games like The Witcher 3, with hundreds of hours of dialogue and subtitles, can be translated for under $5 total cost. This remains true even when accounting for:</p>
     <ul>
-      <li>Multiple OCR attempts due to recognition variations</li>
-      <li>Context window overhead (sending 1-2 previous subtitles with each request)</li>
-      <li>Cache misses requiring fresh API calls</li>
-      <li>Complex narrative content requiring longer context</li>
+      <li>Multiple OCR attempts due to recognition variations.</li>
+      <li>Context window overhead (sending 1-2 previous subtitles with each request).</li>
+      <li>Cache misses requiring fresh API calls.</li>
+      <li>Complex narrative content requiring longer context.</li>
     </ul>
+    
+    <p><strong>Cost Estimate: The Witcher 3 Translation</strong></p>
+    <p>Here is a detailed cost analysis for translating The Witcher 3 subtitles using DeepL and Gemini 2.5 Flash-Lite:</p>
+    
+    <p><strong>Assumptions:</strong></p>
+    <ul>
+      <li><strong>Word Count:</strong> 450,000 words.</li>
+      <li><strong>OCR Inaccuracy:</strong> Each subtitle is sent 3 times for translation.</li>
+      <li><strong>Average Word Length:</strong> 5 characters.</li>
+      <li><strong>Tokens per Word:</strong> 2 tokens per word.</li>
+      <li><strong>Gemini Context:</strong> Each input message is 4 times longer than the actual subtitle.</li>
+      <li><strong>DeepL API Pro Cost:</strong> €20.00 per 1 million characters.</li>
+      <li><strong>Gemini 2.5 Flash-Lite Cost:</strong> $0.10 per 1 million input tokens and $0.40 per 1 million output tokens.</li>
+      <li><strong>EUR to USD Exchange Rate:</strong> 1.08.</li>
+    </ul>
+    
+    <p><strong>Cost Breakdown:</strong></p>
+    
+    <p><strong>DeepL:</strong></p>
+    <ul>
+      <li><strong>Total Characters:</strong> 450,000 words × 5 characters/word = 2,250,000 characters.</li>
+      <li><strong>Total Characters with OCR Inaccuracy:</strong> 2,250,000 × 3 = 6,750,000 characters.</li>
+      <li><strong>Estimated Cost (EUR):</strong> (6,750,000 ÷ 1,000,000) × €20.00 = <strong>€135.00</strong>.</li>
+      <li><strong>Estimated Cost (USD):</strong> €135.00 × 1.08 = <strong>$145.80</strong>.</li>
+    </ul>
+    
+    <p><strong>Gemini 2.5 Flash-Lite:</strong></p>
+    <ul>
+      <li><strong>Total Tokens:</strong> 450,000 words × 2 tokens/word = 900,000 tokens.</li>
+      <li><strong>Total Tokens with OCR Inaccuracy:</strong> 900,000 × 3 = 2,700,000 tokens.</li>
+      <li><strong>Input Tokens:</strong> 2,700,000 × 4 = 10,800,000 tokens.</li>
+      <li><strong>Input Cost:</strong> (10,800,000 ÷ 1,000,000) × $0.10 = <strong>$1.08</strong>.</li>
+      <li><strong>Output Tokens:</strong> 2,700,000 tokens.</li>
+      <li><strong>Output Cost:</strong> (2,700,000 ÷ 1,000,000) × $0.40 = <strong>$1.08</strong>.</li>
+      <li><strong>Total Estimated Cost (USD):</strong> $1.08 (input) + $1.08 (output) = <strong>$2.16</strong>.</li>
+    </ul>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Estimated Cost (EUR)</th>
+          <th>Estimated Cost (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DeepL</strong></td>
+          <td>€135.00</td>
+          <td>$145.80</td>
+        </tr>
+        <tr>
+          <td><strong>Gemini 2.5 Flash-Lite</strong></td>
+          <td>—</td>
+          <td>$2.16</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <p><em>Note: These are rough estimates. Actual costs depend on language pair, OCR accuracy, context settings, and cache effectiveness.</em></p>
+
+    <div class="disclaimer-note">
+      <div class="disclaimer-note-icon">❗</div>
+      <div class="disclaimer-note-content">
+        <strong>Disclaimer:</strong> Cost tracking is provided for reference purposes only. This is free software with no guarantees regarding cost accuracy. Users are responsible for monitoring their own API usage and costs through Google's billing dashboard.
+      </div>
+    </div>
     
     <p><strong>Built-in Cost Tracking</strong></p>
     <p>OCR Translator includes comprehensive cost monitoring specifically designed for Gemini API usage:</p>
     <ul>
-      <li><strong>Real-time Cost Display</strong> – See cumulative costs update as you translate</li>
-      <li><strong>Token Usage Analytics</strong> – Track exact input/output token consumption</li>
-      <li><strong>API Call Logging</strong> – Optional detailed logging for complete transparency</li>
-      <li><strong>Word Count Tracking</strong> – Monitor total words translated across sessions</li>
+      <li><strong>Real-time Cost Display</strong> – See cumulative costs update as you translate.</li>
+      <li><strong>Token Usage Analytics</strong> – Track exact input/output token consumption.</li>
+      <li><strong>API Call Logging</strong> – Optional detailed logging for complete transparency.</li>
+      <li><strong>Word Count Tracking</strong> – Monitor total words translated across sessions.</li>
     </ul>
     
-    <p><em><strong>Disclaimer</strong>: Cost tracking is provided for reference purposes only. This is free software with no guarantees regarding cost accuracy. Users are responsible for monitoring their own API usage and costs through Google's billing dashboard.</em></p>
+    <p><strong>Detailed API Call Example</strong></p>
+    <p>Here's a real example of how the API call logging works, showing the complete translation process:</p>
+    
+    <pre><code>=== GEMINI API CALL LOG ===
+Timestamp: 2025-07-06 17:19:03
+Language Pair: fr -> en
+Original Text: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+
+CALL DETAILS:
+- Message Length: 695 characters
+- Word Count: 119 words
+- Line Count: 9 lines
+
+COMPLETE MESSAGE CONTENT SENT TO GEMINI:
+---BEGIN MESSAGE---
+&lt;Translate idiomatically the third subtitle from French to English. Return translation only.&gt;
+
+FRENCH: C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à mes fins.
+FRENCH: Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici. Que voulez-vous ?
+FRENCH: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+
+ENGLISH: That was my goal. The rest... was merely a means to an end.
+ENGLISH: You say you came all this way to find me. Here I am. What do you want?
+ENGLISH:
+---END MESSAGE---
+
+
+RESPONSE RECEIVED:
+Timestamp: 2025-07-06 17:19:03
+Call Duration: 0.385 seconds
+
+---BEGIN RESPONSE---
+You manipulated entire civilizations, caused decades of war, destroyed Ziost... and fled. You're going to tell me why.
+---END RESPONSE---
+
+TOKEN & COST ANALYSIS (CURRENT CALL):
+- Translated Words: 22
+- Exact Input Tokens: 173
+- Exact Output Tokens: 26
+- Input Cost: $0.00001730
+- Output Cost: $0.00001040
+- Total Cost for this Call: $0.00002770
+
+CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
+- Total Translated Words (so far): 18460
+- Total Input Tokens (so far): 213723
+- Total Output Tokens (so far): 30987
+- Total Input Cost (so far): $0.02137230
+- Total Output Cost (so far): $0.01239480
+- Cumulative Log Cost: $0.03376710
+
+========================================</code></pre>
+    
+    <p>This detailed logging is saved in the <code>Gemini_API_call_logs.txt</code> file. In the <strong>Settings</strong> tab, you'll find <strong>Total Words</strong> and <strong>Total Cost</strong> fields that display cumulative figures based solely on this log file. If the file is cleared or deleted, these totals will reset accordingly.</p>
     
     <h3 id="configuration-and-setup">Configuration and Setup</h3>
     
     <ol>
-      <li><strong>API Key Setup</strong> – Requires a Google AI Studio or Google Cloud account with Gemini API access</li>
-      <li><strong>Model Selection</strong> – Uses Gemini 2.5 Flash-Lite for optimal cost-quality balance</li>
+      <li><strong>API Key Setup</strong> – Requires a Google AI Studio or Google Cloud account with Gemini API access. Go to Google AI Studio and click the "Get API key" button to set up an API key for Gemini models.</li>
+      <li><strong>Model Selection</strong> – Uses Gemini 2.5 Flash-Lite for optimal cost-quality balance.</li>
       <li><strong>Context Window</strong> – Choose between:
         <ul>
-          <li><strong>0 (Disabled)</strong> – Fast, isolated translations</li>
-          <li><strong>1 (Last subtitle)</strong> – Basic context awareness</li>
-          <li><strong>2 (Two subtitles)</strong> – Maximum context for narrative coherence</li>
+          <li><strong>0 (Disabled)</strong> – Fast, isolated translations.</li>
+          <li><strong>1 (Last subtitle)</strong> – Basic context awareness.</li>
+          <li><strong>2 (Two subtitles)</strong> – Maximum context for narrative coherence.</li>
         </ul>
       </li>
-      <li><strong>Temperature Setting</strong> – Configurable from 0.0 (deterministic) to 1.0 (creative)</li>
-      <li><strong>File Caching</strong> – Enable to reduce API calls for repeated content</li>
-      <li><strong>API Logging</strong> – Optional detailed logging for cost analysis and debugging</li>
+      <li><strong>Enable API Log</strong> – Optional detailed logging for cost analysis and debugging (API calls are saved in <strong>Gemini_API_call_logs.txt</strong>).</li>
+      <li><strong>Enable Gemini file cache</strong> – Enable to reduce API calls for repeated content (translations are saved in <strong>gemini_cache.txt</strong>).</li>
+      <li><strong>Temperature Setting</strong> – This setting can only be changed manually in the <code>ocr_translator_config.ini</code> file. It is set at 0.0 by default (<code>gemini_model_temp = 0.0</code>), which is the recommended setting for consistent, deterministic translations.</li>
     </ol>
     
     <h3 id="performance-optimization">Performance Optimization</h3>
@@ -714,11 +937,11 @@
     
     <p><strong>Cost Optimization Strategies</strong>:</p>
     <ul>
-      <li>Use context window judiciously - higher settings provide better quality but increase token usage</li>
-      <li>Enable file caching for content with repeated elements</li>
-      <li>Position source areas precisely to improve OCR consistency</li>
-      <li>Use adaptive preprocessing modes for challenging text</li>
-      <li>Monitor the built-in cost tracker to understand usage patterns</li>
+      <li>Use context window judiciously - higher settings provide better quality but increase token usage.</li>
+      <li>Enable file caching for content with repeated elements.</li>
+      <li>Position source areas precisely to improve OCR consistency.</li>
+      <li>Use adaptive preprocessing modes for challenging text.</li>
+      <li>Monitor the built-in cost tracker to understand usage patterns.</li>
     </ul>
     
     <h3 id="comparison-with-other-methods">Comparison with Other Methods</h3>
@@ -739,7 +962,7 @@
           <td>Excellent + Context</td>
           <td>Excellent</td>
           <td>Good</td>
-          <td>Good</td>
+          <td>Average to Good</td>
         </tr>
         <tr>
           <td><strong>Cost (Large Projects)</strong></td>
@@ -757,24 +980,17 @@
         </tr>
         <tr>
           <td><strong>OCR Error Handling</strong></td>
-          <td>✅ Intelligent</td>
-          <td>❌ Replicates errors</td>
-          <td>❌ Replicates errors</td>
-          <td>❌ Replicates errors</td>
+          <td>✅ Often removes errors</td>
+          <td>❌ Often replicates errors</td>
+          <td>❌ Often replicates errors</td>
+          <td>❌ Often replicates errors</td>
         </tr>
         <tr>
           <td><strong>Cost Tracking</strong></td>
           <td>✅ Built-in</td>
-          <td>❌ External only</td>
+          <td>✅ Free Usage Tracker</td>
           <td>❌ External only</td>
           <td>N/A</td>
-        </tr>
-        <tr>
-          <td><strong>Language Support</strong></td>
-          <td>Very Good</td>
-          <td>Limited</td>
-          <td>Extensive</td>
-          <td>Limited pairs</td>
         </tr>
       </tbody>
     </table>
@@ -784,23 +1000,12 @@
     <p><strong>Ideal for Gaming Translation</strong></p>
     <p>Gemini API excels in gaming scenarios where context and narrative flow are crucial:</p>
     <ul>
-      <li><strong>RPGs and Story-Driven Games</strong> – Context window maintains character voice and story coherence</li>
-      <li><strong>Visual Novels</strong> – Superior handling of dialogue and narrative progression</li>
-      <li><strong>Subtitle-Heavy Content</strong> – Intelligent error correction handles imperfect OCR from overlaid text</li>
-      <li><strong>Multi-Character Dialogue</strong> – Context awareness improves pronoun resolution and speaker identification</li>
+      <li><strong>RPGs and Story-Driven Games</strong> – Context window maintains character voice and story coherence.</li>
+      <li><strong>Visual Novels</strong> – Superior handling of dialogue and narrative progression.</li>
+      <li><strong>Subtitle-Heavy Content</strong> – Intelligent error correction handles imperfect OCR from overlaid text.</li>
+      <li><strong>Multi-Character Dialogue</strong> – Context awareness improves pronoun resolution and speaker identification.</li>
     </ul>
     
-    <p><strong>Cost Projections for Major Titles</strong></p>
-    <p>Based on real-world usage patterns, estimated translation costs for popular games:</p>
-    <ul>
-      <li><strong>The Witcher 3: Wild Hunt</strong> – Approximately $3-5 total (including all DLC)</li>
-      <li><strong>Cyberpunk 2077</strong> – Approximately $2-4 total</li>
-      <li><strong>Baldur's Gate 3</strong> – Approximately $4-6 total</li>
-      <li><strong>Typical Visual Novel</strong> – Approximately $0.50-2 total</li>
-    </ul>
-    
-    <p><em>Note: Actual costs may vary based on language pair, OCR accuracy, context window settings, and cache effectiveness. These estimates include context window overhead and multiple OCR attempts.</em></p>
-
     <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
     <p>These keyboard shortcuts are available:</p>
     <table>
