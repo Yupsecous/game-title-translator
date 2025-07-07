@@ -1,10 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 """
-OCR Translator PyInstaller Specification File - Simple GPU Version
+Game-Changing Translator PyInstaller Specification File - Simple GPU Version
 This spec file bundles everything needed for CUDA support without detection.
 Just includes all necessary dependencies statically.
-To build: pyinstaller OCRTranslator_GPU3.spec
+To build: pyinstaller GameChangingTranslator_GPU.spec
 """
 
 import os
@@ -203,7 +203,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='OCRTranslator',
+    name='GameChangingTranslator',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -224,5 +224,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='OCRTranslator',
+    name='GameChangingTranslator',
 )

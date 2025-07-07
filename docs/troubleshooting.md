@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide addresses common issues you might encounter when using OCR Translator.
+This guide addresses common issues you might encounter when using Game-Changing Translator.
 
 ## Application Startup Issues
 

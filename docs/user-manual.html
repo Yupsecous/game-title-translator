@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="author" content="Tomasz Kamiński" />
-    <title>OCR Translator User Manual</title>
+    <title>Game-Changing Translator User Manual</title>
     <style type="text/css">
         /* Base styling */
         body {
@@ -212,11 +212,11 @@
     <div class="flag-container">
       <img src="screenshots/united-kingdom-flag-icon.svg" alt="British Flag" title="English" />
     </div>
-    <h1 id="ocr-translator-user-manual">OCR Translator User Manual</h1>
+    <h1 id="game-changing-translator-user-manual">Game-Changing Translator User Manual</h1>
     <p>Copyright © 2025 Tomasz Kamiński<br>
     <em>Last Updated: 7 July 2025</em></p>
     <p>
-      <img src="screenshots/screenshot2_eng_deepl.jpg" alt="OCR Translator Main Interface" class="logo-image" />
+      <img src="screenshots/screenshot2_eng_deepl.jpg" alt="Game-Changing Translator Main Interface" class="logo-image" />
     </p>
     <h2 id="table-of-contents">Table of Contents</h2>
     <ol>
@@ -252,10 +252,10 @@
       </li>
     </ol>
     <h2 id="introduction">Introduction</h2>
-    <p><strong>OCR Translator</strong>  is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. With its floating overlay windows, you can position the translation anywhere on your screen, making it perfect for translating games, videos, PDFs, or any application with text that you can't easily copy and paste.</p>
+    <p><strong>Game-Changing Translator</strong>  is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. With its floating overlay windows, you can position the translation anywhere on your screen, making it perfect for translating games, videos, PDFs, or any application with text that you can't easily copy and paste.</p>
     <h2 id="getting-started">Getting Started</h2>
     <h3 id="requirements">Requirements</h3>
-    <p>Before using <strong>OCR Translator</strong> , ensure you have:</p>
+    <p>Before using <strong>Game-Changing Translator</strong> , ensure you have:</p>
     <ul>
       <li>Windows operating system.</li>
       <li>
@@ -264,7 +264,7 @@
     </ul>
     <h3 id="first-run">First Run</h3>
     <ol>
-      <li>Launch <strong>OCR Translator</strong> by running the <code>main.py</code> script or the executable if you're using a compiled version.</li>
+      <li>Launch <strong>Game-Changing Translator</strong> by running the <code>main.py</code> script or the executable if you're using a compiled version.</li>
       <li>On first startup, the application loads with default settings and both source and target areas are hidden.</li>
       <li>Before starting translation, you need to:
         <ul>
@@ -611,7 +611,7 @@
       </li>
     </ol>
     <p>MarianMT models are open-source neural machine translation systems that offer quite good translation quality. Whilst not quite reaching the standards of premium services like DeepL, they provide remarkably solid translations without any cost or internet requirement after the initial model download.</p>
-    <p>These models were originally designed for translating short, single sentences and would typically truncate longer passages. However, <strong>OCR Translator</strong> implements a clever workaround to this limitation. The application automatically splits longer texts into individual sentences and processes them efficiently using batch translation. All sentences are processed together in a single, optimized model inference call, then seamlessly stitched back together, ensuring you receive complete translations regardless of text length.</p>
+    <p>These models were originally designed for translating short, single sentences and would typically truncate longer passages. However, <strong>Game-Changing Translator</strong> implements a clever workaround to this limitation. The application automatically splits longer texts into individual sentences and processes them efficiently using batch translation. All sentences are processed together in a single, optimized model inference call, then seamlessly stitched back together, ensuring you receive complete translations regardless of text length.</p>
     <p>This approach offers several practical advantages:</p>
     <ul>
       <li>Complete privacy – your text never leaves your computer.</li>
@@ -655,7 +655,7 @@
     <p>If you select <strong>Next-gen</strong> and your chosen language pair isn't supported, the application will automatically fall back to <strong>Classic</strong> mode to ensure your translation continues working seamlessly. Both options deliver top-quality results that DeepL is renowned for.</p>
     
     <p><strong>DeepL File Caching System</strong></p>
-    <p><strong>OCR Translator</strong>  implements a caching system for DeepL translations. Once a text segment has been translated, it's stored in the application's local cache (<code>deepl_cache.txt</code>). When the same text appears again, the application retrieves the translation from the cache instead of sending another API request.</p>
+    <p><strong>Game-Changing Translator</strong>  implements a caching system for DeepL translations. Once a text segment has been translated, it's stored in the application's local cache (<code>deepl_cache.txt</code>). When the same text appears again, the application retrieves the translation from the cache instead of sending another API request.</p>
     <p>It's important to understand that this caching mechanism relies entirely on OCR quality. For a cache match to occur, the OCR'd text must be identical – down to the last character – with what is stored in the cache. Even a single character difference will result in a new API call and translation. This means the actual efficiency of the cache depends heavily on consistent OCR results.</p>
     <p>The cache can be helpful for gamers in specific scenarios. For instance, if you're playing a game where static menu options or repeated dialogue appear in exactly the same font, size, and screen position, the OCR is more likely to produce identical results each time. However, if text appears with different backgrounds, lighting, or slight position shifts, OCR variations will likely trigger new translations.</p>
     <p>For example, a game's <strong>Save Game</strong> button might consistently be recognised identically and benefit from caching, while dynamic dialogue with changing characters or backgrounds might produce slightly different OCR results each time, limiting cache effectiveness.</p>
@@ -850,7 +850,7 @@
     </div>
     
     <p><strong>Built-in Cost Tracking</strong></p>
-    <p>OCR Translator includes comprehensive cost monitoring specifically designed for Gemini API usage:</p>
+    <p>Game-Changing Translator includes comprehensive cost monitoring specifically designed for Gemini API usage:</p>
     <ul>
       <li><strong>Real-time Cost Display</strong> – See cumulative costs update as you translate.</li>
       <li><strong>Token Usage Analytics</strong> – Track exact input/output token consumption.</li>
@@ -1100,7 +1100,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         <div class="gaming-note">
           <div class="gaming-note-icon">🎮</div>
           <div class="gaming-note-content">
-            <strong>NOTE:</strong> OCR Translator may not work correctly with some games in fullscreen mode.<br>We recommend using <strong>borderless windowed mode</strong>, which is supported by most modern games.
+            <strong>NOTE:</strong> Game-Changing Translator may not work correctly with some games in fullscreen mode.<br>We recommend using <strong>borderless windowed mode</strong>, which is supported by most modern games.
           </div>
         </div>
         <ul>

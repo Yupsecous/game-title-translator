@@ -72,10 +72,10 @@ except ImportError:
 
 MARIANMT_AVAILABLE = MARIANMT_LIB_AVAILABLE
 
-class OCRTranslator:
+class GameChangingTranslator:
     def __init__(self, root):
         self.root = root
-        self.root.title("OCR Translator")
+        self.root.title("Game-Changing Translator")
         self.root.geometry("600x480") 
         self.root.minsize(500, 430)
         self.root.resizable(True, True)
@@ -431,7 +431,7 @@ class OCRTranslator:
         if self.ui_lang.current_lang == 'pol':
             about_text = """Copyright © 2025 Tomasz Kamiński
 
-OCR Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
+Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
 
 Program został napisany w\u00a0języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 i\u00a0Gemini\u00a02.5\u00a0Pro.
 
@@ -439,7 +439,7 @@ Więcej informacji zawiera instrukcja obsługi."""
         else:
             about_text = """Copyright © 2025 Tomasz Kamiński
 
-OCR Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
+Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
 
 This application was developed in Python using the following AI models: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 and Gemini\u00a02.5\u00a0Pro.
 
@@ -475,7 +475,7 @@ For more information, see the user manual."""
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         self._fully_initialized = True
-        log_debug("OCRTranslator fully initialized.")
+        log_debug("GameChangingTranslator fully initialized.")
         
         # Update usage statistics for selected models - use after_idle to ensure GUI is ready
         if hasattr(self, 'translation_model_var'):
@@ -1419,7 +1419,7 @@ For more information, see the user manual."""
             if self.ui_lang.current_lang == 'pol':
                 about_text = """Copyright © 2025 Tomasz Kamiński
 
-OCR Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
+Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
 
 Program został napisany w\u00a0języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 i\u00a0Gemini\u00a02.5\u00a0Pro.
 
@@ -1427,7 +1427,7 @@ Więcej informacji zawiera instrukcja obsługi."""
             else:
                 about_text = """Copyright © 2025 Tomasz Kamiński
 
-OCR Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
+Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
 
 This application was developed in Python using the following AI models: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 and Gemini\u00a02.5\u00a0Pro.
 

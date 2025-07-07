@@ -9,7 +9,7 @@ class CacheManager:
         """Initialize with a reference to the main application
         
         Args:
-            app: The main OCRTranslator application instance
+            app: The main GameChangingTranslator application instance
         """
         self.app = app
         ### FIX: Add dictionaries to track file modification times.

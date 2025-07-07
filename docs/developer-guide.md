@@ -1,12 +1,12 @@
 # Developer Guide
 
-This guide provides information for developers who want to understand or modify the OCR Translator application.
+This guide provides information for developers who want to understand or modify the Game-Changing Translator application.
 
 > **IMPORTANT NOTE**: This project is considered complete. I won't be accepting pull requests, feature enhancements, or implementing new features that someone else has coded. You are welcome to fork the repository and develop it further as your own project. The code is shared under the GPL licence for others to use, update, and modify as they wish, but I consider my work on it complete and won't be actively engaged in future development.
 
 ## Architecture Overview
 
-OCR Translator follows a modular design with the following key components:
+Game-Changing Translator follows a modular design with the following key components:
 
 ### Core Components
 
@@ -379,10 +379,10 @@ The application can be packaged as a standalone executable:
 
 2. Use the provided spec file:
    ```
-   pyinstaller OCRTranslator.spec
+   pyinstaller GameChangingTranslator.spec
    ```
 
-3. The executable will be in the `dist/OCRTranslator` directory
+3. The executable will be in the `dist/GameChangingTranslator` directory
 
 ### Using cx_Freeze
 

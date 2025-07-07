@@ -12,7 +12,7 @@ class DisplayManager:
         """Initialize with a reference to the main application
         
         Args:
-            app: The main OCRTranslator application instance
+            app: The main GameChangingTranslator application instance
         """
         self.app = app
     
