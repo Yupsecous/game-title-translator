@@ -4,7 +4,7 @@ from tkinter import messagebox
 import os
 import pytesseract # Import to set cmd path early
 
-from app_logic import OCRTranslator # Main application class
+from app_logic import GameChangingTranslator # Main application class
 from logger import log_debug # For logging fatal errors
 from resource_copier import ensure_all_folders_in_main_directory # Auto-copy resources and docs
 
@@ -20,7 +20,7 @@ def main_entry_point():
         if os.path.exists(default_tess_path):
              pytesseract.pytesseract.tesseract_cmd = default_tess_path
         
-        app_instance = OCRTranslator(root)
+        app_instance = GameChangingTranslator(root)
         root.mainloop()
     except Exception as e:
          log_msg = f"FATAL ERROR in main_entry_point: {type(e).__name__} - {e}"

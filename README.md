@@ -1,17 +1,17 @@
-# OCR Translator
+# Game-Changing Translator
 Copyright © 2025 Tomasz Kamiński
 
-![OCR Translator Logo](docs/screenshots/readme_screen.jpg)
+![Game-Changing Translator Logo](docs/screenshots/readme_screen.jpg)
 
 ## Overview
 
-OCR Translator is a powerful desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. It creates floating overlay windows that can be positioned anywhere on your screen, making it perfect for translating games, videos, PDFs, or any application with text that you can't easily copy and paste.
+Game-Changing Translator is a powerful desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. It creates floating overlay windows that can be positioned anywhere on your screen, making it perfect for translating games, videos, PDFs, or any application with text that you can't easily copy and paste.
 
 This project was inspired by a family member who was learning French by playing games with French subtitles and needed real-time translation. I hope it will be useful both for gamers and non-gamers alike for casual on-screen translations, whether you're learning a new language through entertainment or simply need to understand content in a foreign language.
 
 This application was developed or rather vibe-coded with the support of the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
 
-## OCR Translator Gallery
+## Game-Changing Translator Gallery
   - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
   - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
 
@@ -51,7 +51,7 @@ This application was developed or rather vibe-coded with the support of the foll
 
 **🎮 Perfect for Gamers and Non-Technical Users!**
 
-If you want to start using OCR Translator immediately without installing Python or dealing with dependencies, we've prepared ready-to-use compiled versions for you:
+If you want to start using Game-Changing Translator immediately without installing Python or dealing with dependencies, we've prepared ready-to-use compiled versions for you:
 
 ### Quick Start Options
 
@@ -68,7 +68,7 @@ Choose your version:
    - **CPU Version**: Download BOTH files (.7z.001 and .exe)
 2. **Run** the .exe installer file
 3. **Install Tesseract OCR** (one-time requirement) - [Download here](https://github.com/UB-Mannheim/tesseract/wiki)
-4. **Run** `OCRTranslator.exe` from the installed folder
+4. **Run** `GameChangingTranslator.exe` from the installed folder
 5. **Start translating!** 🚀
 
 ### Need Help?
@@ -125,7 +125,7 @@ For more detailed usage instructions, see the [User Manual](https://tomkam1702.g
 - **Installation Guide** 
   - [English](https://tomkam1702.github.io/OCR-Translator/docs/installation.html) 
   - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/installation_pl.html)
-- **OCR Translator Gallery**
+- **Game-Changing Translator Gallery**
   - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
   - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
 - **Troubleshooting** 

@@ -1,5 +1,5 @@
 @echo off
-echo Installing OCR Translator dependencies...
+echo Installing Game-Changing Translator dependencies...
 pip install -r requirements.txt
 echo Done!
 pause

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="author" content="Tomasz Kamiński" />
-    <title>Instrukcja obsługi programu OCR Translator</title>
+    <title>Instrukcja obsługi programu Game-Changing Translator</title>
     <style type="text/css">
         /* Base styling */
         body {
@@ -212,11 +212,11 @@
     <div class="flag-container">
       <img src="screenshots/poland-flag-icon.svg" alt="Polish Flag" title="Polski" />
     </div>
-    <h1 id="ocr-translator-user-manual">Instrukcja obsługi programu OCR Translator</h1>
+    <h1 id="game-changing-translator-user-manual">Instrukcja obsługi programu Game-Changing Translator</h1>
     <p>Copyright © 2025 Tomasz Kamiński<br>
     <em>Ostatnia aktualizacja: 7 lipca 2025 r.</em></p>
     <p>
-      <img src="screenshots/screenshot2_pol_deepl.jpg" alt="Główny interfejs OCR Translator" class="logo-image" />
+      <img src="screenshots/screenshot2_pol_deepl.jpg" alt="Główny interfejs Game-Changing Translator" class="logo-image" />
     </p>
     <h2 id="table-of-contents">Spis treści</h2>
     <ol>
@@ -252,10 +252,10 @@
       </li>
     </ol>
     <h2 id="introduction">Wprowadzenie</h2>
-    <p><strong>OCR Translator</strong>  to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Dzięki ruchomym oknom nakładek tłumaczenie można umieścić w dowolnym miejscu na ekranie, przez co aplikacja doskonale nadaje się do tłumaczenia gier, filmów, plików PDF lub dowolnych programów zawierających tekst, którego nie da się łatwo skopiować i wkleić.</p>
+    <p><strong>Game-Changing Translator</strong>  to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Dzięki ruchomym oknom nakładek tłumaczenie można umieścić w dowolnym miejscu na ekranie, przez co aplikacja doskonale nadaje się do tłumaczenia gier, filmów, plików PDF lub dowolnych programów zawierających tekst, którego nie da się łatwo skopiować i wkleić.</p>
     <h2 id="getting-started">Pierwsze kroki</h2>
     <h3 id="requirements">Wymagania</h3>
-    <p>Przed rozpoczęciem korzystania z <strong>OCR Translator</strong>  sprawdź, czy system spełnia następujące wymagania:</p>
+    <p>Przed rozpoczęciem korzystania z <strong>Game-Changing Translator</strong>  sprawdź, czy system spełnia następujące wymagania:</p>
     <ul>
       <li>System operacyjny Windows.</li>
       <li>Zainstalowany program <a href="https://github.com/UB-Mannheim/tesseract/wiki">Tesseract OCR</a>.</li>
@@ -263,7 +263,7 @@
     </ul>
     <h3 id="first-run">Pierwsze uruchomienie</h3>
     <ol>
-      <li>Uruchom <strong>OCR Translator</strong> przez wykonanie skryptu <code>main.py</code> lub pliku wykonywalnego, jeśli korzystasz z wersji skompilowanej.</li>
+      <li>Uruchom <strong>Game-Changing Translator</strong> przez wykonanie skryptu <code>main.py</code> lub pliku wykonywalnego, jeśli korzystasz z wersji skompilowanej.</li>
       <li>Przy pierwszym uruchomieniu aplikacja ładuje się z domyślnymi ustawieniami, a oba obszary (źródłowy i docelowy) będą ukryte.</li>
       <li>Przed rozpoczęciem tłumaczenia musisz:
         <ul>
@@ -610,7 +610,7 @@
       </li>
     </ol>
     <p>Modele MarianMT to otwarte systemy tłumaczenia maszynowego oparte na sieciach neuronowych, które zapewniają całkiem dobrą jakość tłumaczenia. Choć nie dorównują standardom usług premium takich jak DeepL, zapewniają zaskakująco dobre tłumaczenia bez kosztów i połączenia z Internetem po początkowym pobraniu modelu.</p>
-    <p>Modele te zostały pierwotnie zaprojektowane do tłumaczenia krótkich, pojedynczych zdań i zwykle obcinają dłuższe fragmenty. Jednak <strong>OCR Translator</strong> w pomysłowy sposób obchodzi to ograniczenie. Aplikacja automatycznie dzieli dłuższe teksty na pojedyncze zdania i tłumaczy je równolegle przy użyciu trybu wsadowego. Wszystkie zdania są przetwarzane razem w jednym, zoptymalizowanym wywołaniu modelu, a następnie płynnie łączone w całość, co zapewnia kompletne tłumaczenia niezależnie od długości tekstu.</p>
+    <p>Modele te zostały pierwotnie zaprojektowane do tłumaczenia krótkich, pojedynczych zdań i zwykle obcinają dłuższe fragmenty. Jednak <strong>Game-Changing Translator</strong> w pomysłowy sposób obchodzi to ograniczenie. Aplikacja automatycznie dzieli dłuższe teksty na pojedyncze zdania i tłumaczy je równolegle przy użyciu trybu wsadowego. Wszystkie zdania są przetwarzane razem w jednym, zoptymalizowanym wywołaniu modelu, a następnie płynnie łączone w całość, co zapewnia kompletne tłumaczenia niezależnie od długości tekstu.</p>
     <p>Takie podejście ma kilka praktycznych zalet:</p>
     <ul>
       <li>Pełna prywatność – tekst nigdy nie opuszcza komputera użytkownika.</li>
@@ -654,7 +654,7 @@
     <p>Jeśli wybierzesz model <strong>Nowej generacji</strong>, a wybrana para językowa nie jest obsługiwana, aplikacja automatycznie przełączy się na tryb <strong>Klasyczny</strong>, aby zapewnić ciągłość tłumaczenia. Obie opcje gwarantują doskonałą jakość, z której słynie DeepL.</p>
     
     <p><strong>System buforowania tłumaczeń DeepL w plikach</strong></p>
-    <p><strong>OCR Translator</strong> umożliwia buforowanie tłumaczeń DeepL. Po przetłumaczeniu fragmentu tekstu jest on zapisywany w lokalnej pamięci podręcznej aplikacji (<code>deepl_cache.txt</code>). Gdy ten sam tekst pojawi się ponownie, aplikacja pobiera tłumaczenie z pamięci podręcznej zamiast wysyłać kolejne zapytanie API.</p>
+    <p><strong>Game-Changing Translator</strong> umożliwia buforowanie tłumaczeń DeepL. Po przetłumaczeniu fragmentu tekstu jest on zapisywany w lokalnej pamięci podręcznej aplikacji (<code>deepl_cache.txt</code>). Gdy ten sam tekst pojawi się ponownie, aplikacja pobiera tłumaczenie z pamięci podręcznej zamiast wysyłać kolejne zapytanie API.</p>
     <p>Należy pamiętać, że mechanizm buforowania zależy całkowicie od jakości OCR. Aby tłumaczenie zostało pobrane z pamięci podręcznej, tekst rozpoznany przez OCR musi być identyczny – co do ostatniego znaku – z tym, co już jest w niej przechowywane. Nawet pojedyncza różnica znaku spowoduje nowe wywołanie API i nowe tłumaczenie. Oznacza to, że faktyczna efektywność pamięci podręcznej zależy w dużej mierze od spójności wyników OCR.</p>
     <p>Pamięć podręczna może być pomocna dla graczy w określonych sytuacjach. Na przykład w grze, w której statyczne opcje menu lub powtarzające się dialogi pojawiają się dokładnie w tej samej czcionce, rozmiarze i pozycji na ekranie, OCR prawdopodobnie wygeneruje identyczne wyniki za każdym razem. Jednak jeśli tekst pojawia się na różnych tłach, przy różnym oświetleniu lub z drobnymi zmianami pozycji, różnice w wynikach OCR prawdopodobnie spowodują nowe tłumaczenia.</p>
     <p>Na przykład, przycisk <strong>Zapisz grę</strong> może być konsekwentnie rozpoznawany tak samo i korzystać z pamięci podręcznej, podczas gdy dynamiczne dialogi ze zmieniającymi się postaciami lub tłami mogą dawać nieco różne wyniki OCR za każdym razem, ograniczając skuteczność buforowania.</p>
@@ -844,7 +844,7 @@
     </div>
     
     <p><strong>Wbudowane monitorowanie kosztów</strong></p>
-    <p>OCR Translator umożliwia kompleksowe monitorowanie kosztów, zaprojektowane specjalnie na potrzeby Gemini API:</p>
+    <p>Game-Changing Translator umożliwia kompleksowe monitorowanie kosztów, zaprojektowane specjalnie na potrzeby Gemini API:</p>
     <ul>
       <li><strong>Wyświetlanie kosztów w czasie rzeczywistym</strong> – koszty sumują się na bieżąco podczas tłumaczenia.</li>
       <li><strong>Analiza zużycia tokenów</strong> – śledzenie dokładnego zużycia tokenów wejściowych i wyjściowych.</li>
@@ -1094,7 +1094,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         <div class="gaming-note">
           <div class="gaming-note-icon">🎮</div>
           <div class="gaming-note-content">
-            <strong>UWAGA:</strong> OCR Translator może nie działać w niektórych grach w trybie pełnoekranowym.<br>Zalecane jest korzystanie z <strong>trybu okienkowego bez ramek</strong> (ang. „borderless windowed mode") obsługiwanego w większości nowych gier.
+            <strong>UWAGA:</strong> Game-Changing Translator może nie działać w niektórych grach w trybie pełnoekranowym.<br>Zalecane jest korzystanie z <strong>trybu okienkowego bez ramek</strong> (ang. „borderless windowed mode") obsługiwanego w większości nowych gier.
           </div>
         </div>
         <ul>

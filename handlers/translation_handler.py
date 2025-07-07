@@ -227,7 +227,7 @@ class TranslationHandler:
                 header = f"""
 ###############################################
 #         GEMINI API CALL LOG                 #
-#         OCR Translator - Token Analysis     #
+#         Game-Changing Translator - Token Analysis     #
 ###############################################
 
 Logging Started: {timestamp}

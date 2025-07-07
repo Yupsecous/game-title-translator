@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OCR Translator Compilation Script
+Game-Changing Translator Compilation Script
 Automates the compilation process for CPU and GPU versions
 """
 
@@ -77,7 +77,7 @@ def compile_cpu_version():
         return False
     
     # Step 4: Compile with PyInstaller
-    if not run_command("pyinstaller OCRTranslator.spec", 
+    if not run_command("pyinstaller GameChangingTranslator.spec", 
                       "Step 4: Compiling with PyInstaller..."):
         print("Compilation failed!")
         return False
@@ -110,7 +110,7 @@ def compile_gpu_version():
         return False
     
     # Step 4: Compile with PyInstaller
-    if not run_command("pyinstaller OCRTranslator_GPU.spec", 
+    if not run_command("pyinstaller GameChangingTranslator_GPU.spec", 
                       "Step 4: Compiling with PyInstaller..."):
         print("Compilation failed!")
         return False
@@ -129,7 +129,7 @@ def main():
     
     while True:
         print("\n" + "="*50)
-        print("       OCR Translator Compilation Script")
+        print("       Game-Changing Translator Compilation Script")
         print("="*50)
         print("\nPlease select the version to compile:")
         print("1. CPU-only version")
@@ -144,7 +144,7 @@ def main():
             elif choice == "2":
                 success = compile_gpu_version()
             elif choice == "3":
-                print("\nThank you for using the OCR Translator Compilation Script!")
+                print("\nThank you for using the Game-Changing Translator Compilation Script!")
                 break
             else:
                 print("Invalid choice. Please try again.")

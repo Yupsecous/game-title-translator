@@ -1,10 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 """
-OCR Translator PyInstaller Specification File - Optimized Version
+Game-Changing Translator PyInstaller Specification File - Optimized Version
 This spec file includes all necessary dependencies while excluding unnecessary bloat.
 Keeps ALL functionality but optimizes package size by excluding unused parts of heavy libraries.
-To build: pyinstaller OCRTranslator.spec
+To build: pyinstaller GameChangingTranslator.spec
 """
 
 import os
@@ -140,7 +140,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='OCRTranslator',
+    name='GameChangingTranslator',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -162,5 +162,5 @@ coll = COLLECT(
     strip=False,
     upx=False,  # Disabled to avoid antivirus false positives
     upx_exclude=[],
-    name='OCRTranslator',
+    name='GameChangingTranslator',
 )

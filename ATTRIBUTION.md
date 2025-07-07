@@ -1,7 +1,7 @@
-# Attribution Requirements for OCR Translator
+# Attribution Requirements for Game-Changing Translator
 
 ## Original Author
-**OCR Translator** was created by **Tomasz Kamiński** in 2025.
+**Game-Changing Translator** was created by **Tomasz Kamiński** in 2025.
 
 ## Attribution Requirements
 
@@ -40,7 +40,7 @@ When redistributing (including forks):
 For documentation, websites, or applications using this code:
 
 ```
-Based on OCR Translator by Tomasz Kamiński
+Based on Game-Changing Translator by Tomasz Kamiński
 Original source: https://github.com/tomkam1702/OCR-Translator
 Licensed under GNU GPL v3
 ```

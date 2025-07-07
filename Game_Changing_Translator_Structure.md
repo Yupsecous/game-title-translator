@@ -1,10 +1,10 @@
-# OCR Translator Application Files Structure
+# Game-Changing Translator Application Files Structure
 
 ## Core Application Files
 
 ### Entry Point & Main Logic
 - **main.py** - Application entry point, sets up the environment and starts the main application
-- **app_logic.py** - Main application class (OCRTranslator) and central coordinator
+- **app_logic.py** - Main application class (GameChangingTranslator) and central coordinator
 - **bundled_app.py** - All-in-one bundler for PyInstaller with all imports for dependency detection
 - **resource_copier.py** - Resource management for compiled executables, ensures resources folder exists next to executable
 - **__init__.py** - Package definition file
@@ -58,7 +58,7 @@
 - **resources/gui_pol.csv** - Polish UI translations
 
 ## Build and Setup Files
-- **OCRTranslator.spec** - PyInstaller specification file
+- **GameChangingTranslator.spec** - PyInstaller specification file
 - **setup.py** - Setup configuration for building executables
 
 ## Documentation

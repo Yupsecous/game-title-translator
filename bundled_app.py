@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-OCR Translator - All-in-one bundler for PyInstaller
+Game-Changing Translator - All-in-one bundler for PyInstaller
 This file imports all modules to make PyInstaller detect dependencies correctly.
 The actual application structure is preserved.
 """
@@ -104,7 +104,7 @@ from handlers.translation_handler import TranslationHandler
 from handlers.ui_interaction_handler import UIInteractionHandler
 
 # Finally import the app_logic and main entry point
-from app_logic import OCRTranslator
+from app_logic import GameChangingTranslator
 from main import main_entry_point
 
 # When this file is run directly, start the application

@@ -1,4 +1,4 @@
-# OCR Translator Handlers Package
+# Game-Changing Translator Handlers Package
 # This file makes the handlers directory a Python package
 # and provides imports for all handlers
 
