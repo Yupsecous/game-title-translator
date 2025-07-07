@@ -17,12 +17,29 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
+### 🚀 NEW in Version 2.0.0
+
+- **Gemini 2.5 Flash-Lite Integration**: Revolutionary AI-powered translation with advanced context awareness and cost-effectiveness
+  - Context-aware translation with configurable sliding window (0-2 previous subtitles) for narrative coherence
+  - Intelligent OCR error correction that automatically fixes garbled input text
+  - Exceptional cost-effectiveness: translate massive games like The Witcher 3 for pennies
+  - Built-in real-time cost tracking with token usage analytics and cumulative cost monitoring
+  - Detailed API call logging with complete transparency (`Gemini_API_call_logs.txt`)
+  - Advanced file caching system (`gemini_cache.txt`) for reduced API costs
+  - Superior translation quality with context understanding for dialogue flow and character consistency
+- **DeepL Free Usage Tracker**: Monitor your monthly free quota consumption with real-time tracking in the Settings tab
+  - Displays current usage against the 500,000 character monthly limit for DeepL API Free accounts
+  - Helps users optimize their free tier usage
+
+### Core Features
+
 - **Screen Area Selection**: Define custom regions for text capture and translation display
 - **Real-time Translation**: Automatically detects and translates text as it changes
 - **Multiple Translation Engines**:
-  - Google Translate API
+  - Gemini 2.5 Flash-LiteGoogle Translate API
+  - MarianMT (offline neural machine translation)
   - DeepL API
-  - MarianMT (offline neural machine translation) - available as "MarianMT offline and free"
+  - Google Translate API
 - **Multilingual User Interface**: Full support for English and Polish interface languages
 - **Floating Overlays**: Translucent, movable windows that stay on top of other applications
 - **Customizable Appearance**: Adjust colours, fonts, and transparency
