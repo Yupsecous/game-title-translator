@@ -36,7 +36,7 @@ This application was developed or rather vibe-coded with the support of the foll
 - **Screen Area Selection**: Define custom regions for text capture and translation display
 - **Real-time Translation**: Automatically detects and translates text as it changes
 - **Multiple Translation Engines**:
-  - Gemini 2.5 Flash-LiteGoogle Translate API
+  - Gemini 2.5 Flash-Lite API
   - MarianMT (offline neural machine translation)
   - DeepL API
   - Google Translate API
