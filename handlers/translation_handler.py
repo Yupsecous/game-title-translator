@@ -225,10 +225,10 @@ class TranslationHandler:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 header = f"""
-###############################################
-#         GEMINI API CALL LOG                 #
-#         Game-Changing Translator - Token Analysis     #
-###############################################
+#######################################################
+#                 GEMINI API CALL LOG                 #
+#      Game-Changing Translator - Token Analysis      #
+###################3333333333##########################
 
 Logging Started: {timestamp}
 Purpose: Track input/output token usage for Gemini API calls, along with exact costs.
