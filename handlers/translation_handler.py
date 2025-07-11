@@ -458,6 +458,18 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                         instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
                     else:
                         instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                elif context_size == 3:
+                    target_position = min(actual_context_count + 1, 4)  # Max "fourth subtitle"
+                    ordinal = self._get_ordinal_number(target_position)
+                    instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                elif context_size == 4:
+                    target_position = min(actual_context_count + 1, 5)  # Max "fifth subtitle"
+                    ordinal = self._get_ordinal_number(target_position)
+                    instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                elif context_size == 5:
+                    target_position = min(actual_context_count + 1, 6)  # Max "sixth subtitle"
+                    ordinal = self._get_ordinal_number(target_position)
+                    instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
             
             # Build context window with new text integrated in grouped format
             context_size = self.app.gemini_context_window_var.get()
@@ -679,12 +691,21 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         source_lang = getattr(self, 'gemini_current_source_lang', 'en')
         target_lang = getattr(self, 'gemini_current_target_lang', 'pl')
         
-        # Check if new translation is identical to the most recent one
+        # Check for duplicates according to specific rules:
+        # Rule 2: If translation is identical to previous translation, cache but don't add to context
+        # Rule 3: Only check last vs current (penultimate vs current)
         if self.gemini_context_window:
-            most_recent_translation = self.gemini_context_window[-1][1]  # Get target_text from last entry
-            if target_text == most_recent_translation:
-                log_debug(f"Skipping context window update - identical translation: '{target_text}'")
-                return  # Don't add duplicate translation to context window
+            last_source, last_target, _, _ = self.gemini_context_window[-1]
+            
+            # Rule 2: If translation is identical to previous, skip context update (but keep in cache)
+            if target_text == last_target:
+                log_debug(f"Skipping context window update - duplicate target text: '{target_text}'")
+                return
+            
+            # Additional check: if source is also identical, skip (though this should be caught at OCR level)
+            if source_text == last_source:
+                log_debug(f"Skipping context window update - duplicate source text: '{source_text}'")
+                return
         
         # Add new pair with language codes
         self.gemini_context_window.append((source_text, target_text, source_lang, target_lang))
@@ -835,7 +856,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 self._update_sliding_window(cleaned_text_main, file_cache_hit)
             return file_cache_hit
 
-        # 3. All Caches Miss - Perform API Call
+        # 3. All Caches Miss - Perform API Call  
         log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API.")
         translated_api_text = None
         if selected_translation_model == 'marianmt':

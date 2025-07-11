@@ -357,7 +357,10 @@ def create_settings_tab(app):
     context_window_options = [
         (0, app.ui_lang.get_label("gemini_context_window_0", "0 (Disabled)")),
         (1, app.ui_lang.get_label("gemini_context_window_1", "1 (Last subtitle)")),
-        (2, app.ui_lang.get_label("gemini_context_window_2", "2 (Two subtitles)"))
+        (2, app.ui_lang.get_label("gemini_context_window_2", "2 (Two subtitles)")),
+        (3, app.ui_lang.get_label("gemini_context_window_3", "3 (Three subtitles)")),
+        (4, app.ui_lang.get_label("gemini_context_window_4", "4 (Four subtitles)")),
+        (5, app.ui_lang.get_label("gemini_context_window_5", "5 (Five subtitles)"))
     ]
     
     app.gemini_context_window_display_var = tk.StringVar()
@@ -534,7 +537,10 @@ def create_settings_tab(app):
             new_context_window_options = [
                 (0, app.ui_lang.get_label("gemini_context_window_0", "0 (Disabled)")),
                 (1, app.ui_lang.get_label("gemini_context_window_1", "1 (Last subtitle)")),
-                (2, app.ui_lang.get_label("gemini_context_window_2", "2 (Two subtitles)"))
+                (2, app.ui_lang.get_label("gemini_context_window_2", "2 (Two subtitles)")),
+                (3, app.ui_lang.get_label("gemini_context_window_3", "3 (Three subtitles)")),
+                (4, app.ui_lang.get_label("gemini_context_window_4", "4 (Four subtitles)")),
+                (5, app.ui_lang.get_label("gemini_context_window_5", "5 (Five subtitles)"))
             ]
             
             # Update combobox values
