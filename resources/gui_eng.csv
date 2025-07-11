@@ -36,6 +36,9 @@ gemini_context_window_label,Context Window:
 gemini_context_window_0,0 (Disabled)
 gemini_context_window_1,1 (Last subtitle)
 gemini_context_window_2,2 (Two subtitles)
+gemini_context_window_3,3 (Three subtitles)
+gemini_context_window_4,4 (Four subtitles)
+gemini_context_window_5,5 (Five subtitles)
 deepl_classic_model,Classic
 deepl_nextgen_model,Next-gen
 models_file_label,MarianMT Model List:
