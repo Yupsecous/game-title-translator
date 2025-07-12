@@ -17,6 +17,8 @@ import os
 import re
 import gc
 import traceback
+import io
+import base64
 
 from logger import log_debug, set_debug_logging_enabled, is_debug_logging_enabled
 from resource_handler import get_resource_path
@@ -130,6 +132,7 @@ class GameChangingTranslator:
         self.previous_text = "" 
         self.last_screenshot = None 
         self.last_processed_image = None 
+        self.raw_image_for_gemini = None  # WebP bytes ready for Gemini API 
         
         # OCR Preview window
         self.ocr_preview_window = None
@@ -564,6 +567,41 @@ For more information, see the user manual."""
 
     def update_debug_display(self, original_img_pil, processed_img_cv, ocr_text_content):
         self.display_manager.update_debug_display(original_img_pil, processed_img_cv, ocr_text_content)
+
+    def convert_to_webp_for_gemini(self, pil_image):
+        """Convert PIL image to lossless WebP bytes for Gemini API."""
+        try:
+            # Optimize image for OCR if needed
+            if pil_image.mode in ('RGBA', 'LA'):
+                rgb_img = Image.new('RGB', pil_image.size, (255, 255, 255))
+                if pil_image.mode == 'RGBA':
+                    rgb_img.paste(pil_image, mask=pil_image.split()[-1])
+                else:
+                    rgb_img.paste(pil_image)
+                pil_image = rgb_img
+            
+            # Create memory buffer
+            buffer = io.BytesIO()
+            
+            # Save as WebP lossless in memory
+            pil_image.save(
+                buffer, 
+                format='WebP', 
+                lossless=True, 
+                method=0,
+                exact=True
+            )
+            
+            # Get bytes and encode to base64
+            webp_bytes = buffer.getvalue()
+            webp_base64 = base64.b64encode(webp_bytes).decode('utf-8')
+            
+            log_debug(f"Converted PIL image to WebP for Gemini: {len(webp_bytes)} bytes")
+            return webp_base64
+            
+        except Exception as e:
+            log_debug(f"Error converting image to WebP for Gemini: {e}")
+            return None
 
     def translate_text(self, text_content):
         return self.translation_handler.translate_text(text_content)

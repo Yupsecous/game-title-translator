@@ -164,6 +164,9 @@ def run_ocr_thread(app):
             last_ocr_proc_time = ocr_proc_start_time
             app.last_screenshot = screenshot_pil
 
+            # Convert to WebP for Gemini API (only keep one in memory)
+            app.raw_image_for_gemini = app.convert_to_webp_for_gemini(screenshot_pil)
+
             # Optimized image processing: Direct PIL to OpenCV conversion
             # Convert PIL to numpy array once
             img_np = np.array(screenshot_pil)
