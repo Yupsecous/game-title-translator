@@ -376,11 +376,47 @@ def run_translation_thread(app):
 # ==================== GEMINI OCR ASYNC PROCESSING (Phase 2) ====================
 
 def run_gemini_ocr_only(app, screenshot_pil):
-    """Start async Gemini OCR batch processing for a screenshot."""
+    """Start async Gemini OCR batch processing for a screenshot with proper queue management."""
     try:
         # Check if Gemini OCR is selected
         if app.get_ocr_model_setting() != 'gemini':
             return
+        
+        # Initialize batch queue if not exists
+        if not hasattr(app, 'gemini_batch_queue'):
+            app.gemini_batch_queue = []
+        if not hasattr(app, 'batch_sequence_counter'):
+            app.batch_sequence_counter = 0
+        if not hasattr(app, 'last_displayed_batch_sequence'):
+            app.last_displayed_batch_sequence = 0
+        
+        # Calculate dynamic queue limit based on scan interval
+        scan_interval_ms = app.scan_interval_var.get()
+        queue_limit = max(10, int(3000 / scan_interval_ms))
+        
+        # Clean up expired batches (older than 3 seconds)
+        current_time = time.monotonic()
+        app.gemini_batch_queue = [
+            batch for batch in app.gemini_batch_queue 
+            if current_time - batch['start_time'] < 3.0
+        ]
+        
+        # Remove expired batches from active calls
+        expired_sequences = set()
+        for sequence in list(app.active_ocr_calls):
+            batch_found = any(batch['sequence'] == sequence for batch in app.gemini_batch_queue)
+            if not batch_found:
+                expired_sequences.add(sequence)
+        
+        for sequence in expired_sequences:
+            app.active_ocr_calls.discard(sequence)
+            log_debug(f"Removed expired batch {sequence} from active calls")
+        
+        # If queue is full, remove oldest batch (FIFO)
+        while len(app.gemini_batch_queue) >= queue_limit:
+            oldest_batch = app.gemini_batch_queue.pop(0)
+            app.active_ocr_calls.discard(oldest_batch['sequence'])
+            log_debug(f"Queue full ({queue_limit}), discarded oldest batch {oldest_batch['sequence']}")
         
         # Convert image to WebP for Gemini API
         webp_image_data = app.convert_to_webp_for_gemini(screenshot_pil)
@@ -395,12 +431,22 @@ def run_gemini_ocr_only(app, screenshot_pil):
         app.batch_sequence_counter += 1
         sequence_number = app.batch_sequence_counter
         
-        # Check if we're at the limit of concurrent OCR calls
+        # Check concurrent calls limit (independent of queue limit)
         if len(app.active_ocr_calls) >= app.max_concurrent_ocr_calls:
             log_debug(f"Max concurrent OCR calls ({app.max_concurrent_ocr_calls}) reached, skipping batch {sequence_number}")
             return
         
-        # Add this sequence to active calls
+        # Create batch entry
+        batch_entry = {
+            'sequence': sequence_number,
+            'start_time': current_time,
+            'webp_data': webp_image_data,
+            'source_lang': source_lang,
+            'status': 'pending'
+        }
+        
+        # Add to queue and active calls
+        app.gemini_batch_queue.append(batch_entry)
         app.active_ocr_calls.add(sequence_number)
         
         # Start async OCR processing
@@ -413,30 +459,65 @@ def run_gemini_ocr_only(app, screenshot_pil):
         )
         ocr_thread.start()
         
-        log_debug(f"Started async Gemini OCR batch {sequence_number} (active calls: {len(app.active_ocr_calls)})")
+        log_debug(f"Started async Gemini OCR batch {sequence_number} (active calls: {len(app.active_ocr_calls)}, queue: {len(app.gemini_batch_queue)}/{queue_limit})")
         
     except Exception as e:
         log_debug(f"Error starting Gemini OCR batch: {type(e).__name__} - {e}")
 
 
 def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number):
-    """Process Gemini OCR API call asynchronously."""
+    """Process Gemini OCR API call asynchronously with timeout handling."""
+    start_time = time.monotonic()
+    
     try:
         log_debug(f"Processing Gemini OCR batch {sequence_number}")
+        
+        # Check if batch is still in queue (not expired/discarded)
+        if hasattr(app, 'gemini_batch_queue'):
+            batch_exists = any(batch['sequence'] == sequence_number for batch in app.gemini_batch_queue)
+            if not batch_exists:
+                log_debug(f"Batch {sequence_number} was discarded, aborting OCR call")
+                return
         
         # Make the Gemini OCR API call - logging is handled inside the function
         ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang)
         
+        # Check timeout (3 seconds total including API call)
+        elapsed_time = time.monotonic() - start_time
+        if elapsed_time > 3.0:
+            log_debug(f"Batch {sequence_number} exceeded 3-second timeout ({elapsed_time:.2f}s), discarding")
+            return
+        
         log_debug(f"Gemini OCR batch {sequence_number} completed: '{ocr_result}'")
+        
+        # Mark batch as completed in queue
+        if hasattr(app, 'gemini_batch_queue'):
+            for batch in app.gemini_batch_queue:
+                if batch['sequence'] == sequence_number:
+                    batch['status'] = 'completed'
+                    batch['result'] = ocr_result
+                    batch['completion_time'] = time.monotonic()
+                    break
         
         # Schedule processing of the OCR response on the main thread
         app.root.after(0, process_gemini_ocr_response, app, ocr_result, sequence_number, source_lang)
         
     except Exception as e:
-        log_debug(f"Error in async Gemini OCR batch {sequence_number}: {type(e).__name__} - {e}")
-        # Schedule error handling on main thread
-        error_msg = f"<e>: OCR batch {sequence_number} error: {str(e)}"
-        app.root.after(0, process_gemini_ocr_response, app, error_msg, sequence_number, source_lang)
+        elapsed_time = time.monotonic() - start_time
+        log_debug(f"Error in async Gemini OCR batch {sequence_number} after {elapsed_time:.2f}s: {type(e).__name__} - {e}")
+        
+        # Mark batch as failed in queue
+        if hasattr(app, 'gemini_batch_queue'):
+            for batch in app.gemini_batch_queue:
+                if batch['sequence'] == sequence_number:
+                    batch['status'] = 'failed'
+                    batch['error'] = str(e)
+                    break
+        
+        # Schedule error handling on main thread if not timed out
+        if elapsed_time <= 3.0:
+            error_msg = f"<e>: OCR batch {sequence_number} error: {str(e)}"
+            app.root.after(0, process_gemini_ocr_response, app, error_msg, sequence_number, source_lang)
     
     finally:
         # Always remove from active calls
@@ -448,30 +529,44 @@ def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number)
 
 
 def process_gemini_ocr_response(app, ocr_result, sequence_number, source_lang):
-    """Process Gemini OCR response and handle different result types."""
+    """Process Gemini OCR response with chronological order enforcement."""
     try:
         log_debug(f"Processing OCR response for batch {sequence_number}: '{ocr_result}'")
+        
+        # Initialize last displayed sequence if not exists
+        if not hasattr(app, 'last_displayed_batch_sequence'):
+            app.last_displayed_batch_sequence = 0
+        
+        # CHRONOLOGICAL ORDER ENFORCEMENT - Only reject OLD results, allow any NEW results
+        # This prevents old batches from overriding newer translations
+        if sequence_number <= app.last_displayed_batch_sequence:
+            log_debug(f"OCR batch {sequence_number}: Sequence too old (last displayed: {app.last_displayed_batch_sequence}), discarding")
+            return
+        
+        # This is a newer sequence - proceed with processing
+        log_debug(f"OCR batch {sequence_number}: Processing newer sequence (last displayed: {app.last_displayed_batch_sequence})")
         
         # Handle error responses
         if isinstance(ocr_result, str) and ocr_result.startswith("<e>:"):
             log_debug(f"OCR error in batch {sequence_number}: {ocr_result}")
-            # For errors, fall back to Tesseract if possible
-            # This would be implemented in the actual OCR routing logic
+            app.last_displayed_batch_sequence = sequence_number  # Update sequence even for errors
             return
         
         # Handle <EMPTY> response (no text detected)
         if ocr_result == "<EMPTY>":
             log_debug(f"OCR batch {sequence_number}: No text detected")
             app.handle_empty_ocr_result()
+            app.last_displayed_batch_sequence = sequence_number
             return
         
-        # Handle successive identical subtitle detection - FIX: Only skip context updates, not translation display
-        if ocr_result == app.last_processed_subtitle:
+        # Handle successive identical subtitle detection
+        if hasattr(app, 'last_processed_subtitle') and ocr_result == app.last_processed_subtitle:
             log_debug(f"OCR batch {sequence_number}: Successive identical subtitle detected - '{ocr_result}'")
             # Reset timeout since text is still present, but DON'T send to translation again
             app.reset_clear_timeout()
             # Keep the existing translation displayed - no need to re-translate or clear
             log_debug(f"Keeping existing translation displayed for successive identical: '{ocr_result}'")
+            app.last_displayed_batch_sequence = sequence_number
             return
         
         # New/different text detected
@@ -489,6 +584,16 @@ def process_gemini_ocr_response(app, ocr_result, sequence_number, source_lang):
             log_debug(f"OCR result from batch {sequence_number} sent to translation: '{ocr_result}'")
         else:
             log_debug(f"Translation queue full, skipping OCR result from batch {sequence_number}")
+        
+        # Update the last displayed sequence number
+        app.last_displayed_batch_sequence = sequence_number
+        
+        # Clean up processed batch from queue
+        if hasattr(app, 'gemini_batch_queue'):
+            app.gemini_batch_queue = [
+                batch for batch in app.gemini_batch_queue 
+                if batch['sequence'] != sequence_number
+            ]
         
     except Exception as e:
         log_debug(f"Error processing OCR response for batch {sequence_number}: {type(e).__name__} - {e}")
