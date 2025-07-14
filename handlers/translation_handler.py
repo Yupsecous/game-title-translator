@@ -791,8 +791,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Get language display name for prompt
             source_lang_name = self._get_language_display_name(source_lang, 'gemini')
             
-            # Create OCR prompt - simple and direct
-            prompt = f"Extract all text from this image in {source_lang_name}. If no text is found, return only: <EMPTY>. Return only the text, nothing else."
+            # Create OCR prompt with error correction - use exact prompt requested
+            prompt = f"""1. Extract all text from this image. The language is: {source_lang_name.upper()}.
+2. Then correct all typos. The returned text must be grammatically correct and without any errors.
+3. Then double-check if the text does not have any typos.
+4. Then return the text without any line breaks in this exact format: {source_lang_name.upper()}: [recognized text without typos and line breaks]
+5. Don't return anything else.
+6. If there is no text in the image, you must not return the language name. Return only this exact string "<EMPTY>"."""
             
             # Prepare image data for Gemini
             image_part = {
@@ -802,29 +807,52 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             log_debug(f"Making Gemini OCR API call for language: {source_lang_name}")
             
-            # Make the API call
+            # Make the API call and track timing
             api_call_start_time = time.time()
             response = model.generate_content([prompt, image_part])
             call_duration = time.time() - api_call_start_time
             
-            log_debug(f"Gemini OCR API call took {call_duration:.3f}s")
-            
             # Extract the response text
             ocr_result = response.text.strip() if response.text else "<EMPTY>"
             
-            # Clean up the response
-            if not ocr_result or ocr_result.lower() in ['', 'none', 'no text', 'empty']:
-                ocr_result = "<EMPTY>"
+            # Parse the response according to the expected format
+            if ocr_result == "<EMPTY>":
+                parsed_text = "<EMPTY>"
+            elif ocr_result.startswith(f"{source_lang_name.upper()}: "):
+                # Extract text after "LANGUAGE: " prefix
+                parsed_text = ocr_result[len(f"{source_lang_name.upper()}: "):].strip()
+                if not parsed_text:
+                    parsed_text = "<EMPTY>"
+            else:
+                # Fallback: use the raw response if format doesn't match expected pattern
+                log_debug(f"OCR response doesn't match expected format, using raw response: '{ocr_result}'")
+                parsed_text = ocr_result
             
-            log_debug(f"Gemini OCR result: '{ocr_result}'")
-            return ocr_result
+            # Extract exact token counts from API response metadata
+            input_tokens, output_tokens = 0, 0
+            try:
+                if response.usage_metadata:
+                    input_tokens = response.usage_metadata.prompt_token_count
+                    output_tokens = response.usage_metadata.candidates_token_count
+                    log_debug(f"Gemini OCR usage metadata: In={input_tokens}, Out={output_tokens}")
+            except (AttributeError, KeyError):
+                log_debug("Could not find usage_metadata in Gemini OCR response. Tokens will be logged as 0.")
+            
+            # Log complete OCR call with request, response, and stats
+            self._log_complete_gemini_ocr_call(
+                prompt, len(webp_image_data), ocr_result, parsed_text, 
+                call_duration, input_tokens, output_tokens, source_lang
+            )
+            
+            log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s)")
+            return parsed_text
             
         except Exception as e:
             log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
             return f"<ERROR>: Gemini OCR error: {str(e)}"
     
-    def _log_gemini_ocr_call(self, image_size, source_lang, sequence_number):
-        """Log Gemini OCR API call details."""
+    def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang):
+        """Log complete Gemini OCR API call with request, response, and stats together."""
         # Check if API logging is enabled
         if not self.app.gemini_api_log_enabled_var.get():
             return
@@ -832,54 +860,61 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
+            # Calculate costs
+            INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
+            OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
+            
+            call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
+            call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
+            
             log_entry = f"""
-=== GEMINI OCR API CALL LOG ===
+=== GEMINI OCR API CALL (COMPLETE LOG) ===
 Timestamp: {timestamp}
-Sequence Number: {sequence_number}
 Source Language: {source_lang}
 Image Size: {image_size} bytes
 Call Type: OCR Only
 
-"""
-            
-            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_entry)
-                
-            log_debug(f"Gemini OCR call logged: Seq={sequence_number}, Lang={source_lang}, Size={image_size}")
-            
-        except Exception as e:
-            log_debug(f"Error logging Gemini OCR call: {e}")
-    
-    def _log_gemini_ocr_response(self, response_text, sequence_number, call_duration):
-        """Log Gemini OCR API response details."""
-        # Check if API logging is enabled
-        if not self.app.gemini_api_log_enabled_var.get():
-            return
-            
-        try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            response_entry = f"""
-GEMINI OCR RESPONSE:
-Timestamp: {timestamp}
-Sequence Number: {sequence_number}
-Call Duration: {call_duration:.3f} seconds
+REQUEST PROMPT:
+---BEGIN PROMPT---
+{prompt}
+---END PROMPT---
 
----BEGIN OCR RESPONSE---
-{response_text}
----END OCR RESPONSE---
+RAW RESPONSE:
+---BEGIN RAW RESPONSE---
+{raw_response}
+---END RAW RESPONSE---
+
+PARSED RESULT:
+{parsed_response}
+
+PERFORMANCE & COST ANALYSIS:
+- Call Duration: {call_duration:.3f} seconds
+- Input Tokens: {input_tokens}
+- Output Tokens: {output_tokens}
+- Input Cost: ${call_input_cost:.8f}
+- Output Cost: ${call_output_cost:.8f}
+- Total Cost for this Call: ${(call_input_cost + call_output_cost):.8f}
 
 ========================================
 
 """
             
             with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                f.write(response_entry)
+                f.write(log_entry)
                 
-            log_debug(f"Gemini OCR response logged: Seq={sequence_number}, Duration={call_duration:.3f}s")
-                
+            log_debug(f"Complete Gemini OCR call logged: {input_tokens}+{output_tokens} tokens, {call_duration:.3f}s")
+            
         except Exception as e:
-            log_debug(f"Error logging Gemini OCR response: {e}")
+            log_debug(f"Error logging complete Gemini OCR call: {e}")
+
+    # Remove old separate logging functions - replaced by complete logging above
+    def _log_gemini_ocr_call(self, image_size, source_lang, sequence_number):
+        """Deprecated - replaced by _log_complete_gemini_ocr_call."""
+        pass
+    
+    def _log_gemini_ocr_response(self, response_text, sequence_number, call_duration):
+        """Deprecated - replaced by _log_complete_gemini_ocr_call."""
+        pass
 
     def translate_text(self, text_content_main):
         cleaned_text_main = text_content_main.strip() if text_content_main else ""
