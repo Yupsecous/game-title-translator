@@ -48,6 +48,8 @@ DEFAULT_CONFIG_SETTINGS = {
     'deepl_target_lang': 'EN-GB', # DeepL's code for English (British)
     'deepl_model_type': 'latency_optimized', # Default to classic model for compatibility
     'gui_language':'English',
+    # OCR Model Selection (Phase 1 - Gemini OCR)
+    'ocr_model': 'tesseract',  # 'tesseract' or 'gemini'
     # Adaptive thresholding parameters
     'adaptive_block_size': '41',
     'adaptive_c': '-60',
