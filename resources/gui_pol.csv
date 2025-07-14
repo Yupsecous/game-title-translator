@@ -27,6 +27,9 @@ hide_btn,Ukryj
 settings_tab_title,Ustawienia
 translation_model_label,Model tłumaczenia:
 translation_model_marianmt_offline,MarianMT (lokalny i bezpłatny)
+ocr_model_label,Model OCR:
+ocr_model_tesseract,Tesseract (lokalny)
+ocr_model_gemini,Gemini API (online)
 source_lang_label,Język źródłowy:
 target_lang_label,Język docelowy:
 marian_model_label,Model MarianMT:

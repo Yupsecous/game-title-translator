@@ -1037,6 +1037,7 @@ class UIInteractionHandler:
             cfg['target_text_colour'] = self.app.target_text_colour_var.get()
             cfg['target_font_size'] = str(self.app.target_font_size_var.get())
             cfg['gui_language'] = self.app.gui_language_var.get()
+            cfg['ocr_model'] = self.app.ocr_model_var.get()  # OCR Model Selection (Phase 2)
             
             cfg['google_translate_api_key'] = self.app.google_api_key_var.get()
             cfg['deepl_api_key'] = self.app.deepl_api_key_var.get()

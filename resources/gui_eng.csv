@@ -25,6 +25,9 @@ status_stopped,Stopped (Press ~ to Start)
 settings_tab_title,Settings
 translation_model_label,Translation Model:
 translation_model_marianmt_offline,MarianMT (offline and free)
+ocr_model_label,OCR Model:
+ocr_model_tesseract,Tesseract (offline)
+ocr_model_gemini,Gemini API (online)
 source_lang_label,Source Language:
 target_lang_label,Target Language:
 marian_model_label,MarianMT Model:

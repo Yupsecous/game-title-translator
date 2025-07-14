@@ -743,6 +743,144 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 return 'Auto'
             return lang_code.title()
 
+    # ==================== GEMINI OCR METHODS (Phase 2) ====================
+    
+    def _gemini_ocr_only(self, webp_image_data, source_lang):
+        """Simple OCR-only call to Gemini API for extracting text from images."""
+        log_debug(f"Gemini OCR request for source language: {source_lang}")
+        
+        api_key_gemini = self.app.gemini_api_key_var.get().strip()
+        if not api_key_gemini:
+            return "<ERROR>: Gemini API key missing"
+        
+        try:
+            import google.generativeai as genai
+            
+            # Configure Gemini API
+            genai.configure(api_key=api_key_gemini)
+            
+            # Get model configuration for OCR calls
+            model_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite-preview-06-17')
+            
+            # Optimal configuration for OCR tasks
+            generation_config = {
+                "temperature": 0.0,           # Deterministic for OCR
+                "max_output_tokens": 512,     # Sufficient for OCR text
+                "candidate_count": 1,         # Single response needed
+                "top_p": 1.0,                 # Full token consideration for OCR
+                "top_k": 40,                  # Limit candidate tokens
+                "response_mime_type": "text/plain"
+            }
+            
+            # Gaming-appropriate safety settings (same as translation)
+            from google.generativeai.types import HarmCategory, HarmBlockThreshold
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
+            # Create model for OCR calls
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                generation_config=generation_config,
+                safety_settings=safety_settings
+            )
+            
+            # Get language display name for prompt
+            source_lang_name = self._get_language_display_name(source_lang, 'gemini')
+            
+            # Create OCR prompt - simple and direct
+            prompt = f"Extract all text from this image in {source_lang_name}. If no text is found, return only: <EMPTY>. Return only the text, nothing else."
+            
+            # Prepare image data for Gemini
+            image_part = {
+                'mime_type': 'image/webp',
+                'data': webp_image_data
+            }
+            
+            log_debug(f"Making Gemini OCR API call for language: {source_lang_name}")
+            
+            # Make the API call
+            api_call_start_time = time.time()
+            response = model.generate_content([prompt, image_part])
+            call_duration = time.time() - api_call_start_time
+            
+            log_debug(f"Gemini OCR API call took {call_duration:.3f}s")
+            
+            # Extract the response text
+            ocr_result = response.text.strip() if response.text else "<EMPTY>"
+            
+            # Clean up the response
+            if not ocr_result or ocr_result.lower() in ['', 'none', 'no text', 'empty']:
+                ocr_result = "<EMPTY>"
+            
+            log_debug(f"Gemini OCR result: '{ocr_result}'")
+            return ocr_result
+            
+        except Exception as e:
+            log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
+            return f"<ERROR>: Gemini OCR error: {str(e)}"
+    
+    def _log_gemini_ocr_call(self, image_size, source_lang, sequence_number):
+        """Log Gemini OCR API call details."""
+        # Check if API logging is enabled
+        if not self.app.gemini_api_log_enabled_var.get():
+            return
+            
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            log_entry = f"""
+=== GEMINI OCR API CALL LOG ===
+Timestamp: {timestamp}
+Sequence Number: {sequence_number}
+Source Language: {source_lang}
+Image Size: {image_size} bytes
+Call Type: OCR Only
+
+"""
+            
+            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                f.write(log_entry)
+                
+            log_debug(f"Gemini OCR call logged: Seq={sequence_number}, Lang={source_lang}, Size={image_size}")
+            
+        except Exception as e:
+            log_debug(f"Error logging Gemini OCR call: {e}")
+    
+    def _log_gemini_ocr_response(self, response_text, sequence_number, call_duration):
+        """Log Gemini OCR API response details."""
+        # Check if API logging is enabled
+        if not self.app.gemini_api_log_enabled_var.get():
+            return
+            
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            response_entry = f"""
+GEMINI OCR RESPONSE:
+Timestamp: {timestamp}
+Sequence Number: {sequence_number}
+Call Duration: {call_duration:.3f} seconds
+
+---BEGIN OCR RESPONSE---
+{response_text}
+---END OCR RESPONSE---
+
+========================================
+
+"""
+            
+            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                f.write(response_entry)
+                
+            log_debug(f"Gemini OCR response logged: Seq={sequence_number}, Duration={call_duration:.3f}s")
+                
+        except Exception as e:
+            log_debug(f"Error logging Gemini OCR response: {e}")
+
     def translate_text(self, text_content_main):
         cleaned_text_main = text_content_main.strip() if text_content_main else ""
         if not cleaned_text_main or len(cleaned_text_main) < 1: return None 

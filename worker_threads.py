@@ -167,6 +167,30 @@ def run_ocr_thread(app):
             # Convert to WebP for Gemini API (only keep one in memory)
             app.raw_image_for_gemini = app.convert_to_webp_for_gemini(screenshot_pil)
 
+            # ==================== OCR MODEL ROUTING (Phase 2) ====================
+            # Check OCR model setting and route accordingly
+            ocr_model = app.get_ocr_model_setting()
+            
+            if ocr_model == 'gemini':
+                # Use Gemini OCR - start async batch processing
+                log_debug("WT: OCR routing to Gemini OCR")
+                run_gemini_ocr_only(app, screenshot_pil)
+                continue  # Skip Tesseract processing
+            
+            elif ocr_model == 'tesseract':
+                # Use Tesseract OCR (existing logic continues below)
+                log_debug("WT: OCR routing to Tesseract OCR")
+                # Continue with existing Tesseract processing
+                pass
+            
+            else:
+                # Unknown OCR model - fallback to Tesseract with warning
+                log_debug(f"WT: OCR: Unknown OCR model '{ocr_model}', falling back to Tesseract")
+                # Continue with existing Tesseract processing
+                pass
+            
+            # ==================== TESSERACT OCR PROCESSING ====================
+
             # Optimized image processing: Direct PIL to OpenCV conversion
             # Convert PIL to numpy array once
             img_np = np.array(screenshot_pil)
@@ -343,3 +367,135 @@ def run_translation_thread(app):
             app.root.after(0, app.update_translation_text, f"Translation Thread Error:\n{type(e_trans_loop_wt).__name__}")
             time.sleep(0.2)
     log_debug("WT: Translation thread finished.")
+
+
+# ==================== GEMINI OCR ASYNC PROCESSING (Phase 2) ====================
+
+def run_gemini_ocr_only(app, screenshot_pil):
+    """Start async Gemini OCR batch processing for a screenshot."""
+    try:
+        # Check if Gemini OCR is selected
+        if app.get_ocr_model_setting() != 'gemini':
+            return
+        
+        # Convert image to WebP for Gemini API
+        webp_image_data = app.convert_to_webp_for_gemini(screenshot_pil)
+        if not webp_image_data:
+            log_debug("Failed to convert image to WebP for Gemini OCR")
+            return
+        
+        # Get current source language
+        source_lang = getattr(app, 'gemini_source_lang', 'en')
+        
+        # Increment batch sequence counter
+        app.batch_sequence_counter += 1
+        sequence_number = app.batch_sequence_counter
+        
+        # Check if we're at the limit of concurrent OCR calls
+        if len(app.active_ocr_calls) >= app.max_concurrent_ocr_calls:
+            log_debug(f"Max concurrent OCR calls ({app.max_concurrent_ocr_calls}) reached, skipping batch {sequence_number}")
+            return
+        
+        # Add this sequence to active calls
+        app.active_ocr_calls.add(sequence_number)
+        
+        # Start async OCR processing
+        import threading
+        ocr_thread = threading.Thread(
+            target=process_gemini_ocr_async,
+            args=(app, webp_image_data, source_lang, sequence_number),
+            name=f"GeminiOCR-{sequence_number}",
+            daemon=True
+        )
+        ocr_thread.start()
+        
+        log_debug(f"Started async Gemini OCR batch {sequence_number} (active calls: {len(app.active_ocr_calls)})")
+        
+    except Exception as e:
+        log_debug(f"Error starting Gemini OCR batch: {type(e).__name__} - {e}")
+
+
+def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number):
+    """Process Gemini OCR API call asynchronously."""
+    try:
+        log_debug(f"Processing Gemini OCR batch {sequence_number}")
+        
+        # Log the OCR call if logging is enabled
+        image_size = len(webp_image_data) if webp_image_data else 0
+        app.translation_handler._log_gemini_ocr_call(image_size, source_lang, sequence_number)
+        
+        # Make the Gemini OCR API call
+        api_call_start_time = time.time()
+        ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang)
+        call_duration = time.time() - api_call_start_time
+        
+        # Log the OCR response if logging is enabled
+        app.translation_handler._log_gemini_ocr_response(ocr_result, sequence_number, call_duration)
+        
+        log_debug(f"Gemini OCR batch {sequence_number} completed in {call_duration:.3f}s: '{ocr_result}'")
+        
+        # Schedule processing of the OCR response on the main thread
+        app.root.after(0, process_gemini_ocr_response, app, ocr_result, sequence_number, source_lang)
+        
+    except Exception as e:
+        log_debug(f"Error in async Gemini OCR batch {sequence_number}: {type(e).__name__} - {e}")
+        # Schedule error handling on main thread
+        error_msg = f"<e>: OCR batch {sequence_number} error: {str(e)}"
+        app.root.after(0, process_gemini_ocr_response, app, error_msg, sequence_number, source_lang)
+    
+    finally:
+        # Always remove from active calls
+        try:
+            app.active_ocr_calls.discard(sequence_number)
+            log_debug(f"Gemini OCR batch {sequence_number} finished (active calls: {len(app.active_ocr_calls)})")
+        except Exception as cleanup_error:
+            log_debug(f"Error cleaning up OCR batch {sequence_number}: {cleanup_error}")
+
+
+def process_gemini_ocr_response(app, ocr_result, sequence_number, source_lang):
+    """Process Gemini OCR response and handle different result types."""
+    try:
+        log_debug(f"Processing OCR response for batch {sequence_number}: '{ocr_result}'")
+        
+        # Handle error responses
+        if isinstance(ocr_result, str) and ocr_result.startswith("<e>:"):
+            log_debug(f"OCR error in batch {sequence_number}: {ocr_result}")
+            # For errors, fall back to Tesseract if possible
+            # This would be implemented in the actual OCR routing logic
+            return
+        
+        # Handle <EMPTY> response (no text detected)
+        if ocr_result == "<EMPTY>":
+            log_debug(f"OCR batch {sequence_number}: No text detected")
+            app.handle_empty_ocr_result()
+            return
+        
+        # Handle successive identical subtitle detection
+        if ocr_result == app.last_processed_subtitle:
+            log_debug(f"OCR batch {sequence_number}: Successive identical subtitle detected")
+            app.handle_successive_identical_subtitle(f"OCR batch {sequence_number}: Successive identical")
+            return
+        
+        # New/different text detected
+        log_debug(f"OCR batch {sequence_number}: New text detected: '{ocr_result}'")
+        
+        # Update last processed subtitle for successive comparison
+        app.last_processed_subtitle = ocr_result
+        
+        # Reset clear timeout (text detected)
+        app.reset_clear_timeout()
+        
+        # Send extracted text to translation pipeline
+        if not app.translation_queue.full():
+            app.translation_queue.put_nowait(ocr_result)
+            log_debug(f"OCR result from batch {sequence_number} sent to translation: '{ocr_result}'")
+        else:
+            log_debug(f"Translation queue full, skipping OCR result from batch {sequence_number}")
+        
+    except Exception as e:
+        log_debug(f"Error processing OCR response for batch {sequence_number}: {type(e).__name__} - {e}")
+        # On error, try to clear any timeout state
+        try:
+            app.reset_clear_timeout()
+        except:
+            pass
