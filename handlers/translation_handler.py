@@ -793,11 +793,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Create OCR prompt with error correction - use exact prompt requested
             prompt = f"""1. Extract all text from this image. The language is: {source_lang_name.upper()}.
-2. Then correct all typos. The returned text must be grammatically correct and without any errors.
-3. Then double-check if the text does not have any typos.
-4. Then return the text without any line breaks in this exact format: {source_lang_name.upper()}: [recognized text without typos and line breaks]
-5. Don't return anything else.
-6. If there is no text in the image, you must not return the language name. Return only this exact string "<EMPTY>"."""
+2. Then return the text without any line breaks in this exact format: {source_lang_name.upper()}: [recognized text without line breaks]
+3. Don't return anything else.
+4. If there is no text in the image, you must not return the language name. Return only this exact string "<EMPTY>"."""
             
             # Prepare image data for Gemini
             image_part = {
