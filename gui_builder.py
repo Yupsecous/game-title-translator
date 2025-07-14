@@ -176,11 +176,51 @@ def create_settings_tab(app):
     app.translation_model_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(handle_translation_model_selection))
 
+    # Row 0.5: OCR Model Selection (Phase 1 - Gemini OCR)
+    ttk.Label(frame, text=app.ui_lang.get_label("ocr_model_label", "OCR Model")).grid(row=1, column=0, padx=5, pady=5, sticky="w")
+    
+    ocr_models_available = [
+        ("tesseract", app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)")),
+        ("gemini", app.ui_lang.get_label("ocr_model_gemini", "Gemini API (online)"))
+    ]
+    
+    app.ocr_model_display_var = tk.StringVar()
+    # Set initial display value based on current setting
+    current_ocr_model = app.ocr_model_var.get()
+    for value, display in ocr_models_available:
+        if value == current_ocr_model:
+            app.ocr_model_display_var.set(display)
+            break
+    else:
+        # Fallback if current setting doesn't match any option
+        app.ocr_model_display_var.set(ocr_models_available[0][1])  # Default to Tesseract
+    
+    app.ocr_model_combobox = ttk.Combobox(frame, textvariable=app.ocr_model_display_var,
+                                        values=[display for _, display in ocr_models_available], 
+                                        width=25, state='readonly')
+    app.ocr_model_combobox.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+    
+    def on_ocr_model_changed(event):
+        selected_display = app.ocr_model_display_var.get()
+        # Find the corresponding value
+        for value, display in ocr_models_available:
+            if display == selected_display:
+                app.ocr_model_var.set(value)
+                log_debug(f"OCR model changed to: {value} (display: {display})")
+                if app._fully_initialized:
+                    app.save_settings()
+                break
+    
+    app.ocr_model_combobox.bind('<<ComboboxSelected>>', 
+        create_combobox_handler_wrapper(on_ocr_model_changed))
+
+    # Store the options for later use when updating language
+    app.ocr_model_options = ocr_models_available
 
     app.source_lang_label = ttk.Label(frame, text=app.ui_lang.get_label("source_lang_label"))
-    app.source_lang_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+    app.source_lang_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
     app.source_lang_combobox = ttk.Combobox(frame, textvariable=app.source_display_var, width=25, state='readonly')
-    app.source_lang_combobox.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+    app.source_lang_combobox.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
     def on_source_lang_gui_changed(event):
         selected_display_name = app.source_display_var.get()
@@ -240,9 +280,9 @@ def create_settings_tab(app):
 
 
     app.target_lang_label = ttk.Label(frame, text=app.ui_lang.get_label("target_lang_label"))
-    app.target_lang_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+    app.target_lang_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
     app.target_lang_combobox = ttk.Combobox(frame, textvariable=app.target_display_var, width=25, state='readonly')
-    app.target_lang_combobox.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+    app.target_lang_combobox.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
 
     def on_target_lang_gui_changed(event):
         selected_display_name = app.target_display_var.get()
@@ -301,10 +341,10 @@ def create_settings_tab(app):
 
 
     app.marian_model_label = ttk.Label(frame, text=app.ui_lang.get_label("marian_model_label"))
-    app.marian_model_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+    app.marian_model_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
     app.marian_model_combobox = ttk.Combobox(frame, textvariable=app.marian_model_display_var, 
                                              values=app.marian_models_list, width=25, state='readonly')
-    app.marian_model_combobox.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+    app.marian_model_combobox.grid(row=4, column=1, padx=5, pady=5, sticky="ew")
     
     def handle_marian_model_selection(event):
         # The marian_models_dict now contains localized display names as keys
@@ -314,45 +354,45 @@ def create_settings_tab(app):
         create_combobox_handler_wrapper(handle_marian_model_selection))
     
     app.google_api_key_label = ttk.Label(frame, text=app.ui_lang.get_label("google_api_key_label")) 
-    app.google_api_key_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+    app.google_api_key_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
     app.google_api_key_entry = ttk.Entry(frame, textvariable=app.google_api_key_var, width=40, show="*")
-    app.google_api_key_entry.grid(row=4, column=1, padx=5, pady=5, sticky="ew")
+    app.google_api_key_entry.grid(row=5, column=1, padx=5, pady=5, sticky="ew")
     # Set initial button text based on visibility
     initial_google_text = app.ui_lang.get_label("show_btn", "Show")
     if hasattr(app, 'google_api_key_visible') and app.google_api_key_visible:
         initial_google_text = app.ui_lang.get_label("hide_btn", "Hide")
     app.google_api_key_button = ttk.Button(frame, text=initial_google_text, width=5, 
                                           command=lambda: app.toggle_api_key_visibility("google"))
-    app.google_api_key_button.grid(row=4, column=2, padx=5, pady=5, sticky="w")
+    app.google_api_key_button.grid(row=5, column=2, padx=5, pady=5, sticky="w")
 
     app.deepl_api_key_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_api_key_label")) 
-    app.deepl_api_key_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_api_key_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
     app.deepl_api_key_entry = ttk.Entry(frame, textvariable=app.deepl_api_key_var, width=40, show="*")
-    app.deepl_api_key_entry.grid(row=5, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_api_key_entry.grid(row=6, column=1, padx=5, pady=5, sticky="ew")
     # Set initial button text based on visibility
     initial_deepl_text = app.ui_lang.get_label("show_btn", "Show") 
     if hasattr(app, 'deepl_api_key_visible') and app.deepl_api_key_visible:
         initial_deepl_text = app.ui_lang.get_label("hide_btn", "Hide")
     app.deepl_api_key_button = ttk.Button(frame, text=initial_deepl_text, width=5,
                                          command=lambda: app.toggle_api_key_visibility("deepl"))
-    app.deepl_api_key_button.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+    app.deepl_api_key_button.grid(row=6, column=2, padx=5, pady=5, sticky="w")
 
     # Gemini API Key input (only visible when Gemini is selected)
     app.gemini_api_key_label = ttk.Label(frame, text=app.ui_lang.get_label("gemini_api_key_label", "Gemini API Key")) 
-    app.gemini_api_key_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+    app.gemini_api_key_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
     app.gemini_api_key_entry = ttk.Entry(frame, textvariable=app.gemini_api_key_var, width=40, show="*")
-    app.gemini_api_key_entry.grid(row=6, column=1, padx=5, pady=5, sticky="ew")
+    app.gemini_api_key_entry.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
     # Set initial button text based on visibility
     initial_gemini_text = app.ui_lang.get_label("show_btn", "Show") 
     if hasattr(app, 'gemini_api_key_visible') and app.gemini_api_key_visible:
         initial_gemini_text = app.ui_lang.get_label("hide_btn", "Hide")
     app.gemini_api_key_button = ttk.Button(frame, text=initial_gemini_text, width=5,
                                           command=lambda: app.toggle_api_key_visibility("gemini"))
-    app.gemini_api_key_button.grid(row=6, column=2, padx=5, pady=5, sticky="w")
+    app.gemini_api_key_button.grid(row=7, column=2, padx=5, pady=5, sticky="w")
 
     # Gemini Context Window Setting (only visible when Gemini is selected)
     app.gemini_context_window_label = ttk.Label(frame, text=app.ui_lang.get_label("gemini_context_window_label", "Context Window"))
-    app.gemini_context_window_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+    app.gemini_context_window_label.grid(row=8, column=0, padx=5, pady=5, sticky="w")
     
     context_window_options = [
         (0, app.ui_lang.get_label("gemini_context_window_0", "0 (Disabled)")),
@@ -377,7 +417,7 @@ def create_settings_tab(app):
     app.gemini_context_window_combobox = ttk.Combobox(frame, textvariable=app.gemini_context_window_display_var,
                                                      values=[display for _, display in context_window_options], 
                                                      width=25, state='readonly')
-    app.gemini_context_window_combobox.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
+    app.gemini_context_window_combobox.grid(row=8, column=1, padx=5, pady=5, sticky="ew")
     
     def on_gemini_context_window_changed(event):
         selected_display = app.gemini_context_window_display_var.get()
@@ -406,7 +446,7 @@ def create_settings_tab(app):
 
     # Gemini API Statistics Row (only visible when Gemini is selected)
     app.gemini_stats_frame = ttk.Frame(frame)
-    app.gemini_stats_frame.grid(row=8, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+    app.gemini_stats_frame.grid(row=9, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
     
     # Total Words field (read-only)
     app.gemini_total_words_label = ttk.Label(app.gemini_stats_frame, text=app.ui_lang.get_label("gemini_total_words_label", "Łącznie słów"))
@@ -448,7 +488,7 @@ def create_settings_tab(app):
 
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
-    app.deepl_model_type_label.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_model_type_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
     
     # Create model type options with user-friendly names
     deepl_model_options = [
@@ -470,7 +510,7 @@ def create_settings_tab(app):
     app.deepl_model_type_combobox = ttk.Combobox(frame, textvariable=app.deepl_model_display_var,
                                                values=[display for _, display in deepl_model_options], 
                                                width=25, state='readonly')
-    app.deepl_model_type_combobox.grid(row=9, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_model_type_combobox.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
     
     def on_deepl_model_type_changed(event):
         selected_display = app.deepl_model_display_var.get()
@@ -491,10 +531,10 @@ def create_settings_tab(app):
 
     # DeepL Usage Display (only visible when DeepL is selected)
     app.deepl_usage_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
-    app.deepl_usage_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_usage_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
     app.deepl_usage_var = tk.StringVar(value=app.ui_lang.get_label("deepl_usage_loading", "Loading..."))
     app.deepl_usage_entry = ttk.Entry(frame, textvariable=app.deepl_usage_var, width=40, state='readonly')
-    app.deepl_usage_entry.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_usage_entry.grid(row=11, column=1, padx=5, pady=5, sticky="ew")
     
     # Function to update DeepL model type options when language changes
     def update_deepl_model_type_for_language():
@@ -611,19 +651,19 @@ def create_settings_tab(app):
     app.update_deepl_usage_for_language = update_deepl_usage_for_language
 
     app.models_file_label = ttk.Label(frame, text=app.ui_lang.get_label("models_file_label")) 
-    app.models_file_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+    app.models_file_label.grid(row=12, column=0, padx=5, pady=5, sticky="w")
     app.models_file_frame = ttk.Frame(frame)
-    app.models_file_frame.grid(row=7, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+    app.models_file_frame.grid(row=12, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
     app.models_file_entry = ttk.Entry(app.models_file_frame, textvariable=app.models_file_var)
     app.models_file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
     app.models_file_button = ttk.Button(app.models_file_frame, text=app.ui_lang.get_label("browse_btn"), command=app.browse_marian_models_file)
     app.models_file_button.pack(side=tk.RIGHT, padx=(5,0))
 
     app.beam_size_label = ttk.Label(frame, text=app.ui_lang.get_label("beam_size_label")) 
-    app.beam_size_label.grid(row=8, column=0, padx=5, pady=5, sticky="w")
+    app.beam_size_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
     app.beam_spinbox = ttk.Spinbox(frame, from_=1, to=50, textvariable=app.num_beams_var, width=10,
                                   validate="key", validatecommand=(validate_beam_size, '%P'))
-    app.beam_spinbox.grid(row=8, column=1, padx=5, pady=5, sticky="w")
+    app.beam_spinbox.grid(row=13, column=1, padx=5, pady=5, sticky="w")
     def on_beam_spinbox_focus_out(event):
         try:
             value = int(app.num_beams_var.get())
@@ -635,7 +675,7 @@ def create_settings_tab(app):
     app.beam_spinbox.bind("<FocusOut>", on_beam_spinbox_focus_out)
 
     app.marian_explanation_labels = [] 
-    row_offset = 11  # Adjusted from 9 to account for new Gemini stats (row 8) and DeepL usage (row 10) rows
+    row_offset = 16  # Adjusted from 11 to account for new OCR model selection (row 1) and updated Gemini/DeepL sections
     if app.MARIANMT_AVAILABLE:
         texts = [
             app.ui_lang.get_label("marian_beam_explanation", "Higher beam values = better but slower translations"),
@@ -654,12 +694,14 @@ def create_settings_tab(app):
         app.marian_explanation_labels.append(lbl)
     current_row = row_offset + len(texts)
 
-    ttk.Label(frame, text=app.ui_lang.get_label("tesseract_path_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
-    path_frame_settings = ttk.Frame(frame) # Renamed to avoid conflict with debug tab's path_frame
-    path_frame_settings.grid(row=current_row, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
-    app.tesseract_path_entry = ttk.Entry(path_frame_settings, textvariable=app.tesseract_path_var) 
+    # Store references to Tesseract-specific widgets for OCR model UI management
+    app.tesseract_path_label = ttk.Label(frame, text=app.ui_lang.get_label("tesseract_path_label"))
+    app.tesseract_path_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
+    app.tesseract_path_frame = ttk.Frame(frame) # Store reference to the frame
+    app.tesseract_path_frame.grid(row=current_row, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+    app.tesseract_path_entry = ttk.Entry(app.tesseract_path_frame, textvariable=app.tesseract_path_var) 
     app.tesseract_path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Button(path_frame_settings, text=app.ui_lang.get_label("browse_btn"), command=app.browse_tesseract).pack(side=tk.RIGHT, padx=(5,0))
+    ttk.Button(app.tesseract_path_frame, text=app.ui_lang.get_label("browse_btn"), command=app.browse_tesseract).pack(side=tk.RIGHT, padx=(5,0))
     current_row += 1
 
     ttk.Label(frame, text=app.ui_lang.get_label("scan_interval_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
@@ -689,10 +731,11 @@ def create_settings_tab(app):
     timeout_spinbox.bind("<FocusOut>", on_timeout_focus_out)
     current_row += 1
     
-    ttk.Label(frame, text=app.ui_lang.get_label("stability_threshold_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
-    stability_spinbox = ttk.Spinbox(frame, from_=0, to=5, textvariable=app.stability_var, 
+    app.stability_label = ttk.Label(frame, text=app.ui_lang.get_label("stability_threshold_label"))
+    app.stability_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
+    app.stability_spinbox = ttk.Spinbox(frame, from_=0, to=5, textvariable=app.stability_var, 
                                   width=10, validate="key", validatecommand=(validate_stability, '%P'))
-    stability_spinbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
+    app.stability_spinbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
     def on_stability_focus_out(event):
         try:
             value = int(app.stability_var.get())
@@ -700,13 +743,14 @@ def create_settings_tab(app):
             app.update_stability_from_spinbox() 
         except (ValueError, tk.TclError): app.stability_var.set(0)
         app.save_settings()
-    stability_spinbox.bind("<FocusOut>", on_stability_focus_out)
+    app.stability_spinbox.bind("<FocusOut>", on_stability_focus_out)
     current_row += 1
 
-    ttk.Label(frame, text=app.ui_lang.get_label("confidence_threshold_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
-    confidence_spinbox = ttk.Spinbox(frame, from_=0, to=100, textvariable=app.confidence_var, 
+    app.confidence_label = ttk.Label(frame, text=app.ui_lang.get_label("confidence_threshold_label"))
+    app.confidence_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
+    app.confidence_spinbox = ttk.Spinbox(frame, from_=0, to=100, textvariable=app.confidence_var, 
                                    width=10, validate="key", validatecommand=(validate_confidence, '%P'))
-    confidence_spinbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
+    app.confidence_spinbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
     def on_confidence_focus_out(event):
         try:
             value = int(app.confidence_var.get())
@@ -714,10 +758,11 @@ def create_settings_tab(app):
             app.confidence_threshold = app.confidence_var.get() 
         except (ValueError, tk.TclError): app.confidence_var.set(50)
         app.save_settings()
-    confidence_spinbox.bind("<FocusOut>", on_confidence_focus_out)
+    app.confidence_spinbox.bind("<FocusOut>", on_confidence_focus_out)
     current_row += 1
     
-    ttk.Label(frame, text=app.ui_lang.get_label("preprocessing_mode_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
+    app.preprocessing_mode_label = ttk.Label(frame, text=app.ui_lang.get_label("preprocessing_mode_label"))
+    app.preprocessing_mode_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
     
     # Create a display mapping for the preprocessing mode
     preprocessing_values = {
@@ -739,9 +784,9 @@ def create_settings_tab(app):
     
     # Create combobox with display values
     preprocessing_display_values = [preprocessing_values[val] for val in preprocessing_list]
-    preprocessing_combobox = ttk.Combobox(frame, textvariable=display_var, 
+    app.preprocessing_mode_combobox = ttk.Combobox(frame, textvariable=display_var, 
                                        values=preprocessing_display_values, width=15, state='readonly')
-    preprocessing_combobox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
+    app.preprocessing_mode_combobox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
     
     # Create mapping from display name back to value
     display_to_value = {display: value for value, display in preprocessing_values.items()}
@@ -755,7 +800,7 @@ def create_settings_tab(app):
         app.preprocessing_mode_var.set(actual_value)
         app.save_settings()
     
-    preprocessing_combobox.bind('<<ComboboxSelected>>', 
+    app.preprocessing_mode_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_preprocessing_combo_selected))
     current_row += 1
 
@@ -821,7 +866,7 @@ def create_settings_tab(app):
         update_adaptive_fields_visibility()
     
     # Rebind with new handler
-    preprocessing_combobox.bind('<<ComboboxSelected>>', 
+    app.preprocessing_mode_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_preprocessing_combo_selected_with_visibility))
     
     # Initial visibility update
@@ -833,11 +878,13 @@ def create_settings_tab(app):
     ocr_debug_frame.grid(row=current_row, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
     
     ttk.Label(ocr_debug_frame, text=app.ui_lang.get_label("ocr_debugging_label")).pack(side=tk.LEFT)
-    ttk.Checkbutton(ocr_debug_frame, text=app.ui_lang.get_label("show_debug_checkbox"), variable=app.ocr_debugging_var).pack(side=tk.LEFT, padx=(5,0))
+    app.ocr_debugging_checkbox = ttk.Checkbutton(ocr_debug_frame, text=app.ui_lang.get_label("show_debug_checkbox"), variable=app.ocr_debugging_var)
+    app.ocr_debugging_checkbox.pack(side=tk.LEFT, padx=(5,0))
     
     # Add Preview button
-    ttk.Button(ocr_debug_frame, text=app.ui_lang.get_label("preview_btn", "Preview"), 
-               command=app.show_ocr_preview).pack(side=tk.LEFT, padx=(10,0))
+    app.ocr_preview_button = ttk.Button(ocr_debug_frame, text=app.ui_lang.get_label("preview_btn", "Preview"), 
+               command=app.show_ocr_preview)
+    app.ocr_preview_button.pack(side=tk.LEFT, padx=(10,0))
     current_row += 1
 
     ttk.Label(frame, text=app.ui_lang.get_label("remove_trailing_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 

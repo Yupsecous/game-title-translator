@@ -181,6 +181,69 @@ class UIInteractionHandler:
             # Use after_idle to ensure all GUI elements are ready
             self.app.root.after_idle(self.app.update_deepl_usage)
     
+    def update_ocr_model_ui(self):
+        """Update UI visibility for OCR model-specific settings."""
+        selected_ocr_model = self.app.ocr_model_var.get()
+        log_debug(f"Updating OCR model UI for: {selected_ocr_model}")
+        
+        def manage_grid(widget, show=True):
+            if widget and hasattr(widget, 'grid_remove') and hasattr(widget, 'grid'):
+                is_gridded = False
+                try:
+                    if widget.grid_info():
+                        is_gridded = True
+                except tk.TclError: 
+                    is_gridded = False
+                
+                if show and not is_gridded: 
+                    widget.grid() 
+                elif not show and is_gridded: 
+                    widget.grid_remove()
+        
+        is_tesseract = (selected_ocr_model == 'tesseract')
+        is_gemini_ocr = (selected_ocr_model == 'gemini')
+        
+        # Hide/show Tesseract-specific fields when Gemini OCR is selected
+        if hasattr(self.app, 'tesseract_path_label'):
+            manage_grid(self.app.tesseract_path_label, show=is_tesseract)
+        if hasattr(self.app, 'tesseract_path_frame'):
+            manage_grid(self.app.tesseract_path_frame, show=is_tesseract)
+        if hasattr(self.app, 'preprocessing_mode_label'):
+            manage_grid(self.app.preprocessing_mode_label, show=is_tesseract)
+        if hasattr(self.app, 'preprocessing_mode_combobox'):
+            manage_grid(self.app.preprocessing_mode_combobox, show=is_tesseract)
+        if hasattr(self.app, 'confidence_label'):
+            manage_grid(self.app.confidence_label, show=is_tesseract)
+        if hasattr(self.app, 'confidence_spinbox'):
+            manage_grid(self.app.confidence_spinbox, show=is_tesseract)
+        if hasattr(self.app, 'stability_label'):
+            manage_grid(self.app.stability_label, show=is_tesseract)
+        if hasattr(self.app, 'stability_spinbox'):
+            manage_grid(self.app.stability_spinbox, show=is_tesseract)
+        
+        # Handle adaptive thresholding parameters - only show when Tesseract + Adaptive mode
+        is_adaptive_mode = (self.app.preprocessing_mode_var.get() == 'adaptive')
+        show_adaptive = is_tesseract and is_adaptive_mode
+        
+        if hasattr(self.app, 'adaptive_block_size_label'):
+            manage_grid(self.app.adaptive_block_size_label, show=show_adaptive)
+        if hasattr(self.app, 'adaptive_block_size_spinbox'):
+            manage_grid(self.app.adaptive_block_size_spinbox, show=show_adaptive)
+        if hasattr(self.app, 'adaptive_c_label'):
+            manage_grid(self.app.adaptive_c_label, show=show_adaptive)
+        if hasattr(self.app, 'adaptive_c_spinbox'):
+            manage_grid(self.app.adaptive_c_spinbox, show=show_adaptive)
+        
+        # Show/hide OCR debugging (available for both OCR models)
+        if hasattr(self.app, 'ocr_debugging_checkbox'):
+            manage_grid(self.app.ocr_debugging_checkbox, show=True)  # Always show
+        
+        # Update OCR Preview button (always show, but functionality will vary by OCR model)
+        if hasattr(self.app, 'ocr_preview_button'):
+            manage_grid(self.app.ocr_preview_button, show=True)  # Always show
+        
+        log_debug(f"OCR model UI updated for {selected_ocr_model}: Tesseract fields={'visible' if is_tesseract else 'hidden'}")
+
     def update_marian_models_dropdown_for_language(self, ui_language=None):
         """Update MarianMT models dropdown with localized display names."""
         if not hasattr(self.app, 'marian_model_combobox') or not self.app.marian_model_combobox.winfo_exists():

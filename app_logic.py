@@ -134,6 +134,13 @@ class GameChangingTranslator:
         self.last_processed_image = None 
         self.raw_image_for_gemini = None  # WebP bytes ready for Gemini API 
         
+        # Gemini OCR Batch Infrastructure (Phase 1)
+        self.last_processed_subtitle = None  # Store last processed subtitle for successive comparison
+        self.batch_sequence_counter = 0  # Track batch sequence numbers
+        self.clear_timeout_timer_start = None  # Timer for clear translation timeout
+        self.active_ocr_calls = set()  # Track active async OCR calls
+        self.max_concurrent_ocr_calls = 3  # Limit concurrent OCR API calls
+        
         # OCR Preview window
         self.ocr_preview_window = None
 
@@ -160,6 +167,9 @@ class GameChangingTranslator:
         self.remove_trailing_garbage_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'remove_trailing_garbage', fallback=False))
         self.debug_logging_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'debug_logging_enabled', fallback=True))
         self.gui_language_var = tk.StringVar(value=self.config['Settings'].get('gui_language', 'English'))
+        
+        # OCR Model Selection (Phase 1 - Gemini OCR)
+        self.ocr_model_var = tk.StringVar(value=self.config['Settings'].get('ocr_model', 'tesseract'))
         
         self.google_api_key_var = tk.StringVar(value=self.config['Settings'].get('google_translate_api_key', ''))
         self.deepl_api_key_var = tk.StringVar(value=self.config['Settings'].get('deepl_api_key', ''))
@@ -290,6 +300,8 @@ class GameChangingTranslator:
         self.num_beams_var.trace_add("write", self.settings_changed_callback)
         self.marian_model_var.trace_add("write", self.settings_changed_callback) 
         self.gui_language_var.trace_add("write", self.settings_changed_callback)
+        self.ocr_model_var.trace_add("write", self.settings_changed_callback)
+        self.ocr_model_var.trace_add("write", self.on_ocr_model_change)
 
         # Other instance variables
         # Increased queue sizes from 4/3 to 8/6 to reduce queue management overhead
@@ -514,6 +526,29 @@ For more information, see the user manual."""
                 # Window was destroyed
                 self.ocr_preview_window = None
 
+    def on_ocr_model_change(self, *args):
+        """Called when OCR model selection changes to update UI visibility."""
+        try:
+            # Update UI to show/hide Tesseract-specific fields
+            if hasattr(self, 'ui_interaction_handler'):
+                self.ui_interaction_handler.update_ocr_model_ui()
+            
+            # Refresh OCR preview if it's open to use the new OCR model
+            if self.ocr_preview_window is not None:
+                try:
+                    if self.ocr_preview_window.winfo_exists():
+                        if hasattr(self, '_preview_refresh_timer'):
+                            self.root.after_cancel(self._preview_refresh_timer)
+                        self._preview_refresh_timer = self.root.after(200, self.refresh_ocr_preview)
+                    else:
+                        self.ocr_preview_window = None
+                except tk.TclError:
+                    self.ocr_preview_window = None
+                    
+            log_debug(f"OCR model changed to: {self.ocr_model_var.get()}")
+        except Exception as e:
+            log_debug(f"Error in OCR model change callback: {e}")
+
     def save_settings(self):
         if self._fully_initialized:
             return self.ui_interaction_handler.save_settings()
@@ -602,6 +637,66 @@ For more information, see the user manual."""
         except Exception as e:
             log_debug(f"Error converting image to WebP for Gemini: {e}")
             return None
+
+    # Gemini OCR Batch Processing Methods (Phase 1)
+    def get_ocr_model_setting(self):
+        """Get the current OCR model setting."""
+        return self.ocr_model_var.get()
+    
+    def handle_empty_ocr_result(self):
+        """Handle <EMPTY> OCR result and manage clear translation timeout."""
+        current_time = time.monotonic()
+        
+        # Only start timeout if we have a timeout value configured
+        if self.clear_translation_timeout_var.get() <= 0:
+            return  # Timeout disabled, do nothing
+        
+        if self.clear_timeout_timer_start is None:
+            # First EMPTY result - start timer
+            self.clear_timeout_timer_start = current_time
+            log_debug("Clear timeout timer started for <EMPTY> OCR result")
+        else:
+            # Check if timeout period exceeded
+            elapsed = current_time - self.clear_timeout_timer_start
+            timeout_seconds = self.clear_translation_timeout_var.get()
+            
+            if elapsed >= timeout_seconds:
+                # Clear the translation display
+                self.update_translation_text("")
+                self.reset_clear_timeout()
+                log_debug(f"Translation cleared after {elapsed:.1f}s timeout")
+    
+    def handle_successive_identical_subtitle(self, reason):
+        """Handle identical subtitles that are the SAME as the immediately previous one."""
+        # 1. Do NOT update caches (LRU, file cache) - no new content
+        # 2. Do NOT update context window - successive identical subtitle
+        # 3. Keep displaying last translation (no API call needed)
+        # 4. Reset clear timeout (text is still present)
+        
+        self.reset_clear_timeout()  # Text still present
+        # Display remains unchanged (last translation stays)
+        # self.last_processed_subtitle stays the same (no change)
+        log_debug(f"Successive identical subtitle detected ({reason}), maintaining current translation")
+        # No context window update - subtitle hasn't changed
+    
+    def reset_clear_timeout(self):
+        """Reset clear translation timeout timer."""
+        self.clear_timeout_timer_start = None
+        log_debug("Clear timeout timer reset - text detected")
+    
+    def check_clear_timeout(self):
+        """Check if clear timeout should be triggered and return True if timeout exceeded."""
+        if self.clear_timeout_timer_start is None:
+            return False
+            
+        if self.clear_translation_timeout_var.get() <= 0:
+            return False  # Timeout disabled
+            
+        current_time = time.monotonic()
+        elapsed = current_time - self.clear_timeout_timer_start
+        timeout_seconds = self.clear_translation_timeout_var.get()
+        
+        return elapsed >= timeout_seconds
 
     def translate_text(self, text_content):
         return self.translation_handler.translate_text(text_content)
