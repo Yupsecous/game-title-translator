@@ -307,20 +307,24 @@ def run_translation_thread(app):
         now = time.monotonic()
         try:
             # Check if we need to clear the translation due to inactivity
-            inactive_duration = now - thread_local_last_translation_display_time
+            # DISABLE this timeout logic when using Gemini OCR as it has its own timeout handling
+            ocr_model = app.get_ocr_model_setting()
             
-            # Only clear translation if timeout is enabled and there's no ongoing text detection
-            if app.clear_translation_timeout > 0 and inactive_duration > app.clear_translation_timeout:
-                # Only clear if there's no text being detected in the source area
-                # Check if there's any text in the previous_text (indicating source has content)
-                if not app.previous_text or app.previous_text == "":
-                    app.update_translation_text("") # Use app's method to update UI
-                    log_debug(f"WT: Cleared translation after {inactive_duration:.1f}s of inactivity with no source text (timeout: {app.clear_translation_timeout}s)")
-                else:
-                    # If there's still text in the source area, don't clear the translation
-                    log_debug(f"WT: Not clearing translation despite {inactive_duration:.1f}s inactivity because source area still has text")
+            if ocr_model != 'gemini':  # Only use translation thread timeout for Tesseract OCR
+                inactive_duration = now - thread_local_last_translation_display_time
                 
-                thread_local_last_translation_display_time = now # Reset timer after checking
+                # Only clear translation if timeout is enabled and there's no ongoing text detection
+                if app.clear_translation_timeout > 0 and inactive_duration > app.clear_translation_timeout:
+                    # Only clear if there's no text being detected in the source area
+                    # Check if there's any text in the previous_text (indicating source has content)
+                    if not app.previous_text or app.previous_text == "":
+                        app.update_translation_text("") # Use app's method to update UI
+                        log_debug(f"WT: Cleared translation after {inactive_duration:.1f}s of inactivity with no source text (timeout: {app.clear_translation_timeout}s)")
+                    else:
+                        # If there's still text in the source area, don't clear the translation
+                        log_debug(f"WT: Not clearing translation despite {inactive_duration:.1f}s inactivity because source area still has text")
+                    
+                    thread_local_last_translation_display_time = now # Reset timer after checking
 
             try:
                 text_to_translate = app.translation_queue.get(timeout=1.0) # Reduced timeout
@@ -420,19 +424,10 @@ def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number)
     try:
         log_debug(f"Processing Gemini OCR batch {sequence_number}")
         
-        # Log the OCR call if logging is enabled
-        image_size = len(webp_image_data) if webp_image_data else 0
-        app.translation_handler._log_gemini_ocr_call(image_size, source_lang, sequence_number)
-        
-        # Make the Gemini OCR API call
-        api_call_start_time = time.time()
+        # Make the Gemini OCR API call - logging is handled inside the function
         ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang)
-        call_duration = time.time() - api_call_start_time
         
-        # Log the OCR response if logging is enabled
-        app.translation_handler._log_gemini_ocr_response(ocr_result, sequence_number, call_duration)
-        
-        log_debug(f"Gemini OCR batch {sequence_number} completed in {call_duration:.3f}s: '{ocr_result}'")
+        log_debug(f"Gemini OCR batch {sequence_number} completed: '{ocr_result}'")
         
         # Schedule processing of the OCR response on the main thread
         app.root.after(0, process_gemini_ocr_response, app, ocr_result, sequence_number, source_lang)
@@ -470,10 +465,13 @@ def process_gemini_ocr_response(app, ocr_result, sequence_number, source_lang):
             app.handle_empty_ocr_result()
             return
         
-        # Handle successive identical subtitle detection
+        # Handle successive identical subtitle detection - FIX: Only skip context updates, not translation display
         if ocr_result == app.last_processed_subtitle:
-            log_debug(f"OCR batch {sequence_number}: Successive identical subtitle detected")
-            app.handle_successive_identical_subtitle(f"OCR batch {sequence_number}: Successive identical")
+            log_debug(f"OCR batch {sequence_number}: Successive identical subtitle detected - '{ocr_result}'")
+            # Reset timeout since text is still present, but DON'T send to translation again
+            app.reset_clear_timeout()
+            # Keep the existing translation displayed - no need to re-translate or clear
+            log_debug(f"Keeping existing translation displayed for successive identical: '{ocr_result}'")
             return
         
         # New/different text detected
