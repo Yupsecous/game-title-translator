@@ -141,6 +141,10 @@ class GameChangingTranslator:
         self.active_ocr_calls = set()  # Track active async OCR calls
         self.max_concurrent_ocr_calls = 3  # Limit concurrent OCR API calls
         
+        # Gemini OCR Queue Management (Phase 2 - Issue Fix)
+        self.gemini_batch_queue = []  # Queue for managing batches with timeouts
+        self.last_displayed_batch_sequence = 0  # Track chronological order
+        
         # OCR Preview window
         self.ocr_preview_window = None
 
@@ -1329,6 +1333,16 @@ For more information, see the user manual."""
         if items_cleared_count > 0:
             log_debug(f"Cleared {items_cleared_count} items from {type(q_to_clear).__name__}.")
 
+    def _reset_gemini_batch_state(self):
+        """Reset Gemini OCR batch management state for clean start."""
+        self.gemini_batch_queue = []
+        self.batch_sequence_counter = 0
+        self.last_displayed_batch_sequence = 0
+        self.active_ocr_calls = set()
+        self.last_processed_subtitle = None
+        self.clear_timeout_timer_start = None
+        log_debug("Gemini OCR batch state reset")
+
     def toggle_translation(self):
         if self.is_running:
             log_debug("Stopping translation process requested by user.")
@@ -1440,6 +1454,9 @@ For more information, see the user manual."""
             self.last_image_hash = None
             self.last_screenshot = None 
             self.last_processed_image = None 
+            
+            # Reset Gemini OCR batch management state
+            self._reset_gemini_batch_state() 
 
             try:
                 if self.target_overlay and self.target_overlay.winfo_exists() and not self.target_overlay.winfo_viewable():
