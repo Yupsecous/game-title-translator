@@ -22,15 +22,15 @@ ENV/
 *.swo
 
 # Application specific files
-translator_debug.log
+translator_debug*.log
 marian_models_cache/
 debug_images/
 *.png
 !screenshots/*.png
 !docs/screenshots/*.png
-googletrans_cache.txt
-deepl_cache.txt
-gemini_cache.txt
+googletrans_cache*.txt
+deepl_cache*.txt
+gemini_cache*.txt
 Gemini_API_call_log*.txt
 
 # API Keys and sensitive information
