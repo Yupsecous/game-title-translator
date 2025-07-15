@@ -7,6 +7,7 @@ import time
 import html
 import hashlib # Not used here directly, but good for consistency
 import traceback
+import threading
 from datetime import datetime
 # Removed lru_cache import - replaced with unified cache
 
@@ -21,12 +22,19 @@ class TranslationHandler:
         # Initialize unified translation cache (replaces all individual LRU caches)
         self.unified_cache = UnifiedTranslationCache(max_size=1000)
         
+        # Add thread lock for atomic logging to prevent interleaved logs
+        self._log_lock = threading.Lock()
+        
         # Initialize Gemini API call log file path
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             base_dir = os.path.dirname(sys.executable)
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.gemini_log_file = os.path.join(base_dir, "Gemini_API_call_logs.txt")
+        
+        # Initialize short log file paths
+        self.ocr_short_log_file = os.path.join(base_dir, "API_OCR_short_log.txt")
+        self.tra_short_log_file = os.path.join(base_dir, "API_TRA_short_log.txt")
         
         # Initialize Gemini API call log file
         self._initialize_gemini_log()
@@ -214,21 +222,22 @@ class TranslationHandler:
             return f"MarianMT translation error: {type(e_cmm).__name__} - {str(e_cmm)}"
 
     def _initialize_gemini_log(self):
-        """Initialize the Gemini API call log file with a header if it's new."""
+        """Initialize the Gemini API call log file and short log files with headers if they're new."""
         try:
             # Ensure the directory exists
             log_dir = os.path.dirname(self.gemini_log_file)
             if log_dir:
                 os.makedirs(log_dir, exist_ok=True)
 
+            timestamp = self._get_precise_timestamp()
+
+            # Initialize main log file
             if not os.path.exists(self.gemini_log_file):
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
                 header = f"""
 #######################################################
 #                 GEMINI API CALL LOG                 #
 #      Game-Changing Translator - Token Analysis      #
-###################3333333333##########################
+#######################################################
 
 Logging Started: {timestamp}
 Purpose: Track input/output token usage for Gemini API calls, along with exact costs.
@@ -241,54 +250,56 @@ Format: Each entry shows complete message content sent to and received from Gemi
                 log_debug(f"Gemini API logging initialized: {self.gemini_log_file}")
             else:
                 # Append a session start separator to existing log
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 session_start_msg = f"\n\n--- NEW LOGGING SESSION STARTED: {timestamp} ---\n"
                 with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
                     f.write(session_start_msg)
                 log_debug(f"Gemini API logging continues in existing file: {self.gemini_log_file}")
 
-        except Exception as e:
-            log_debug(f"Error initializing Gemini API log: {e}")
+            # Initialize short OCR log file
+            if not os.path.exists(self.ocr_short_log_file):
+                ocr_header = f"""
+#######################################################
+#              GEMINI OCR - SHORT LOG                 #
+#######################################################
 
-    def _log_gemini_api_call(self, message_content, source_lang, target_lang, text_to_translate):
-        """Log complete Gemini API call content to file for token usage analysis."""
-        # Check if API logging is enabled
-        if not self.app.gemini_api_log_enabled_var.get():
-            return
-            
-        try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Calculate detailed token estimates
-            words_in_message = len(message_content.split())
-            chars_in_message = len(message_content)
-            lines_in_message = len(message_content.split('\n'))
-            
-            log_entry = f"""
-=== GEMINI API CALL LOG ===
-Timestamp: {timestamp}
-Language Pair: {source_lang} -> {target_lang}
-Original Text: {text_to_translate}
-
-CALL DETAILS:
-- Message Length: {chars_in_message} characters
-- Word Count: {words_in_message} words
-- Line Count: {lines_in_message} lines
-
-COMPLETE MESSAGE CONTENT SENT TO GEMINI:
----BEGIN MESSAGE---
-{message_content}
----END MESSAGE---
+Session Started: {timestamp}
+Purpose: Concise OCR call results and statistics
 
 """
-            
-            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_entry)
-                
-            log_debug(f"Gemini API call logged: {chars_in_message} chars, ~{int(words_in_message * 1.3)} tokens")
-            
+                with open(self.ocr_short_log_file, 'w', encoding='utf-8') as f:
+                    f.write(ocr_header)
+                log_debug(f"Gemini OCR short log initialized: {self.ocr_short_log_file}")
+            else:
+                # Append session separator
+                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n--- SESSION: {timestamp} ---\n")
+
+            # Initialize short translation log file
+            if not os.path.exists(self.tra_short_log_file):
+                tra_header = f"""
+#######################################################
+#           GEMINI TRANSLATION - SHORT LOG            #
+#######################################################
+
+Session Started: {timestamp}
+Purpose: Concise translation call results and statistics
+
+"""
+                with open(self.tra_short_log_file, 'w', encoding='utf-8') as f:
+                    f.write(tra_header)
+                log_debug(f"Gemini translation short log initialized: {self.tra_short_log_file}")
+            else:
+                # Append session separator
+                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n--- SESSION: {timestamp} ---\n")
+
         except Exception as e:
-            log_debug(f"Error logging Gemini API call: {e}")
+            log_debug(f"Error initializing Gemini API logs: {e}")
+
+    def _log_gemini_api_call(self, message_content, source_lang, target_lang, text_to_translate):
+        """Deprecated - replaced by _log_complete_gemini_translation_call for atomic logging."""
+        log_debug("Warning: _log_gemini_api_call is deprecated, use _log_complete_gemini_translation_call instead")
+        pass
 
     def _get_cumulative_totals(self):
         """Reads the log file and calculates cumulative translated words and token totals."""
@@ -328,40 +339,157 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
             
         return total_translated_words, total_input, total_output
 
-    def _log_gemini_response(self, response_text, call_duration, input_tokens, output_tokens, original_text):
-        """Log Gemini API response, exact tokens, costs, and cumulative totals."""
+    def _get_precise_timestamp(self):
+        """Get timestamp with millisecond precision."""
+        now = datetime.now()
+        return now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Remove last 3 digits for milliseconds
+
+    def _get_cumulative_totals_ocr(self):
+        """Get cumulative totals for OCR calls from the log file."""
+        total_input = 0
+        total_output = 0
+        total_cost = 0.0
+        
+        if not os.path.exists(self.gemini_log_file):
+            return 0, 0, 0.0
+        
+        # Regex to find OCR cumulative totals
+        input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(OCR, so far\):\s*(\d+)")
+        output_token_regex = re.compile(r"^\s*-\s*Total Output Tokens \(OCR, so far\):\s*(\d+)")
+        cost_regex = re.compile(r"^\s*-\s*Total OCR Cost \(so far\):\s*\$([0-9.]+)")
+        
+        try:
+            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    input_match = input_token_regex.match(line)
+                    if input_match:
+                        total_input = int(input_match.group(1))
+                        continue
+                    
+                    output_match = output_token_regex.match(line)
+                    if output_match:
+                        total_output = int(output_match.group(1))
+                        continue
+                        
+                    cost_match = cost_regex.match(line)
+                    if cost_match:
+                        total_cost = float(cost_match.group(1))
+                        
+        except (IOError, ValueError) as e:
+            log_debug(f"Error reading OCR cumulative totals: {e}")
+            return 0, 0, 0.0
+            
+        return total_input, total_output, total_cost
+
+    def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result):
+        """Write concise OCR call log entry."""
+        if not self.app.gemini_api_log_enabled_var.get():
+            return
+            
+        try:
+            log_entry = f"""========= OCR CALL ===========
+Start: {call_start_time}
+End: {call_end_time}
+Duration: {call_duration:.3f}s
+Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
+Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
+Result:
+--------------------------------------------------
+{parsed_result}
+--------------------------------------------------
+
+"""
+            with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
+                f.write(log_entry)
+        except Exception as e:
+            log_debug(f"Error writing short OCR log: {e}")
+
+    def _write_short_translation_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, original_text, translated_text, source_lang, target_lang):
+        """Write concise translation call log entry."""
+        if not self.app.gemini_api_log_enabled_var.get():
+            return
+            
+        try:
+            # Get language display names
+            source_lang_name = self._get_language_display_name(source_lang, 'gemini').upper()
+            target_lang_name = self._get_language_display_name(target_lang, 'gemini').upper()
+            
+            log_entry = f"""===== TRANSLATION CALL =======
+Start: {call_start_time}
+End: {call_end_time}
+Duration: {call_duration:.3f}s
+Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
+Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
+Result:
+--------------------------------------------------
+{source_lang_name}: {original_text}
+{target_lang_name}: {translated_text}
+--------------------------------------------------
+
+"""
+            with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
+                f.write(log_entry)
+        except Exception as e:
+            log_debug(f"Error writing short translation log: {e}")
+
+    def _log_complete_gemini_translation_call(self, message_content, response_text, call_duration, input_tokens, output_tokens, original_text, source_lang, target_lang):
+        """Log complete Gemini translation API call with atomic writing (request + response + stats)."""
         # Check if API logging is enabled
         if not self.app.gemini_api_log_enabled_var.get():
             return
             
         try:
-            # --- 1. Calculate current call translated word count from original text ---
-            current_translated_words = len(original_text.split())
-            
-            # --- 2. Get cumulative totals BEFORE this call ---
-            prev_total_translated_words, prev_total_input, prev_total_output = self._get_cumulative_totals()
+            with self._log_lock:  # Ensure atomic logging to prevent interleaved logs
+                call_start_time = self._get_precise_timestamp()
+                call_end_time = self._get_precise_timestamp()
+                
+                # --- 1. Calculate current call translated word count from original text ---
+                current_translated_words = len(original_text.split())
+                
+                # --- 2. Get cumulative totals BEFORE this call ---
+                prev_total_translated_words, prev_total_input, prev_total_output = self._get_cumulative_totals()
 
-            # --- 3. Define costs and calculate for current call ---
-            INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
-            OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
-            
-            call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
-            call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
-            
-            # --- 4. Calculate new cumulative totals AND costs ---
-            new_total_translated_words = prev_total_translated_words + current_translated_words
-            new_total_input = prev_total_input + input_tokens
-            new_total_output = prev_total_output + output_tokens
-            
-            total_input_cost = (new_total_input / 1_000_000) * INPUT_COST_PER_MILLION
-            total_output_cost = (new_total_output / 1_000_000) * OUTPUT_COST_PER_MILLION
-            
-            # --- 5. Format the log entry ---
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            response_entry = f"""
+                # --- 3. Define costs and calculate for current call ---
+                INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
+                OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
+                
+                call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
+                call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
+                total_call_cost = call_input_cost + call_output_cost
+                
+                # --- 4. Calculate new cumulative totals AND costs ---
+                new_total_translated_words = prev_total_translated_words + current_translated_words
+                new_total_input = prev_total_input + input_tokens
+                new_total_output = prev_total_output + output_tokens
+                
+                total_input_cost = (new_total_input / 1_000_000) * INPUT_COST_PER_MILLION
+                total_output_cost = (new_total_output / 1_000_000) * OUTPUT_COST_PER_MILLION
+                
+                # --- 5. Calculate detailed message stats ---
+                words_in_message = len(message_content.split())
+                chars_in_message = len(message_content)
+                lines_in_message = len(message_content.split('\n'))
+                
+                # --- 6. Format the complete log entry with fixed header ---
+                log_entry = f"""
+=== GEMINI TRANSLATION API CALL ===
+Timestamp: {call_start_time}
+Language Pair: {source_lang} -> {target_lang}
+Original Text: {original_text}
+
+CALL DETAILS:
+- Message Length: {chars_in_message} characters
+- Word Count: {words_in_message} words
+- Line Count: {lines_in_message} lines
+
+COMPLETE MESSAGE CONTENT SENT TO GEMINI:
+---BEGIN MESSAGE---
+{message_content}
+---END MESSAGE---
+
+
 RESPONSE RECEIVED:
-Timestamp: {timestamp}
+Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
 
 ---BEGIN RESPONSE---
@@ -374,7 +502,7 @@ TOKEN & COST ANALYSIS (CURRENT CALL):
 - Exact Output Tokens: {output_tokens}
 - Input Cost: ${call_input_cost:.8f}
 - Output Cost: ${call_output_cost:.8f}
-- Total Cost for this Call: ${(call_input_cost + call_output_cost):.8f}
+- Total Cost for this Call: ${total_call_cost:.8f}
 
 CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 - Total Translated Words (so far): {new_total_translated_words}
@@ -387,15 +515,27 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 ========================================
 
 """
-            
-            # --- 6. Write to file ---
-            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                f.write(response_entry)
                 
-            log_debug(f"Gemini response logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
+                # --- 7. Write to main log file ---
+                with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                    f.write(log_entry)
                 
+                # --- 8. Write to short translation log ---
+                self._write_short_translation_log(call_start_time, call_end_time, call_duration, 
+                                                input_tokens, output_tokens, total_call_cost,
+                                                new_total_input, new_total_output, 
+                                                total_input_cost + total_output_cost, 
+                                                original_text, response_text, source_lang, target_lang)
+                
+                log_debug(f"Complete Gemini translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
+                    
         except Exception as e:
-            log_debug(f"Error logging Gemini API response: {e}\n{traceback.format_exc()}")
+            log_debug(f"Error logging complete Gemini translation call: {e}\n{traceback.format_exc()}")
+
+    def _log_gemini_response(self, response_text, call_duration, input_tokens, output_tokens, original_text):
+        """Deprecated - replaced by _log_complete_gemini_translation_call for atomic logging."""
+        log_debug("Warning: _log_gemini_response is deprecated, use _log_complete_gemini_translation_call instead")
+        pass
 
     def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
         """Gemini API call with simplified message format (no system instructions)."""
@@ -486,8 +626,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             log_debug(f"Making Gemini API call for: {text_to_translate_gm}")
             
-            # Log complete API call content for token usage analysis
-            self._log_gemini_api_call(message_content, source_lang_gm, target_lang_gm, text_to_translate_gm)
+            # Note: API call logging now happens atomically after the response
             
             api_call_start_time = time.time()
             if not hasattr(self, 'gemini_model') or self.gemini_model is None:
@@ -535,8 +674,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 translation_result = translation_result[len(f"{target_lang_gm}:"):].strip()                
             log_debug(f"Gemini response: {translation_result}")
             
-            # Log the response, tokens, and costs to the API call log file
-            self._log_gemini_response(translation_result, call_duration, input_tokens, output_tokens, text_to_translate_gm)
+            # Log complete API call atomically (request + response + stats together)
+            self._log_complete_gemini_translation_call(message_content, translation_result, call_duration, 
+                                                     input_tokens, output_tokens, text_to_translate_gm, 
+                                                     source_lang_gm, target_lang_gm)
             
             return translation_result
             
@@ -850,24 +991,36 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             return f"<ERROR>: Gemini OCR error: {str(e)}"
     
     def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang):
-        """Log complete Gemini OCR API call with request, response, and stats together."""
+        """Log complete Gemini OCR API call with atomic writing and cumulative totals."""
         # Check if API logging is enabled
         if not self.app.gemini_api_log_enabled_var.get():
             return
             
         try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Calculate costs
-            INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
-            OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
-            
-            call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
-            call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
-            
-            log_entry = f"""
-=== GEMINI OCR API CALL (COMPLETE LOG) ===
-Timestamp: {timestamp}
+            with self._log_lock:  # Ensure atomic logging to prevent interleaved logs
+                call_start_time = self._get_precise_timestamp()
+                call_end_time = self._get_precise_timestamp()
+                
+                # Calculate costs
+                INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
+                OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
+                
+                call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
+                call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
+                total_call_cost = call_input_cost + call_output_cost
+                
+                # Get cumulative totals for OCR
+                prev_total_input, prev_total_output, prev_total_cost = self._get_cumulative_totals_ocr()
+                
+                # Calculate new cumulative totals
+                new_total_input = prev_total_input + input_tokens
+                new_total_output = prev_total_output + output_tokens
+                new_total_cost = prev_total_cost + total_call_cost
+                
+                # Main log entry with fixed header
+                log_entry = f"""
+=== GEMINI OCR API CALL ===
+Timestamp: {call_start_time}
 Source Language: {source_lang}
 Image Size: {image_size} bytes
 Call Type: OCR Only
@@ -891,17 +1044,28 @@ PERFORMANCE & COST ANALYSIS:
 - Output Tokens: {output_tokens}
 - Input Cost: ${call_input_cost:.8f}
 - Output Cost: ${call_output_cost:.8f}
-- Total Cost for this Call: ${(call_input_cost + call_output_cost):.8f}
+- Total Cost for this Call: ${total_call_cost:.8f}
+
+CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
+- Total Input Tokens (OCR, so far): {new_total_input}
+- Total Output Tokens (OCR, so far): {new_total_output}
+- Total OCR Cost (so far): ${new_total_cost:.8f}
 
 ========================================
 
 """
-            
-            with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_entry)
                 
-            log_debug(f"Complete Gemini OCR call logged: {input_tokens}+{output_tokens} tokens, {call_duration:.3f}s")
-            
+                # Write to main log file
+                with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
+                    f.write(log_entry)
+                
+                # Write to short OCR log
+                self._write_short_ocr_log(call_start_time, call_end_time, call_duration, 
+                                        input_tokens, output_tokens, total_call_cost,
+                                        new_total_input, new_total_output, new_total_cost, parsed_response)
+                
+                log_debug(f"Complete Gemini OCR call logged: {input_tokens}+{output_tokens} tokens, {call_duration:.3f}s")
+                
         except Exception as e:
             log_debug(f"Error logging complete Gemini OCR call: {e}")
 
