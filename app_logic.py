@@ -139,7 +139,7 @@ class GameChangingTranslator:
         self.batch_sequence_counter = 0  # Track batch sequence numbers
         self.clear_timeout_timer_start = None  # Timer for clear translation timeout
         self.active_ocr_calls = set()  # Track active async OCR calls
-        self.max_concurrent_ocr_calls = 3  # Limit concurrent OCR API calls
+        self.max_concurrent_ocr_calls = 10  # Limit concurrent OCR API calls (10 for Gemini)
         
         # Gemini OCR Queue Management (Phase 2 - Issue Fix)
         self.gemini_batch_queue = []  # Queue for managing batches with timeouts
@@ -276,6 +276,24 @@ class GameChangingTranslator:
 
         self.settings_changed_callback = _settings_changed_callback_internal
 
+        # Scan interval validation callback for Gemini OCR minimum
+        def _scan_interval_changed_callback(*args, **kwargs):
+            if self._fully_initialized and not self._suppress_traces and not self._ui_update_in_progress:
+                # Validate minimum scan interval for Gemini OCR
+                if self.get_ocr_model_setting() == 'gemini':
+                    current_value = self.scan_interval_var.get()
+                    if current_value < 500:
+                        log_debug(f"Scan interval {current_value}ms too low for Gemini OCR, setting to 500ms minimum")
+                        self.scan_interval_var.set(500)
+                        return  # Skip save_settings since we just changed the value
+                self.save_settings()
+            elif self._suppress_traces:
+                log_debug("Scan interval trace suppressed during UI update")
+            elif self._ui_update_in_progress:
+                log_debug("Scan interval trace suppressed during UI update operation")
+
+        self.scan_interval_changed_callback = _scan_interval_changed_callback
+
         # Add traces
         self.source_colour_var.trace_add("write", self.settings_changed_callback)
         self.target_colour_var.trace_add("write", self.settings_changed_callback)
@@ -296,7 +314,7 @@ class GameChangingTranslator:
         self.adaptive_c_var.trace_add("write", self.on_ocr_parameter_change)
         self.ocr_debugging_var.trace_add("write", self.settings_changed_callback)
         self.tesseract_path_var.trace_add("write", self.settings_changed_callback)
-        self.scan_interval_var.trace_add("write", self.settings_changed_callback)
+        self.scan_interval_var.trace_add("write", self.scan_interval_changed_callback)  # Special validation callback
         self.clear_translation_timeout_var.trace_add("write", self.settings_changed_callback)
         self.stability_var.trace_add("write", self.settings_changed_callback)
         self.confidence_var.trace_add("write", self.settings_changed_callback)
@@ -536,6 +554,13 @@ For more information, see the user manual."""
             # Update UI to show/hide Tesseract-specific fields
             if hasattr(self, 'ui_interaction_handler'):
                 self.ui_interaction_handler.update_ocr_model_ui()
+            
+            # Validate scan interval when switching to Gemini OCR
+            if self.get_ocr_model_setting() == 'gemini':
+                current_value = self.scan_interval_var.get()
+                if current_value < 500:
+                    log_debug(f"OCR model changed to Gemini: updating scan interval from {current_value}ms to 500ms minimum")
+                    self.scan_interval_var.set(500)
             
             # Refresh OCR preview if it's open to use the new OCR model
             if self.ocr_preview_window is not None:
