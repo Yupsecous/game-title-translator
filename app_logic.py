@@ -141,8 +141,7 @@ class GameChangingTranslator:
         self.active_ocr_calls = set()  # Track active async OCR calls
         self.max_concurrent_ocr_calls = 10  # Limit concurrent OCR API calls (10 for Gemini)
         
-        # Gemini OCR Queue Management (Phase 2 - Issue Fix)
-        self.gemini_batch_queue = []  # Queue for managing batches with timeouts
+        # Gemini OCR Simple Management (No Queue for Gemini)
         self.last_displayed_batch_sequence = 0  # Track chronological order
         
         # OCR Preview window
@@ -1360,7 +1359,6 @@ For more information, see the user manual."""
 
     def _reset_gemini_batch_state(self):
         """Reset Gemini OCR batch management state for clean start."""
-        self.gemini_batch_queue = []
         self.batch_sequence_counter = 0
         self.last_displayed_batch_sequence = 0
         self.active_ocr_calls = set()
