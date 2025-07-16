@@ -8,7 +8,7 @@ import html
 import hashlib # Not used here directly, but good for consistency
 import traceback
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 # Removed lru_cache import - replaced with unified cache
 
 from logger import log_debug
@@ -344,6 +344,20 @@ Purpose: Concise translation call results and statistics
         now = datetime.now()
         return now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Remove last 3 digits for milliseconds
 
+    def _calculate_start_time(self, end_time_str, duration_seconds):
+        """Calculate start time based on end time and duration."""
+        try:
+            # Parse the end time string
+            end_time = datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S.%f")
+            # Subtract the duration to get start time
+            start_time = end_time - timedelta(seconds=duration_seconds)
+            # Format back to string
+            return start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        except Exception as e:
+            log_debug(f"Error calculating start time: {e}")
+            # Fallback to end time if calculation fails
+            return end_time_str
+
     def _get_cumulative_totals_ocr(self):
         """Get cumulative totals for OCR calls from the log file."""
         total_input = 0
@@ -440,8 +454,9 @@ Result:
             
         try:
             with self._log_lock:  # Ensure atomic logging to prevent interleaved logs
-                call_start_time = self._get_precise_timestamp()
+                # Calculate correct start and end times based on call duration
                 call_end_time = self._get_precise_timestamp()
+                call_start_time = self._calculate_start_time(call_end_time, call_duration)
                 
                 # --- 1. Calculate current call translated word count from original text ---
                 current_translated_words = len(original_text.split())
@@ -998,8 +1013,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
         try:
             with self._log_lock:  # Ensure atomic logging to prevent interleaved logs
-                call_start_time = self._get_precise_timestamp()
+                # Calculate correct start and end times based on call duration
                 call_end_time = self._get_precise_timestamp()
+                call_start_time = self._calculate_start_time(call_end_time, call_duration)
                 
                 # Calculate costs
                 INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
