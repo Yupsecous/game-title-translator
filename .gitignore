@@ -21,6 +21,9 @@ ENV/
 *.swp
 *.swo
 
+# OCR images
+OCR_images/
+
 # Application specific files
 translator_debug*.log
 marian_models_cache/
