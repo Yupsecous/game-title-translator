@@ -144,12 +144,6 @@ class GameChangingTranslator:
         # Gemini OCR Simple Management (No Queue for Gemini)
         self.last_displayed_batch_sequence = 0  # Track chronological order
         
-        # Translation Async Processing Infrastructure (Phase 2)
-        self.translation_sequence_counter = 0  # Track translation sequence numbers
-        self.last_displayed_translation_sequence = 0  # Track chronological order for translations
-        self.active_translation_calls = set()  # Track active async translation calls
-        self.max_concurrent_translation_calls = 5  # Limit concurrent translation API calls
-        
         # OCR Preview window
         self.ocr_preview_window = None
 
@@ -556,16 +550,6 @@ For more information, see the user manual."""
     def on_ocr_model_change(self, *args):
         """Called when OCR model selection changes to update UI visibility."""
         try:
-            # End OCR session if switching away from Gemini and translation is running
-            if (hasattr(self, 'translation_handler') and self.is_running and 
-                self.get_ocr_model_setting() != 'gemini'):
-                self.translation_handler.end_ocr_session()
-            
-            # Start OCR session if switching to Gemini and translation is running
-            if (hasattr(self, 'translation_handler') and self.is_running and 
-                self.get_ocr_model_setting() == 'gemini'):
-                self.translation_handler.start_ocr_session()
-            
             # Update UI to show/hide Tesseract-specific fields
             if hasattr(self, 'ui_interaction_handler'):
                 self.ui_interaction_handler.update_ocr_model_ui()
@@ -728,24 +712,6 @@ For more information, see the user manual."""
         self.clear_timeout_timer_start = None
         log_debug("Clear timeout timer reset - text detected")
     
-    def initialize_async_translation_infrastructure(self):
-        """Initialize async translation infrastructure if not already present."""
-        if not hasattr(self, 'translation_sequence_counter'):
-            self.translation_sequence_counter = 0
-            log_debug("Initialized translation_sequence_counter")
-        
-        if not hasattr(self, 'last_displayed_translation_sequence'):
-            self.last_displayed_translation_sequence = 0
-            log_debug("Initialized last_displayed_translation_sequence")
-        
-        if not hasattr(self, 'active_translation_calls'):
-            self.active_translation_calls = set()
-            log_debug("Initialized active_translation_calls")
-        
-        if not hasattr(self, 'max_concurrent_translation_calls'):
-            self.max_concurrent_translation_calls = 5
-            log_debug("Initialized max_concurrent_translation_calls")
-    
     def check_clear_timeout(self):
         """Check if clear timeout should be triggered and return True if timeout exceeded."""
         if self.clear_timeout_timer_start is None:
@@ -803,18 +769,6 @@ For more information, see the user manual."""
 
 
     def on_translation_model_selection_changed(self, event=None, initial_setup=False):
-        # Handle session management for translation method changes
-        if (hasattr(self, 'translation_handler') and self.is_running and not initial_setup):
-            current_model = self.translation_model_var.get()
-            
-            # End translation session if switching away from Gemini
-            if current_model != 'gemini_api':
-                self.translation_handler.end_translation_session()
-            
-            # Start translation session if switching to Gemini
-            if current_model == 'gemini_api':
-                self.translation_handler.start_translation_session()
-        
         self.ui_interaction_handler.on_translation_model_selection_changed(event, initial_setup)
         if not initial_setup and self._fully_initialized: 
             self.save_settings()
@@ -1417,11 +1371,6 @@ For more information, see the user manual."""
             log_debug("Stopping translation process requested by user.")
             self.is_running = False
             
-            # End sessions if they are active
-            if hasattr(self, 'translation_handler'):
-                self.translation_handler.end_ocr_session()
-                self.translation_handler.end_translation_session()
-            
             # Clear Gemini context when translation is stopped
             if (hasattr(self, 'translation_handler') and 
                 hasattr(self.translation_handler, '_clear_gemini_context')):
@@ -1546,17 +1495,6 @@ For more information, see the user manual."""
             self.cache_manager.load_file_caches()
 
             self.is_running = True 
-            
-            # Start appropriate sessions based on settings
-            if hasattr(self, 'translation_handler'):
-                # Start OCR session if using Gemini OCR
-                if self.get_ocr_model_setting() == 'gemini':
-                    self.translation_handler.start_ocr_session()
-                
-                # Start translation session if using Gemini translation
-                if self.translation_model_var.get() == 'gemini_api':
-                    self.translation_handler.start_translation_session()
-            
             self.start_stop_btn.config(text="Stop", state=tk.NORMAL)
             status_text_running = "Status: " + self.ui_lang.get_label("status_running", "Running (Press ~ to Stop)")
             self.status_label.config(text=status_text_running)
@@ -1773,13 +1711,6 @@ For more information, see the user manual."""
             self.toggle_translation()
         else:
              log_debug("Process was not running at close time.")
-
-        # Force end any remaining sessions when application closes
-        if hasattr(self, 'translation_handler'):
-            try:
-                self.translation_handler.force_end_sessions_on_app_close()
-            except Exception as e:
-                log_debug(f"Error ending sessions on app close: {e}")
 
         if hasattr(self, 'marian_translator') and self.marian_translator and hasattr(self.marian_translator, 'thread_pool'):
             try:

@@ -334,14 +334,15 @@ def run_ocr_thread(app):
                 adaptive_trans_interval = max(0.2, min(app.min_translation_interval, app.min_translation_interval * (0.5 + (0.1*s_count) + (txt_len/1000))))
                 
                 if (now - app.last_successful_translation_time >= adaptive_trans_interval):
-                    # Use async translation instead of queue to eliminate bottlenecks
-                    start_async_translation(app, ocr_cleaned_text, 0)  # Use 0 as OCR sequence for Tesseract
-                    app.last_successful_translation_time = now
-                    app.text_stability_counter = 0
-                    # Alternative Conservative Fix: Update only if text changed, don't reset to empty if text is the same
-                    if ocr_cleaned_text != app.previous_text:
-                        app.previous_text = ocr_cleaned_text
-                    similar_texts_count = 0 # Reset after sending for translation
+                    if not app.translation_queue.full():
+                        app.translation_queue.put_nowait(ocr_cleaned_text)
+                        app.last_successful_translation_time = now
+                        app.text_stability_counter = 0
+                        # Alternative Conservative Fix: Update only if text changed, don't reset to empty if text is the same
+                        if ocr_cleaned_text != app.previous_text:
+                            app.previous_text = ocr_cleaned_text
+                        similar_texts_count = 0 # Reset after sending for translation
+                    # else: log_debug("WT: OCR: Translation queue full, skipping.") # Can be verbose
                 # else: log_debug(f"WT: OCR: Throttling translation: last was {now - app.last_successful_translation_time:.2f}s ago") # Can be verbose
         
         except pytesseract.TesseractNotFoundError:
@@ -362,12 +363,7 @@ def run_ocr_thread(app):
     log_debug("WT: OCR thread finished.")
 
 def run_translation_thread(app):
-    """Simplified translation thread - mainly handles Tesseract timeout logic.
-    
-    Async translations are now handled by start_async_translation() for both Gemini and Tesseract OCR.
-    This thread primarily manages the clear translation timeout for Tesseract OCR.
-    """
-    log_debug("WT: Translation thread started (simplified for async processing).")
+    log_debug("WT: Translation thread started.")
     # Keep track of the last time a translation was sent to display (local to this thread)
     thread_local_last_translation_display_time = time.monotonic() 
 
@@ -394,22 +390,40 @@ def run_translation_thread(app):
                     
                     thread_local_last_translation_display_time = now # Reset timer after checking
 
-            # For async processing: Check if we need to update the local timer based on global successful translation time
-            if app.last_successful_translation_time > thread_local_last_translation_display_time:
-                thread_local_last_translation_display_time = app.last_successful_translation_time
-
-            # Check for any remaining items in translation queue and process them (legacy support)
             try:
-                text_to_translate = app.translation_queue.get(timeout=0.1)  # Very short timeout
-                if text_to_translate and not app.is_placeholder_text(text_to_translate):
-                    log_debug(f"WT: Processing legacy queue item: '{text_to_translate}'")
-                    # Process using async translation instead of blocking
-                    start_async_translation(app, text_to_translate, 0)  # Use 0 as OCR sequence for legacy items
+                text_to_translate = app.translation_queue.get(timeout=1.0) # Reduced timeout
             except queue.Empty:
-                pass  # No items in queue, continue
+                time.sleep(0.05) 
+                continue
+
+            if not text_to_translate or app.is_placeholder_text(text_to_translate): # Use app's method
+                continue
             
-            # Sleep to avoid busy waiting
-            time.sleep(0.1)
+            translation_process_start_time = time.monotonic()
+            translated_text = app.translate_text(text_to_translate) # Call app's main translation method
+            translation_process_duration = time.monotonic() - translation_process_start_time
+
+            error_prefixes = ("Err:", "MarianMT error:", "Google API error:", "DeepL API error:", 
+                              "No translation for model:", "MarianMT not initialized.", 
+                              "MarianMT language pair not determined.", "Google API key missing.",
+                              "DeepL API key missing.", "Google Client init error:", 
+                              "DeepL Client init error:", "Translation error:", # Generic error from MarianMT
+                              "Google Translate API client not initialized", # Error from Google API cached func
+                              "DeepL API client not initialized", # Error from DeepL API cached func
+                              "MarianMT translator not initialized" # Error from MarianMT cached func
+                              )
+
+
+            if isinstance(translated_text, str) and not any(translated_text.startswith(p) for p in error_prefixes):
+                final_processed_translation = post_process_translation_text(translated_text) # From translation_utils
+                app.update_translation_text(final_processed_translation) # Use app's method
+                log_debug(f"WT: Translation displayed (took {translation_process_duration:.3f}s): \"{final_processed_translation}\"")
+                thread_local_last_translation_display_time = time.monotonic() # Update display time
+                app.last_successful_translation_time = time.monotonic() # Update app's global tracker
+            elif translated_text is not None: # It's likely an error message string
+                log_debug(f"WT: Translation Failed/Skipped: {translated_text}. Original: \"{text_to_translate}\"")
+                app.update_translation_text(f"Translation Error:\n{translated_text}") # Use app's method
+                thread_local_last_translation_display_time = time.monotonic() # Update display time for errors too
 
         except tk.TclError:
             log_debug("WT: Translation thread TclError.")
@@ -417,6 +431,8 @@ def run_translation_thread(app):
             time.sleep(0.1)
         except Exception as e_trans_loop_wt:
             log_debug(f"WT: Translation thread error: {type(e_trans_loop_wt).__name__} - {e_trans_loop_wt}\n{traceback.format_exc()}")
+            # Display a generic error in the target window via main thread (app's method)
+            app.root.after(0, app.update_translation_text, f"Translation Thread Error:\n{type(e_trans_loop_wt).__name__}")
             time.sleep(0.2)
     log_debug("WT: Translation thread finished.")
 
@@ -561,8 +577,12 @@ def process_gemini_ocr_response(app, ocr_result, sequence_number, source_lang):
         # Reset clear timeout (text detected)
         app.reset_clear_timeout()
         
-        # Send extracted text to async translation pipeline (replaces queue-based approach)
-        start_async_translation(app, ocr_result, sequence_number)
+        # Send extracted text to translation pipeline
+        if not app.translation_queue.full():
+            app.translation_queue.put_nowait(ocr_result)
+            log_debug(f"OCR result from batch {sequence_number} sent to translation: '{ocr_result}'")
+        else:
+            log_debug(f"Translation queue full, skipping OCR result from batch {sequence_number}")
         
         # Update the last displayed sequence number
         app.last_displayed_batch_sequence = sequence_number
@@ -572,132 +592,5 @@ def process_gemini_ocr_response(app, ocr_result, sequence_number, source_lang):
         # On error, try to clear any timeout state
         try:
             app.reset_clear_timeout()
-        except:
-            pass
-
-
-# ==================== ASYNC TRANSLATION PROCESSING (Phase 2) ====================
-
-def start_async_translation(app, text_to_translate, ocr_sequence_number):
-    """Start async translation processing to eliminate queue bottlenecks."""
-    try:
-        # Ensure async translation infrastructure is initialized
-        app.initialize_async_translation_infrastructure()
-        
-        # Increment translation sequence counter
-        app.translation_sequence_counter += 1
-        translation_sequence = app.translation_sequence_counter
-        
-        # Check concurrent calls limit
-        if len(app.active_translation_calls) >= app.max_concurrent_translation_calls:
-            log_debug(f"Max concurrent translation calls ({app.max_concurrent_translation_calls}) reached, skipping translation {translation_sequence}")
-            return
-        
-        # Start translation processing immediately (no queue for async translations)
-        app.active_translation_calls.add(translation_sequence)
-        
-        import threading
-        translation_thread = threading.Thread(
-            target=process_translation_async,
-            args=(app, text_to_translate, translation_sequence, ocr_sequence_number),
-            name=f"Translation-{translation_sequence}",
-            daemon=True
-        )
-        translation_thread.start()
-        
-        log_debug(f"Started async translation {translation_sequence} for OCR batch {ocr_sequence_number} (active calls: {len(app.active_translation_calls)}): '{text_to_translate}'")
-        
-    except Exception as e:
-        log_debug(f"Error starting async translation: {type(e).__name__} - {e}")
-
-
-def process_translation_async(app, text_to_translate, translation_sequence, ocr_sequence_number):
-    """Process translation API call asynchronously with timeout and staleness handling."""
-    start_time = time.monotonic()
-    
-    try:
-        log_debug(f"Processing async translation {translation_sequence}")
-        
-        # Make the translation API call with timeout consideration
-        translation_result = app.translation_handler.translate_text_with_timeout(text_to_translate, timeout_seconds=10.0)
-        
-        # Check if translation took too long (consider potentially stale)
-        elapsed_time = time.monotonic() - start_time
-        if elapsed_time > 5.0:
-            log_debug(f"Translation {translation_sequence} took {elapsed_time:.1f}s, may be stale but will attempt display")
-        
-        log_debug(f"Translation {translation_sequence} completed in {elapsed_time:.3f}s: '{translation_result}'")
-        
-        # Schedule processing of the translation response on the main thread
-        app.root.after(0, process_translation_response, app, translation_result, translation_sequence, text_to_translate, ocr_sequence_number)
-        
-    except Exception as e:
-        elapsed_time = time.monotonic() - start_time
-        log_debug(f"Error in async translation {translation_sequence} after {elapsed_time:.2f}s: {type(e).__name__} - {e}")
-        
-        # Schedule error handling on main thread
-        error_msg = f"Translation error: {str(e)}"
-        app.root.after(0, process_translation_response, app, error_msg, translation_sequence, text_to_translate, ocr_sequence_number)
-    
-    finally:
-        # Always remove from active calls
-        try:
-            app.active_translation_calls.discard(translation_sequence)
-            log_debug(f"Translation {translation_sequence} finished (active calls: {len(app.active_translation_calls)})")
-        except Exception as cleanup_error:
-            log_debug(f"Error cleaning up translation {translation_sequence}: {cleanup_error}")
-
-
-def process_translation_response(app, translation_result, translation_sequence, original_text, ocr_sequence_number):
-    """Process translation response with chronological order enforcement - same logic as OCR."""
-    try:
-        log_debug(f"Processing translation response for sequence {translation_sequence}: '{translation_result}'")
-        
-        # Initialize last displayed sequence if not exists
-        if not hasattr(app, 'last_displayed_translation_sequence'):
-            app.last_displayed_translation_sequence = 0
-        
-        # CHRONOLOGICAL ORDER ENFORCEMENT - Only display if this is newer than what's currently shown
-        if translation_sequence <= app.last_displayed_translation_sequence:
-            log_debug(f"Translation {translation_sequence}: Sequence too old (last displayed: {app.last_displayed_translation_sequence}), discarding but caching result")
-            # Still update caches even if we don't display - translation result is valid
-            return
-        
-        # This is a newer translation - proceed with display
-        log_debug(f"Translation {translation_sequence}: Processing newer sequence (last displayed: {app.last_displayed_translation_sequence})")
-        
-        # Handle error responses
-        error_prefixes = ("Err:", "MarianMT error:", "Google API error:", "DeepL API error:", 
-                          "No translation for model:", "MarianMT not initialized.", 
-                          "MarianMT language pair not determined:", "Google API key missing:",
-                          "DeepL API key missing:", "Google Client init error:", 
-                          "DeepL Client init error:", "Translation error:", 
-                          "Google Translate API client not initialized", 
-                          "DeepL API client not initialized", 
-                          "MarianMT translator not initialized",
-                          "Translation timeout:", "Translation error:")
-        
-        if isinstance(translation_result, str) and any(translation_result.startswith(p) for p in error_prefixes):
-            log_debug(f"Translation error in sequence {translation_sequence}: {translation_result}")
-            app.update_translation_text(f"Translation Error:\n{translation_result}")
-            app.last_displayed_translation_sequence = translation_sequence
-            app.last_successful_translation_time = time.monotonic()
-            return
-        
-        # Successful translation - process and display
-        if isinstance(translation_result, str) and translation_result.strip():
-            final_processed_translation = post_process_translation_text(translation_result)
-            app.update_translation_text(final_processed_translation)
-            log_debug(f"Translation {translation_sequence} displayed: '{final_processed_translation}' (from OCR batch {ocr_sequence_number})")
-            app.last_displayed_translation_sequence = translation_sequence
-            app.last_successful_translation_time = time.monotonic()
-        else:
-            log_debug(f"Translation {translation_sequence}: Empty or invalid result, not displaying")
-            
-    except Exception as e:
-        log_debug(f"Error processing translation response for sequence {translation_sequence}: {type(e).__name__} - {e}")
-        # On error, try to display error message
-        try:
-            app.update_translation_text(f"Translation Processing Error:\n{type(e).__name__}")
         except:
             pass
