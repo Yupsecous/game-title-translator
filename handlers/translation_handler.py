@@ -959,6 +959,107 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if lang_code.lower() == 'auto':
                 return 'Auto'
             return lang_code.title()
+    
+    def _get_next_ocr_image_number(self):
+        """Get the next sequential number for OCR image saving."""
+        try:
+            # Get the base directory (same as where the script runs from)
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                base_dir = os.path.dirname(sys.executable)
+            else:
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            
+            ocr_images_dir = os.path.join(base_dir, "OCR_images")
+            
+            # Ensure the directory exists
+            os.makedirs(ocr_images_dir, exist_ok=True)
+            
+            # Get all existing files in the directory
+            if os.path.exists(ocr_images_dir):
+                existing_files = os.listdir(ocr_images_dir)
+                # Filter for .webp files and extract numbers
+                numbers = []
+                for filename in existing_files:
+                    if filename.endswith('.webp'):
+                        try:
+                            # Extract number from filename like "0001.webp"
+                            number_str = filename.split('.')[0]
+                            if number_str.isdigit():
+                                numbers.append(int(number_str))
+                        except (ValueError, IndexError):
+                            continue
+                
+                # Get the next number
+                if numbers:
+                    next_number = max(numbers) + 1
+                else:
+                    next_number = 1
+            else:
+                next_number = 1
+            
+            return next_number, ocr_images_dir
+        except Exception as e:
+            log_debug(f"Error getting next OCR image number: {e}")
+            return 1, None
+    
+    def _save_ocr_image(self, webp_image_data):
+        """Save the OCR image to the OCR_images folder with sequential numbering."""
+        try:
+            # Debug: Check what we received
+            log_debug(f"_save_ocr_image called with data type: {type(webp_image_data)}")
+            
+            if webp_image_data is None:
+                log_debug("webp_image_data is None, cannot save image")
+                return
+            
+            if isinstance(webp_image_data, str):
+                log_debug(f"webp_image_data is string with length: {len(webp_image_data)}")
+                # If it's a string, it might be base64 encoded
+                try:
+                    import base64
+                    webp_image_data = base64.b64decode(webp_image_data)
+                    log_debug(f"Decoded base64 data, new length: {len(webp_image_data)}")
+                except Exception as decode_error:
+                    log_debug(f"Failed to decode base64 data: {decode_error}")
+                    return
+            elif isinstance(webp_image_data, bytes):
+                log_debug(f"webp_image_data is bytes with length: {len(webp_image_data)}")
+            else:
+                log_debug(f"webp_image_data is unexpected type: {type(webp_image_data)}")
+                return
+            
+            if len(webp_image_data) == 0:
+                log_debug("webp_image_data is empty, cannot save image")
+                return
+            
+            next_number, ocr_images_dir = self._get_next_ocr_image_number()
+            
+            if ocr_images_dir is None:
+                log_debug("Could not determine OCR images directory, skipping image save")
+                return
+            
+            # Format the filename with 4-digit zero-padding
+            filename = f"{next_number:04d}.webp"
+            filepath = os.path.join(ocr_images_dir, filename)
+            
+            # Save the image data
+            with open(filepath, 'wb') as f:
+                bytes_written = f.write(webp_image_data)
+                log_debug(f"Wrote {bytes_written} bytes to {filepath}")
+            
+            # Verify the file was written correctly
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath)
+                log_debug(f"Successfully saved OCR image to: {filepath} (size: {file_size} bytes)")
+            else:
+                log_debug(f"File was not created: {filepath}")
+            
+        except Exception as e:
+            log_debug(f"Error saving OCR image: {e}")
+            import traceback
+            log_debug(f"Full traceback: {traceback.format_exc()}")
+            # Don't let image saving errors stop the OCR process
+            pass
 
     # ==================== GEMINI OCR METHODS (Phase 2) ====================
     
@@ -1009,10 +1110,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             source_lang_name = self._get_language_display_name(source_lang, 'gemini')
             
             # Create OCR prompt with error correction - use exact prompt requested
-            prompt = f"""1. Extract all text from this image. The language is: {source_lang_name.upper()}.
-2. Then return the text without any line breaks in this exact format: {source_lang_name.upper()}: [recognized text without line breaks]
-3. Don't return anything else.
-4. If there is no text in the image, you must not return the language name. Return only this exact string "<EMPTY>"."""
+            prompt = f"""1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image without line breaks. Don't return anything else.
+2. If there is no text in the image, return only: <EMPTY>."""
             
             # Prepare image data for Gemini
             image_part = {
@@ -1022,9 +1121,12 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             log_debug(f"Making Gemini OCR API call for language: {source_lang_name}")
             
+            # Save the image before sending to API
+            # self._save_ocr_image(webp_image_data)
+            
             # Make the API call and track timing
             api_call_start_time = time.time()
-            response = model.generate_content([prompt, image_part])
+            response = model.generate_content([image_part, prompt])
             call_duration = time.time() - api_call_start_time
             
             # Extract the response text
@@ -1034,8 +1136,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if ocr_result == "<EMPTY>":
                 parsed_text = "<EMPTY>"
             elif ocr_result.startswith(f"{source_lang_name.upper()}: "):
-                # Extract text after "LANGUAGE: " prefix
+                # Extract text after "LANGUAGE: " prefix (with space)
                 parsed_text = ocr_result[len(f"{source_lang_name.upper()}: "):].strip()
+                if not parsed_text:
+                    parsed_text = "<EMPTY>"
+            elif ocr_result.startswith(f"{source_lang_name.upper()}:"):
+                # Extract text after "LANGUAGE:" prefix (without space)
+                parsed_text = ocr_result[len(f"{source_lang_name.upper()}:"):].strip()
                 if not parsed_text:
                     parsed_text = "<EMPTY>"
             else:
