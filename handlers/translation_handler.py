@@ -25,12 +25,6 @@ class TranslationHandler:
         # Add thread lock for atomic logging to prevent interleaved logs
         self._log_lock = threading.Lock()
         
-        # Initialize session counters
-        self.ocr_session_counter = 1
-        self.translation_session_counter = 1
-        self.current_ocr_session_active = False
-        self.current_translation_session_active = False
-        
         # Initialize Gemini API call log file path
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             base_dir = os.path.dirname(sys.executable)
@@ -301,61 +295,6 @@ Purpose: Concise translation call results and statistics
 
         except Exception as e:
             log_debug(f"Error initializing Gemini API logs: {e}")
-
-    def start_ocr_session(self):
-        """Start a new OCR session with numbered identifier."""
-        if not self.current_ocr_session_active:
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"\nSESSION {self.ocr_session_counter} STARTED {timestamp}\n")
-                self.current_ocr_session_active = True
-                log_debug(f"OCR Session {self.ocr_session_counter} started")
-            except Exception as e:
-                log_debug(f"Error starting OCR session: {e}")
-
-    def end_ocr_session(self):
-        """End the current OCR session."""
-        if self.current_ocr_session_active:
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp}\n")
-                self.current_ocr_session_active = False
-                self.ocr_session_counter += 1
-                log_debug(f"OCR Session {self.ocr_session_counter - 1} ended")
-            except Exception as e:
-                log_debug(f"Error ending OCR session: {e}")
-
-    def start_translation_session(self):
-        """Start a new translation session with numbered identifier."""
-        if not self.current_translation_session_active:
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"\nSESSION {self.translation_session_counter} STARTED {timestamp}\n")
-                self.current_translation_session_active = True
-                log_debug(f"Translation Session {self.translation_session_counter} started")
-            except Exception as e:
-                log_debug(f"Error starting translation session: {e}")
-
-    def end_translation_session(self):
-        """End the current translation session."""
-        if self.current_translation_session_active:
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp}\n")
-                self.current_translation_session_active = False
-                self.translation_session_counter += 1
-                log_debug(f"Translation Session {self.translation_session_counter - 1} ended")
-            except Exception as e:
-                log_debug(f"Error ending translation session: {e}")
-
-    def force_end_sessions_on_app_close(self):
-        """End both sessions when application is closing."""
-        self.end_ocr_session()
-        self.end_translation_session()
 
     def _log_gemini_api_call(self, message_content, source_lang, target_lang, text_to_translate):
         """Deprecated - replaced by _log_complete_gemini_translation_call for atomic logging."""
@@ -1039,10 +978,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 if not parsed_text:
                     parsed_text = "<EMPTY>"
             else:
-                # With the new format, just use the response directly
+                # Fallback: use the raw response if format doesn't match expected pattern
+                log_debug(f"OCR response doesn't match expected format, using raw response: '{ocr_result}'")
                 parsed_text = ocr_result
-                if not parsed_text:
-                    parsed_text = "<EMPTY>"
             
             # Extract exact token counts from API response metadata
             input_tokens, output_tokens = 0, 0
@@ -1065,7 +1003,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
         except Exception as e:
             log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
-            return "<EMPTY>"
+            return f"<ERROR>: Gemini OCR error: {str(e)}"
     
     def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang):
         """Log complete Gemini OCR API call with atomic writing and cumulative totals."""
@@ -1108,14 +1046,16 @@ REQUEST PROMPT:
 {prompt}
 ---END PROMPT---
 
-RESPONSE RECEIVED:
-Timestamp: {call_end_time}
-
----BEGIN RESPONSE---
+RAW RESPONSE:
+---BEGIN RAW RESPONSE---
 {raw_response}
----END RESPONSE---
+---END RAW RESPONSE---
+
+PARSED RESULT:
+{parsed_response}
 
 PERFORMANCE & COST ANALYSIS:
+- Call Duration: {call_duration:.3f} seconds
 - Input Tokens: {input_tokens}
 - Output Tokens: {output_tokens}
 - Input Cost: ${call_input_cost:.8f}
@@ -1153,39 +1093,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     def _log_gemini_ocr_response(self, response_text, sequence_number, call_duration):
         """Deprecated - replaced by _log_complete_gemini_ocr_call."""
         pass
-
-    def translate_text_with_timeout(self, text_content, timeout_seconds=10.0):
-        """Wrapper for translate_text with timeout support for async processing."""
-        import threading
-        import time
-        
-        result = [None]  # Use list to store result from thread
-        exception = [None]  # Store any exception
-        
-        def translation_worker():
-            try:
-                result[0] = self.translate_text(text_content)
-            except Exception as e:
-                exception[0] = e
-        
-        # Start translation in separate thread
-        thread = threading.Thread(target=translation_worker, daemon=True)
-        thread.start()
-        
-        # Wait for completion with timeout
-        thread.join(timeout=timeout_seconds)
-        
-        if thread.is_alive():
-            # Translation timed out
-            log_debug(f"Translation timed out after {timeout_seconds}s for: '{text_content}'")
-            return f"Translation timeout: exceeded {timeout_seconds}s"
-        
-        if exception[0]:
-            # Translation had an exception
-            log_debug(f"Translation exception: {exception[0]}")
-            return f"Translation error: {str(exception[0])}"
-        
-        return result[0]
 
     def translate_text(self, text_content_main):
         cleaned_text_main = text_content_main.strip() if text_content_main else ""
@@ -1349,35 +1256,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         ]
         text_lower = text.lower()
         return any(indicator in text_lower for indicator in error_indicators)
-    
-    def _is_ocr_error_message(self, text):
-        """Check if text is an OCR error message that should be replaced with <EMPTY>."""
-        if not isinstance(text, str):
-            return False
-        
-        text_stripped = text.strip()
-        
-        # Check for various OCR error patterns
-        ocr_error_patterns = [
-            r'^<e>:.*',                    # Gemini OCR errors: <e>: Gemini OCR error: ...
-            r'^<ERROR>:.*',                # Alternative error format: <ERROR>: Gemini OCR error: ...
-            r'^.*OCR error.*',             # Any text containing "OCR error"
-            r'^.*Gemini OCR error.*',      # Specific Gemini OCR errors
-            r'^.*Tesseract.*error.*',      # Tesseract OCR errors
-            r'^.*recognition.*error.*',    # OCR recognition errors
-            r'^.*Unable to.*recognize.*',  # Recognition failure messages
-        ]
-        
-        # Check each pattern
-        for pattern in ocr_error_patterns:
-            try:
-                if re.match(pattern, text_stripped, re.IGNORECASE):
-                    return True
-            except re.error as e:
-                log_debug(f"Regex error in _is_ocr_error_message with pattern '{pattern}': {e}")
-                continue
-        
-        return False
     
     def clear_cache(self):
         """Clear the unified translation cache."""
