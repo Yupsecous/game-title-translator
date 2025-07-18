@@ -207,6 +207,9 @@ def create_settings_tab(app):
             if display == selected_display:
                 app.ocr_model_var.set(value)
                 log_debug(f"OCR model changed to: {value} (display: {display})")
+                # Update UI immediately for responsive feedback
+                if hasattr(app, 'ui_interaction_handler'):
+                    app.ui_interaction_handler.update_ocr_model_ui()
                 if app._fully_initialized:
                     app.save_settings()
                 break
@@ -842,10 +845,14 @@ def create_settings_tab(app):
     app.adaptive_c_spinbox.bind("<FocusOut>", on_c_value_focus_out)
     current_row += 1
 
-    # Function to show/hide adaptive parameters based on preprocessing mode
+    # Function to show/hide adaptive parameters based on preprocessing mode AND OCR model
     def update_adaptive_fields_visibility():
         mode = app.preprocessing_mode_var.get()
-        if mode == 'adaptive':
+        ocr_model = app.ocr_model_var.get()
+        # Adaptive parameters should only be visible when using Tesseract OCR AND adaptive preprocessing
+        should_show = (ocr_model == 'tesseract') and (mode == 'adaptive')
+        
+        if should_show:
             app.adaptive_block_size_label.grid()
             app.adaptive_block_size_spinbox.grid()
             app.adaptive_c_label.grid()
@@ -873,22 +880,28 @@ def create_settings_tab(app):
     update_adaptive_fields_visibility()
     current_row += 1
 
-    # Create a frame for the OCR debugging label and preview button
-    ocr_debug_frame = ttk.Frame(frame)
-    ocr_debug_frame.grid(row=current_row, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+    # Store references to OCR debugging widgets for OCR model UI management
+    app.ocr_debugging_label = ttk.Label(frame, text=app.ui_lang.get_label("ocr_debugging_label"))
+    app.ocr_debugging_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
     
-    ttk.Label(ocr_debug_frame, text=app.ui_lang.get_label("ocr_debugging_label")).pack(side=tk.LEFT)
-    app.ocr_debugging_checkbox = ttk.Checkbutton(ocr_debug_frame, text=app.ui_lang.get_label("show_debug_checkbox"), variable=app.ocr_debugging_var)
-    app.ocr_debugging_checkbox.pack(side=tk.LEFT, padx=(5,0))
+    # Create a frame for the OCR debugging checkbox and preview button
+    app.ocr_debug_frame = ttk.Frame(frame)
+    app.ocr_debug_frame.grid(row=current_row, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    app.ocr_debugging_checkbox = ttk.Checkbutton(app.ocr_debug_frame, text=app.ui_lang.get_label("show_debug_checkbox"), variable=app.ocr_debugging_var)
+    app.ocr_debugging_checkbox.pack(side=tk.LEFT)
     
     # Add Preview button
-    app.ocr_preview_button = ttk.Button(ocr_debug_frame, text=app.ui_lang.get_label("preview_btn", "Preview"), 
+    app.ocr_preview_button = ttk.Button(app.ocr_debug_frame, text=app.ui_lang.get_label("preview_btn", "Preview"), 
                command=app.show_ocr_preview)
     app.ocr_preview_button.pack(side=tk.LEFT, padx=(10,0))
     current_row += 1
 
-    ttk.Label(frame, text=app.ui_lang.get_label("remove_trailing_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
-    ttk.Checkbutton(frame, text=app.ui_lang.get_label("remove_trailing_checkbox"), variable=app.remove_trailing_garbage_var).grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
+    # Store references to Tesseract-specific widgets for OCR model UI management
+    app.remove_trailing_label = ttk.Label(frame, text=app.ui_lang.get_label("remove_trailing_label"))
+    app.remove_trailing_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
+    app.remove_trailing_checkbox = ttk.Checkbutton(frame, text=app.ui_lang.get_label("remove_trailing_checkbox"), variable=app.remove_trailing_garbage_var)
+    app.remove_trailing_checkbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
     current_row += 1
     
     color_options = [ 

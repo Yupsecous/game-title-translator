@@ -221,6 +221,18 @@ class UIInteractionHandler:
         if hasattr(self.app, 'stability_spinbox'):
             manage_grid(self.app.stability_spinbox, show=is_tesseract)
         
+        # Handle "Remove Trailing Garbage" - this is a Tesseract-specific feature
+        if hasattr(self.app, 'remove_trailing_label'):
+            manage_grid(self.app.remove_trailing_label, show=is_tesseract)
+        if hasattr(self.app, 'remove_trailing_checkbox'):
+            manage_grid(self.app.remove_trailing_checkbox, show=is_tesseract)
+        
+        # Handle OCR debugging - hide for Gemini OCR as it has different debugging needs
+        if hasattr(self.app, 'ocr_debugging_label'):
+            manage_grid(self.app.ocr_debugging_label, show=is_tesseract)
+        if hasattr(self.app, 'ocr_debug_frame'):
+            manage_grid(self.app.ocr_debug_frame, show=is_tesseract)
+        
         # Handle adaptive thresholding parameters - only show when Tesseract + Adaptive mode
         is_adaptive_mode = (self.app.preprocessing_mode_var.get() == 'adaptive')
         show_adaptive = is_tesseract and is_adaptive_mode
@@ -234,15 +246,7 @@ class UIInteractionHandler:
         if hasattr(self.app, 'adaptive_c_spinbox'):
             manage_grid(self.app.adaptive_c_spinbox, show=show_adaptive)
         
-        # Show/hide OCR debugging (available for both OCR models)
-        if hasattr(self.app, 'ocr_debugging_checkbox'):
-            manage_grid(self.app.ocr_debugging_checkbox, show=True)  # Always show
-        
-        # Update OCR Preview button (always show, but functionality will vary by OCR model)
-        if hasattr(self.app, 'ocr_preview_button'):
-            manage_grid(self.app.ocr_preview_button, show=True)  # Always show
-        
-        log_debug(f"OCR model UI updated for {selected_ocr_model}: Tesseract fields={'visible' if is_tesseract else 'hidden'}")
+        log_debug(f"OCR model UI updated for {selected_ocr_model}: Tesseract fields={'visible' if is_tesseract else 'hidden'}, Adaptive={'visible' if show_adaptive else 'hidden'}")
 
     def update_marian_models_dropdown_for_language(self, ui_language=None):
         """Update MarianMT models dropdown with localized display names."""

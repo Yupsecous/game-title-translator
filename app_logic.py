@@ -519,6 +519,10 @@ For more information, see the user manual."""
         self._fully_initialized = True
         log_debug("GameChangingTranslator fully initialized.")
         
+        # Ensure OCR model UI is correctly set up on initial load
+        if hasattr(self, 'ui_interaction_handler'):
+            self.ui_interaction_handler.update_ocr_model_ui()
+        
         # Update usage statistics for selected models - use after_idle to ensure GUI is ready
         if hasattr(self, 'translation_model_var'):
             selected_model = self.translation_model_var.get()
@@ -569,6 +573,10 @@ For more information, see the user manual."""
             # Update UI to show/hide Tesseract-specific fields
             if hasattr(self, 'ui_interaction_handler'):
                 self.ui_interaction_handler.update_ocr_model_ui()
+            
+            # Update adaptive fields visibility based on new OCR model
+            if hasattr(self, 'update_adaptive_fields_visibility'):
+                self.update_adaptive_fields_visibility()
             
             # Validate scan interval when switching to Gemini OCR
             if self.get_ocr_model_setting() == 'gemini':
@@ -1677,6 +1685,12 @@ For more information, see the user manual."""
             
             # Update translation model UI visibility based on current selection
             self.ui_interaction_handler.update_translation_model_ui()
+            
+            # Update OCR model UI visibility based on current selection
+            self.ui_interaction_handler.update_ocr_model_ui()
+            
+            # Schedule a delayed OCR model UI update to ensure it takes effect after language change
+            self.root.after_idle(lambda: self.ui_interaction_handler.update_ocr_model_ui())
             
             # Update adaptive fields visibility based on current preprocessing mode
             if hasattr(self, 'update_adaptive_fields_visibility'):
