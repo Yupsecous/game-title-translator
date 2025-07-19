@@ -142,11 +142,11 @@ class UIInteractionHandler:
         if hasattr(self.app, 'gemini_context_window_combobox'):
             manage_grid(self.app.gemini_context_window_combobox, show=is_gemini)
         
-        # Gemini statistics visibility
+        # Gemini statistics visibility - hide when Gemini is selected since stats are in API Usage tab
         if hasattr(self.app, 'gemini_stats_frame'):
-            manage_grid(self.app.gemini_stats_frame, show=is_gemini)
+            manage_grid(self.app.gemini_stats_frame, show=False)  # Always hidden now
         if hasattr(self.app, 'gemini_refresh_stats_button'):
-            manage_grid(self.app.gemini_refresh_stats_button, show=is_gemini)
+            manage_grid(self.app.gemini_refresh_stats_button, show=False)  # Always hidden now
         # Note: gemini_file_cache_checkbox is now permanently visible in the cache section
         
         # DeepL Model Type visibility
@@ -155,11 +155,7 @@ class UIInteractionHandler:
         if hasattr(self.app, 'deepl_model_type_combobox'):
             manage_grid(self.app.deepl_model_type_combobox, show=is_deepl)
         
-        # DeepL Usage visibility
-        if hasattr(self.app, 'deepl_usage_label'):
-            manage_grid(self.app.deepl_usage_label, show=is_deepl)
-        if hasattr(self.app, 'deepl_usage_entry'):
-            manage_grid(self.app.deepl_usage_entry, show=is_deepl)
+        # DeepL Usage now always visible in API Usage tab - no longer shown in Settings tab
         
         manage_grid(self.app.marian_model_label, show=is_marian)
         manage_grid(self.app.marian_model_combobox, show=is_marian)

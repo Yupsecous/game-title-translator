@@ -205,9 +205,10 @@ class StatisticsHandler:
                     total_calls += 1
             total_duration += session.get('duration_seconds', 0.0)
         
-        # Calculate derived statistics
+        # Calculate derived statistics - ensure per-hour uses exact per-minute calculation
         avg_cost_per_call = total_cost / total_calls if total_calls > 0 else 0.0
         avg_cost_per_minute = (total_cost / (total_duration / 60.0)) if total_duration > 0 else 0.0
+        # Use the exact per-minute value to calculate per-hour for consistency
         avg_cost_per_hour = avg_cost_per_minute * 60.0
         
         return {
@@ -237,7 +238,7 @@ class StatisticsHandler:
         # Calculate derived statistics
         avg_cost_per_word = total_cost / total_words if total_words > 0 else 0.0
         avg_cost_per_minute = (total_cost / (total_duration / 60.0)) if total_duration > 0 else 0.0
-        avg_cost_per_hour = avg_cost_per_minute * 60.0
+        avg_cost_per_hour = avg_cost_per_minute * 60.0  # Direct multiplication for consistency
         words_per_minute = (total_words / (total_duration / 60.0)) if total_duration > 0 else 0.0
         
         return {
@@ -254,10 +255,10 @@ class StatisticsHandler:
     def _calculate_combined_statistics(self, ocr_stats, translation_stats):
         """Calculate combined OCR + Translation statistics."""
         total_cost = ocr_stats['total_cost'] + translation_stats['total_cost']
-        total_duration = max(ocr_stats['total_duration_seconds'], translation_stats['total_duration_seconds'])
         
-        combined_cost_per_minute = (total_cost / (total_duration / 60.0)) if total_duration > 0 else 0.0
-        combined_cost_per_hour = combined_cost_per_minute * 60.0
+        # Simply add the individual rates since they represent independent processes
+        combined_cost_per_minute = ocr_stats['avg_cost_per_minute'] + translation_stats['avg_cost_per_minute']
+        combined_cost_per_hour = ocr_stats['avg_cost_per_hour'] + translation_stats['avg_cost_per_hour']
         
         return {
             'total_cost': total_cost,

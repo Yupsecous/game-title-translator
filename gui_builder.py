@@ -636,9 +636,8 @@ def create_settings_tab(app):
         if hasattr(app, 'deepl_usage_label') and app.deepl_usage_label.winfo_exists():
             app.deepl_usage_label.config(text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
         
-        # Refresh DeepL usage display with new language formatting if DeepL is currently selected
-        if (hasattr(app, 'translation_model_var') and app.translation_model_var.get() == 'deepl_api' and
-            hasattr(app, 'update_deepl_usage')):
+        # Always refresh DeepL usage display since it's now always visible in API Usage tab
+        if hasattr(app, 'update_deepl_usage'):
             app.root.after_idle(app.update_deepl_usage)
         
         log_debug("Updated DeepL usage labels for language change")
@@ -975,13 +974,13 @@ def create_api_usage_tab(app):
     ocr_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_ocr"))
     ocr_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
     
-    # OCR statistics labels and values
+    # OCR statistics labels and values - reordered as requested
     ocr_stats = [
-        ("api_usage_total_ocr_cost", "Total OCR Cost:"),
         ("api_usage_total_ocr_calls", "Total OCR Calls:"),
         ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
         ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
-        ("api_usage_avg_cost_per_hour", "Average Cost per Hour:")
+        ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
+        ("api_usage_total_ocr_cost", "Total OCR Cost:")
     ]
     
     app.ocr_stat_labels = {}
@@ -1005,14 +1004,15 @@ def create_api_usage_tab(app):
     translation_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_translation"))
     translation_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
     
-    # Translation statistics labels and values
+    # Translation statistics labels and values - reordered as requested
     translation_stats = [
-        ("api_usage_total_translation_cost", "Total Translation Cost:"),
-        ("api_usage_total_words_translated", "Total Words Translated:"),
         ("api_usage_total_translation_calls", "Total Translation Calls:"),
+        ("api_usage_total_words_translated", "Total Words Translated:"),
+        ("api_usage_words_per_minute", "Average Words per Minute:"),
         ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
         ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
-        ("api_usage_words_per_minute", "Average Words per Minute:")
+        ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
+        ("api_usage_total_translation_cost", "Total Translation Cost:")
     ]
     
     app.translation_stat_labels = {}
@@ -1064,12 +1064,12 @@ def create_api_usage_tab(app):
     deepl_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_deepl"))
     deepl_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
     
-    # DeepL usage display (moved from settings tab)
+    # DeepL usage display (moved from settings tab) - always visible
     app.deepl_usage_label = ttk.Label(deepl_section, text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
     app.deepl_usage_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
     app.deepl_usage_var = tk.StringVar(value=app.ui_lang.get_label("deepl_usage_loading", "Loading..."))
-    app.deepl_usage_entry = ttk.Entry(deepl_section, textvariable=app.deepl_usage_var, width=50, state='readonly')
-    app.deepl_usage_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_usage_display = ttk.Label(deepl_section, textvariable=app.deepl_usage_var, foreground="blue")
+    app.deepl_usage_display.grid(row=0, column=1, padx=5, pady=5, sticky="w")
     
     current_row += 1
     
@@ -1095,6 +1095,12 @@ def create_api_usage_tab(app):
                                       command=app.export_statistics_text)
     app.export_text_button.pack(side=tk.LEFT, padx=5)
     
+    # Copy to Clipboard button
+    app.copy_stats_button = ttk.Button(button_frame,
+                                     text=app.ui_lang.get_label("api_usage_copy_btn", "Copy"),
+                                     command=app.copy_statistics_to_clipboard)
+    app.copy_stats_button.pack(side=tk.LEFT, padx=5)
+    
     # Make the columns expandable
     frame.columnconfigure(0, weight=1)
     frame.columnconfigure(1, weight=1)
@@ -1102,6 +1108,9 @@ def create_api_usage_tab(app):
     translation_section.columnconfigure(1, weight=1)
     combined_section.columnconfigure(1, weight=1)
     deepl_section.columnconfigure(1, weight=1)
+    
+    # Auto-refresh statistics when tab is created
+    app.root.after_idle(lambda: app._delayed_api_stats_refresh() if hasattr(app, '_delayed_api_stats_refresh') else None)
 
 def create_debug_tab(app):
     # Create a scrollable tab content frame
