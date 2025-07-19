@@ -15,6 +15,7 @@
 - **handlers/configuration_handler.py** - Settings and configuration file management
 - **handlers/display_manager.py** - UI display updates for translation text and debug information
 - **handlers/hotkey_handler.py** - Keyboard shortcut setup and management
+- **handlers/statistics_handler.py** - API usage statistics parsing and cost monitoring
 - **handlers/translation_handler.py** - Text translation using different translation services
 - **handlers/ui_interaction_handler.py** - User interface interaction management
 
@@ -58,14 +59,19 @@
 - **resources/gui_pol.csv** - Polish UI translations
 
 ## Build and Setup Files
-- **GameChangingTranslator.spec** - PyInstaller specification file
+- **GameChangingTranslator.spec** - PyInstaller specification file (standard CPU version)
+- **GameChangingTranslator_GPU.spec** - PyInstaller specification file (GPU/CUDA optimized version)
+- **compile_app.py** - Python compilation utility for building executables
 - **setup.py** - Setup configuration for building executables
+- **run_python_compiler.bat** - Windows batch script for compiling the application
 
 ## Documentation
 - **README.md** - Main project documentation
 - **CHANGELOG.md** - Version history and changes
 - **LICENSE** - GPL v3 license file
-- **OCR_Translator_Structure.md** - This file - application structure documentation
+- **ATTRIBUTION.md** - Third-party software attributions and credits
+- **CONTRIBUTORS.md** - List of project contributors
+- **Game_Changing_Translator_Structure.md** - This file - application structure documentation
 - **docs/user-manual.html** - Comprehensive user manual in English
 - **docs/user-manual_pl.html** - Comprehensive user manual in Polish
 - **docs/installation.html** - Installation guide in English
@@ -74,15 +80,21 @@
 - **docs/gallery_pl.html** - Application gallery in Polish
 - **docs/developer-guide.md** - Developer documentation
 - **docs/troubleshooting.md** - Troubleshooting guide
+- **docs/flags/** - Directory containing flag icons for language selection
+- **docs/gallery/** - Directory containing gallery images
+- **docs/screenshots/** - Directory containing screenshot images for documentation
 
 ## Cache and Data Files (Generated at Runtime)
 - **deepl_cache.txt** - Cached translations from DeepL API
 - **googletrans_cache.txt** - Cached translations from Google Translate API (if file caching enabled)
 - **gemini_cache.txt** - Cached translations from Gemini API (if file caching enabled)
 - **Gemini_API_call_logs.txt** - Detailed Gemini API call logging with cost tracking and token analysis
+- **API_OCR_short_log.txt** - Short log file for Gemini OCR API usage statistics
+- **API_TRA_short_log.txt** - Short log file for Gemini Translation API usage statistics
 - **marian_models_cache/** - Directory for cached MarianMT models
-- **translator_debug.log** - Application debug log file
+- **translator_debug.log** - Current application debug log file
 - **debug_images/** - Directory for saving debug images (created when debug mode is enabled)
+- **__pycache__/** - Python bytecode cache directory
 
 ---
 
@@ -90,37 +102,12 @@
 
 - Cache files (`deepl_cache.txt`, `googletrans_cache.txt`, `gemini_cache.txt`) and log files are generated during runtime
 - The `marian_models_cache/` directory is created automatically when MarianMT models are downloaded
-- Debug images are saved to `debug_images/` only when debug mode is enabled
+- Debug images are saved to `debug_images/` when debug mode is enabled
+- API usage statistics are tracked in `API_OCR_short_log.txt` and `API_TRA_short_log.txt` for monitoring costs
 - All CSV files are organized in the `resources/` directory for consistency and better organization
 - The application supports both English and Polish UI languages through localized CSV files
 - The `resource_copier.py` module ensures that when running as a compiled executable, resource files are available next to the executable for user modifications
-
----
-
-## Files Excluded from Application Structure
-
-The following files are test/development files and are not part of the core application:
-
-### Development Utilities
-- **cleanup_repository.py** - Repository cleanup script for removing test files before GitHub upload
-- **build_and_copy_resources.py** - Development build utility for PyInstaller
-- **build_and_copy_resources.bat** - Windows batch script for development builds
-
-### Development Documentation/Prompts
-- **prompt.txt** - Development prompt file with feature implementation instructions
-- **prompt_ocr.txt** - Development prompt for OCR feature enhancements
-- **prompt_user_guide.txt** - Development prompt for user guide corrections
-- **Language_Names_Localized.md** - Development strategy document for implementing Polish language names
-- **ocr_translator_config.7z** - Compressed backup configuration file
-
-### Test Files (if present)
-- **test_*.py** - Various test files for different components
-- **test_unified_cache.py** - Test script for unified translation cache functionality
-- **comprehensive_test.py** - Comprehensive testing script
-- **simple_verification.py** - Simple verification script
-- **verification_test.py** - Verification testing script
-
-These files are useful for development and testing but are not required for the application to function in a production environment.
+- Git version control files (`.git/`, `.gitignore`) are present for development but excluded from distribution builds
 
 ---
 
@@ -222,3 +209,32 @@ Gemini(FR-EN,2025-07-06 21:13:31):Sa glorieuse Majesté:==:His Glorious Majesty
 ```
 
 The cache effectiveness depends on OCR consistency - identical OCR results enable cache hits, while variations trigger new API calls.
+
+## API Usage Statistics System
+
+The application includes a comprehensive API usage monitoring system for tracking costs and performance:
+
+### Statistics Handler (`handlers/statistics_handler.py`)
+- **Real-time monitoring** of Gemini OCR and Translation API usage
+- **Cost calculation** with proper currency formatting for different locales
+- **Export functionality** for statistics in CSV and TXT formats
+- **Clipboard integration** for easy data sharing
+- **Multi-language support** with proper Polish number formatting
+
+### API Usage Tab
+The GUI includes a dedicated "API Usage" tab that displays:
+- **Gemini OCR Statistics**: Total calls, average cost per call/minute/hour, total cost
+- **Gemini Translation Statistics**: Total calls, words translated, words per minute, cost per word/call/minute/hour, total cost
+- **Combined API Statistics**: Total API cost, combined cost per minute/hour
+- **DeepL Usage Tracker**: Free monthly limit monitoring
+
+### Log Files for Statistics
+- **`API_OCR_short_log.txt`** - Condensed log for OCR API calls with timing and cost data
+- **`API_TRA_short_log.txt`** - Condensed log for Translation API calls with timing and cost data
+- **`Gemini_API_call_logs.txt`** - Detailed logs with complete request/response data and token analysis
+
+### Export and Sharing Features
+- **CSV Export**: Structured data export with proper localization
+- **Text Export**: Human-readable summary reports in English/Polish
+- **Clipboard Copy**: Quick sharing with proper formatting for each language
+- **Automatic Currency Formatting**: Proper decimal separators and currency symbols for different locales
