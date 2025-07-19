@@ -606,6 +606,10 @@ For more information, see the user manual."""
                     if label_key in self.combined_stat_labels and self.combined_stat_labels[label_key].winfo_exists():
                         self.combined_stat_labels[label_key].config(text=self.ui_lang.get_label(label_key, fallback_text))
             
+            # Update API usage info label
+            if hasattr(self, 'update_api_usage_info_for_language'):
+                self.update_api_usage_info_for_language()
+            
             log_debug("Updated API Usage tab labels for language change")
         except Exception as e:
             log_debug(f"Error updating API Usage tab for language change: {e}")
@@ -1108,7 +1112,10 @@ For more information, see the user manual."""
                     self.ocr_stat_vars['api_usage_total_ocr_calls'].set(str(ocr['total_calls']))
                     self.ocr_stat_vars['api_usage_avg_cost_per_call'].set(self.format_currency_for_display(ocr['avg_cost_per_call']))
                     self.ocr_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(ocr['avg_cost_per_minute'], "/min"))
-                    self.ocr_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(ocr['avg_cost_per_minute'] * 60, "/hr"))
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    self.ocr_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
                 
                 # Update Translation statistics
                 trans = stats['translation']
@@ -1118,7 +1125,10 @@ For more information, see the user manual."""
                     self.translation_stat_vars['api_usage_total_translation_calls'].set(str(trans['total_calls']))
                     self.translation_stat_vars['api_usage_avg_cost_per_word'].set(self.format_currency_for_display(trans['avg_cost_per_word']))
                     self.translation_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(trans['avg_cost_per_minute'], "/min"))
-                    self.translation_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(trans['avg_cost_per_minute'] * 60, "/hr"))
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    self.translation_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
                     
                     # Format words per minute with proper decimal separator
                     wpm_str = f"{trans['words_per_minute']:.2f}"
@@ -1131,7 +1141,10 @@ For more information, see the user manual."""
                 if hasattr(self, 'combined_stat_vars'):
                     self.combined_stat_vars['api_usage_total_api_cost'].set(self.format_currency_for_display(combined['total_cost']))
                     self.combined_stat_vars['api_usage_combined_cost_per_minute'].set(self.format_currency_for_display(combined['combined_cost_per_minute'], "/min"))
-                    self.combined_stat_vars['api_usage_combined_cost_per_hour'].set(self.format_currency_for_display(combined['combined_cost_per_minute'] * 60, "/hr"))
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    self.combined_stat_vars['api_usage_combined_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
                 
                 log_debug("API statistics refreshed successfully")
             else:
@@ -1157,7 +1170,10 @@ For more information, see the user manual."""
                     clipboard_text += f"Łączne wywołania OCR: {ocr['total_calls']}\n"
                     clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
                     clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(ocr['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
                     clipboard_text += f"Łączny koszt OCR: {self.format_currency_for_display(ocr['total_cost'])}\n\n"
                     
                     # Translation Statistics - match GUI order
@@ -1170,7 +1186,10 @@ For more information, see the user manual."""
                     clipboard_text += f"Średnia słów na minutę: {wpm_str}\n"
                     clipboard_text += f"Średni koszt na słowo: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
                     clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(trans['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
                     clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(trans['total_cost'])}\n\n"
                     
                     # Combined Statistics - match GUI order
@@ -1179,7 +1198,10 @@ For more information, see the user manual."""
                     combined = stats['combined']
                     clipboard_text += f"Łączny koszt API: {self.format_currency_for_display(combined['total_cost'])}\n"
                     clipboard_text += f"Łączny koszt na minutę: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Łączny koszt na godzinę: {self.format_currency_for_display(combined['combined_cost_per_minute'] * 60, '/hr')}\n\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Łączny koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n\n"
                     
                     # DeepL Usage Monitor
                     clipboard_text += "📈 Monitor użycia DeepL\n"
@@ -1200,7 +1222,10 @@ For more information, see the user manual."""
                     clipboard_text += f"Total OCR Calls: {ocr['total_calls']}\n"
                     clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
                     clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(ocr['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
                     clipboard_text += f"Total OCR Cost: {self.format_currency_for_display(ocr['total_cost'])}\n\n"
                     
                     # Translation Statistics - match GUI order
@@ -1212,7 +1237,10 @@ For more information, see the user manual."""
                     clipboard_text += f"Average Words per Minute: {trans['words_per_minute']:.2f}\n"
                     clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
                     clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(trans['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
                     clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(trans['total_cost'])}\n\n"
                     
                     # Combined Statistics - match GUI order
@@ -1221,7 +1249,10 @@ For more information, see the user manual."""
                     combined = stats['combined']
                     clipboard_text += f"Total API Cost: {self.format_currency_for_display(combined['total_cost'])}\n"
                     clipboard_text += f"Combined Cost per Minute: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(combined['combined_cost_per_minute'] * 60, '/hr')}\n\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n\n"
                     
                     # DeepL Usage Monitor
                     clipboard_text += "📈 DeepL Usage Monitor\n"
@@ -1265,7 +1296,12 @@ For more information, see the user manual."""
             )
             
             if file_path and hasattr(self, 'statistics_handler'):
-                success = self.statistics_handler.export_statistics_csv(file_path)
+                # Get the current DeepL usage value
+                deepl_usage = None
+                if hasattr(self, 'deepl_usage_var'):
+                    deepl_usage = self.deepl_usage_var.get()
+                
+                success = self.statistics_handler.export_statistics_csv(file_path, self.ui_lang, deepl_usage)
                 if success:
                     messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
                 else:
@@ -1288,7 +1324,12 @@ For more information, see the user manual."""
             )
             
             if file_path and hasattr(self, 'statistics_handler'):
-                success = self.statistics_handler.export_statistics_text(file_path, self.ui_lang)
+                # Get the current DeepL usage value
+                deepl_usage = None
+                if hasattr(self, 'deepl_usage_var'):
+                    deepl_usage = self.deepl_usage_var.get()
+                
+                success = self.statistics_handler.export_statistics_text(file_path, self.ui_lang, deepl_usage)
                 if success:
                     messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
                 else:

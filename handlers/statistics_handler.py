@@ -205,11 +205,12 @@ class StatisticsHandler:
                     total_calls += 1
             total_duration += session.get('duration_seconds', 0.0)
         
-        # Calculate derived statistics - ensure per-hour uses exact per-minute calculation
+        # Calculate derived statistics - ensure per-hour uses exact per-minute calculation with proper rounding
         avg_cost_per_call = total_cost / total_calls if total_calls > 0 else 0.0
         avg_cost_per_minute = (total_cost / (total_duration / 60.0)) if total_duration > 0 else 0.0
-        # Use the exact per-minute value to calculate per-hour for consistency
-        avg_cost_per_hour = avg_cost_per_minute * 60.0
+        # Round cost per minute to 8 decimal places, then multiply by 60 for consistency
+        avg_cost_per_minute_rounded = round(avg_cost_per_minute, 8)
+        avg_cost_per_hour = avg_cost_per_minute_rounded * 60.0
         
         return {
             'total_cost': total_cost,
@@ -238,7 +239,9 @@ class StatisticsHandler:
         # Calculate derived statistics
         avg_cost_per_word = total_cost / total_words if total_words > 0 else 0.0
         avg_cost_per_minute = (total_cost / (total_duration / 60.0)) if total_duration > 0 else 0.0
-        avg_cost_per_hour = avg_cost_per_minute * 60.0  # Direct multiplication for consistency
+        # Round cost per minute to 8 decimal places, then multiply by 60 for consistency
+        avg_cost_per_minute_rounded = round(avg_cost_per_minute, 8)
+        avg_cost_per_hour = avg_cost_per_minute_rounded * 60.0
         words_per_minute = (total_words / (total_duration / 60.0)) if total_duration > 0 else 0.0
         
         return {
@@ -258,7 +261,9 @@ class StatisticsHandler:
         
         # Simply add the individual rates since they represent independent processes
         combined_cost_per_minute = ocr_stats['avg_cost_per_minute'] + translation_stats['avg_cost_per_minute']
-        combined_cost_per_hour = ocr_stats['avg_cost_per_hour'] + translation_stats['avg_cost_per_hour']
+        # Round combined cost per minute to 8 decimal places, then multiply by 60 for consistency
+        combined_cost_per_minute_rounded = round(combined_cost_per_minute, 8)
+        combined_cost_per_hour = combined_cost_per_minute_rounded * 60.0
         
         return {
             'total_cost': total_cost,
@@ -294,40 +299,73 @@ class StatisticsHandler:
             }
         }
     
-    def export_statistics_csv(self, file_path):
-        """Export statistics to CSV format - matching GUI order."""
+    def _format_currency_for_export(self, amount, use_polish_format=False):
+        """Format currency for export files with proper localization."""
+        try:
+            if use_polish_format:
+                # Polish format: "0,04941340 USD"
+                amount_str = f"{amount:.8f}"
+                amount_str = amount_str.replace('.', ',')  # Replace decimal point with comma
+                return f"{amount_str} USD"
+            else:
+                # English format: "$0.04941340"
+                return f"${amount:.8f}"
+        except Exception as e:
+            log_debug(f"Error formatting currency for export: {e}")
+            return f"${amount:.8f}"  # Fallback to English format
+    
+    def export_statistics_csv(self, file_path, ui_lang=None, deepl_usage=None):
+        """Export statistics to CSV format with proper formatting."""
         try:
             stats = self.get_statistics()
+            
+            # Determine if Polish formatting should be used
+            use_polish_format = ui_lang and hasattr(ui_lang, 'current_lang') and ui_lang.current_lang == 'pol'
             
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write("Category,Metric,Value\n")
                 
-                # OCR statistics - match GUI order
+                # OCR statistics - match GUI order with proper cost per hour calculation
                 ocr = stats['ocr']
                 f.write(f"OCR,Total OCR Calls,{ocr['total_calls']}\n")
-                f.write(f"OCR,Average Cost per Call,${ocr['avg_cost_per_call']:.8f}\n")
-                f.write(f"OCR,Average Cost per Minute,${ocr['avg_cost_per_minute']:.8f}\n")
-                f.write(f"OCR,Average Cost per Hour,${ocr['avg_cost_per_minute'] * 60:.8f}\n")
-                f.write(f"OCR,Total OCR Cost,${ocr['total_cost']:.8f}\n")
+                f.write(f"OCR,Average Cost per Call,{self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
+                f.write(f"OCR,Average Cost per Minute,{self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}\n")
+                # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
+                cost_per_hour = cost_per_minute_rounded * 60
+                f.write(f"OCR,Average Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
+                f.write(f"OCR,Total OCR Cost,{self._format_currency_for_export(ocr['total_cost'], use_polish_format)}\n")
                 
-                # Translation statistics - match GUI order
+                # Translation statistics - match GUI order with proper cost per hour calculation
                 trans = stats['translation']
                 f.write(f"Translation,Total Translation Calls,{trans['total_calls']}\n")
                 f.write(f"Translation,Total Words Translated,{trans['total_words']}\n")
-                f.write(f"Translation,Average Words per Minute,{trans['words_per_minute']:.2f}\n")
-                f.write(f"Translation,Average Cost per Word,${trans['avg_cost_per_word']:.8f}\n")
-                f.write(f"Translation,Average Cost per Minute,${trans['avg_cost_per_minute']:.8f}\n")
-                f.write(f"Translation,Average Cost per Hour,${trans['avg_cost_per_minute'] * 60:.8f}\n")
-                f.write(f"Translation,Total Translation Cost,${trans['total_cost']:.8f}\n")
+                # Format words per minute with proper decimal separator
+                wpm = trans['words_per_minute']
+                wpm_str = f"{wpm:.2f}"
+                if use_polish_format:
+                    wpm_str = wpm_str.replace('.', ',')
+                f.write(f"Translation,Average Words per Minute,{wpm_str}\n")
+                f.write(f"Translation,Average Cost per Word,{self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
+                f.write(f"Translation,Average Cost per Minute,{self._format_currency_for_export(trans['avg_cost_per_minute'], use_polish_format)}\n")
+                # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
+                cost_per_hour = cost_per_minute_rounded * 60
+                f.write(f"Translation,Average Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
+                f.write(f"Translation,Total Translation Cost,{self._format_currency_for_export(trans['total_cost'], use_polish_format)}\n")
                 
-                # Combined statistics - match GUI order
+                # Combined statistics - match GUI order with proper cost per hour calculation
                 combined = stats['combined']
-                f.write(f"Combined,Total API Cost,${combined['total_cost']:.8f}\n")
-                f.write(f"Combined,Combined Cost per Minute,${combined['combined_cost_per_minute']:.8f}\n")
-                f.write(f"Combined,Combined Cost per Hour,${combined['combined_cost_per_minute'] * 60:.8f}\n")
+                f.write(f"Combined,Total API Cost,{self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
+                f.write(f"Combined,Combined Cost per Minute,{self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}\n")
+                # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
+                cost_per_hour = cost_per_minute_rounded * 60
+                f.write(f"Combined,Combined Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
                 
-                # DeepL section placeholder
-                f.write(f"DeepL,Free Monthly Limit,[Check in application]\n")
+                # DeepL section with actual value
+                deepl_value = deepl_usage if deepl_usage else "N/A"
+                f.write(f"DeepL,Free Monthly Limit,{deepl_value}\n")
             
             log_debug(f"Statistics exported to CSV: {file_path}")
             return True
@@ -336,14 +374,17 @@ class StatisticsHandler:
             log_debug(f"Error exporting statistics to CSV: {e}")
             return False
     
-    def export_statistics_text(self, file_path, ui_lang=None):
-        """Export statistics to text summary format."""
+    def export_statistics_text(self, file_path, ui_lang=None, deepl_usage=None):
+        """Export statistics to text summary format with proper formatting."""
         try:
             stats = self.get_statistics()
             
+            # Determine if Polish formatting should be used
+            use_polish_format = ui_lang and hasattr(ui_lang, 'current_lang') and ui_lang.current_lang == 'pol'
+            
             with open(file_path, 'w', encoding='utf-8') as f:
                 # Use Polish or English based on ui_lang parameter
-                if ui_lang and hasattr(ui_lang, 'current_lang') and ui_lang.current_lang == 'pol':
+                if use_polish_format:
                     f.write("Game-Changing Translator - Statystyki użycia API\n")
                     f.write("=" * 50 + "\n\n")
                     
@@ -352,10 +393,13 @@ class StatisticsHandler:
                     f.write("-" * 25 + "\n")
                     ocr = stats['ocr']
                     f.write(f"Łączne wywołania OCR: {ocr['total_calls']}\n")
-                    f.write(f"Średni koszt na wywołanie: ${ocr['avg_cost_per_call']:.8f}\n")
-                    f.write(f"Średni koszt na minutę: ${ocr['avg_cost_per_minute']:.8f}/min\n")
-                    f.write(f"Średni koszt na godzinę: ${ocr['avg_cost_per_minute'] * 60:.8f}/hr\n")
-                    f.write(f"Łączny koszt OCR: ${ocr['total_cost']:.8f}\n\n")
+                    f.write(f"Średni koszt na wywołanie: {self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
+                    f.write(f"Średni koszt na minutę: {self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}/min\n")
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    f.write(f"Średni koszt na godzinę: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/godz.\n")
+                    f.write(f"Łączny koszt OCR: {self._format_currency_for_export(ocr['total_cost'], use_polish_format)}\n\n")
                     
                     # Translation Statistics - match GUI order
                     f.write("🔄 Statystyki tłumaczenia Gemini\n")
@@ -363,24 +407,33 @@ class StatisticsHandler:
                     trans = stats['translation']
                     f.write(f"Łączne wywołania tłumaczenia: {trans['total_calls']}\n")
                     f.write(f"Łącznie słów przetłumaczonych: {trans['total_words']}\n")
-                    f.write(f"Średnia słów na minutę: {trans['words_per_minute']:.2f}\n")
-                    f.write(f"Średni koszt na słowo: ${trans['avg_cost_per_word']:.8f}\n")
-                    f.write(f"Średni koszt na minutę: ${trans['avg_cost_per_minute']:.8f}/min\n")
-                    f.write(f"Średni koszt na godzinę: ${trans['avg_cost_per_minute'] * 60:.8f}/hr\n")
-                    f.write(f"Łączny koszt tłumaczenia: ${trans['total_cost']:.8f}\n\n")
+                    # Format words per minute with proper decimal separator
+                    wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
+                    f.write(f"Średnia słów na minutę: {wpm_str}\n")
+                    f.write(f"Średni koszt na słowo: {self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
+                    f.write(f"Średni koszt na minutę: {self._format_currency_for_export(trans['avg_cost_per_minute'], use_polish_format)}/min\n")
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    f.write(f"Średni koszt na godzinę: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/godz.\n")
+                    f.write(f"Łączny koszt tłumaczenia: {self._format_currency_for_export(trans['total_cost'], use_polish_format)}\n\n")
                     
                     # Combined Statistics - match GUI order
                     f.write("💰 Łączne statystyki API\n")
                     f.write("-" * 25 + "\n")
                     combined = stats['combined']
-                    f.write(f"Łączny koszt API: ${combined['total_cost']:.8f}\n")
-                    f.write(f"Łączny koszt na minutę: ${combined['combined_cost_per_minute']:.8f}/min\n")
-                    f.write(f"Łączny koszt na godzinę: ${combined['combined_cost_per_minute'] * 60:.8f}/hr\n\n")
+                    f.write(f"Łączny koszt API: {self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
+                    f.write(f"Łączny koszt na minutę: {self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}/min\n")
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    f.write(f"Łączny koszt na godzinę: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/godz.\n\n")
                     
-                    # DeepL section placeholder
+                    # DeepL section with actual value
                     f.write("📈 Monitor użycia DeepL\n")
                     f.write("-" * 25 + "\n")
-                    f.write("Darmowy miesięczny limit: [Sprawdź w aplikacji]\n\n")
+                    deepl_value = deepl_usage if deepl_usage else "N/A"
+                    f.write(f"Darmowy miesięczny limit: {deepl_value}\n\n")
                     
                 else:
                     f.write("Game-Changing Translator - API Usage Statistics\n")
@@ -391,10 +444,13 @@ class StatisticsHandler:
                     f.write("-" * 25 + "\n")
                     ocr = stats['ocr']
                     f.write(f"Total OCR Calls: {ocr['total_calls']}\n")
-                    f.write(f"Average Cost per Call: ${ocr['avg_cost_per_call']:.8f}\n")
-                    f.write(f"Average Cost per Minute: ${ocr['avg_cost_per_minute']:.8f}/min\n")
-                    f.write(f"Average Cost per Hour: ${ocr['avg_cost_per_minute'] * 60:.8f}/hr\n")
-                    f.write(f"Total OCR Cost: ${ocr['total_cost']:.8f}\n\n")
+                    f.write(f"Average Cost per Call: {self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
+                    f.write(f"Average Cost per Minute: {self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}/min\n")
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    f.write(f"Average Cost per Hour: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/hr\n")
+                    f.write(f"Total OCR Cost: {self._format_currency_for_export(ocr['total_cost'], use_polish_format)}\n\n")
                     
                     # Translation Statistics - match GUI order
                     f.write("🔄 Gemini Translation Statistics\n")
@@ -403,23 +459,30 @@ class StatisticsHandler:
                     f.write(f"Total Translation Calls: {trans['total_calls']}\n")
                     f.write(f"Total Words Translated: {trans['total_words']}\n")
                     f.write(f"Average Words per Minute: {trans['words_per_minute']:.2f}\n")
-                    f.write(f"Average Cost per Word: ${trans['avg_cost_per_word']:.8f}\n")
-                    f.write(f"Average Cost per Minute: ${trans['avg_cost_per_minute']:.8f}/min\n")
-                    f.write(f"Average Cost per Hour: ${trans['avg_cost_per_minute'] * 60:.8f}/hr\n")
-                    f.write(f"Total Translation Cost: ${trans['total_cost']:.8f}\n\n")
+                    f.write(f"Average Cost per Word: {self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
+                    f.write(f"Average Cost per Minute: {self._format_currency_for_export(trans['avg_cost_per_minute'], use_polish_format)}/min\n")
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    f.write(f"Average Cost per Hour: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/hr\n")
+                    f.write(f"Total Translation Cost: {self._format_currency_for_export(trans['total_cost'], use_polish_format)}\n\n")
                     
                     # Combined Statistics - match GUI order
                     f.write("💰 Combined API Statistics\n")
                     f.write("-" * 25 + "\n")
                     combined = stats['combined']
-                    f.write(f"Total API Cost: ${combined['total_cost']:.8f}\n")
-                    f.write(f"Combined Cost per Minute: ${combined['combined_cost_per_minute']:.8f}/min\n")
-                    f.write(f"Combined Cost per Hour: ${combined['combined_cost_per_minute'] * 60:.8f}/hr\n\n")
+                    f.write(f"Total API Cost: {self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
+                    f.write(f"Combined Cost per Minute: {self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}/min\n")
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    f.write(f"Combined Cost per Hour: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/hr\n\n")
                     
-                    # DeepL section placeholder
+                    # DeepL section with actual value
                     f.write("📈 DeepL Usage Monitor\n")
                     f.write("-" * 25 + "\n")
-                    f.write("Free Monthly Limit: [Check in application]\n\n")
+                    deepl_value = deepl_usage if deepl_usage else "N/A"
+                    f.write(f"Free Monthly Limit: {deepl_value}\n\n")
                 
                 f.write(f"Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             
