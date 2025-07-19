@@ -25,11 +25,16 @@ class TranslationHandler:
         # Add thread lock for atomic logging to prevent interleaved logs
         self._log_lock = threading.Lock()
         
-        # Initialize session counters
+        # Initialize session counters - will be set by reading existing logs
         self.ocr_session_counter = 1
         self.translation_session_counter = 1
         self.current_ocr_session_active = False
         self.current_translation_session_active = False
+        
+        # Track pending API calls to ensure session ends only after all calls complete
+        self._pending_ocr_calls = 0
+        self._pending_translation_calls = 0
+        self._api_calls_lock = threading.Lock()
         
         # Initialize Gemini API call log file path
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -44,6 +49,10 @@ class TranslationHandler:
         
         # Initialize Gemini API call log file
         self._initialize_gemini_log()
+        
+        # Initialize session counters by reading existing logs
+        self._initialize_session_counters()
+        
         log_debug("Translation handler initialized with unified cache")
     
     def _google_translate(self, text_to_translate_gt, source_lang_gt, target_lang_gt):
@@ -302,6 +311,80 @@ Purpose: Concise translation call results and statistics
         except Exception as e:
             log_debug(f"Error initializing Gemini API logs: {e}")
 
+    def _initialize_session_counters(self):
+        """Initialize session counters by reading existing logs to find the highest session number."""
+        try:
+            # Read OCR log to find highest OCR session number
+            highest_ocr_session = 0
+            if os.path.exists(self.ocr_short_log_file):
+                with open(self.ocr_short_log_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith("SESSION ") and " STARTED " in line:
+                            try:
+                                # Extract session number from "SESSION X STARTED"
+                                session_num = int(line.split()[1])
+                                highest_ocr_session = max(highest_ocr_session, session_num)
+                            except (IndexError, ValueError):
+                                continue
+            
+            # Read Translation log to find highest translation session number
+            highest_translation_session = 0
+            if os.path.exists(self.tra_short_log_file):
+                with open(self.tra_short_log_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith("SESSION ") and " STARTED " in line:
+                            try:
+                                # Extract session number from "SESSION X STARTED"
+                                session_num = int(line.split()[1])
+                                highest_translation_session = max(highest_translation_session, session_num)
+                            except (IndexError, ValueError):
+                                continue
+            
+            # Set counters to highest found + 1 (for next session)
+            self.ocr_session_counter = highest_ocr_session + 1
+            self.translation_session_counter = highest_translation_session + 1
+            
+            log_debug(f"Initialized session counters: OCR={self.ocr_session_counter}, Translation={self.translation_session_counter}")
+            
+        except Exception as e:
+            log_debug(f"Error initializing session counters: {e}, using defaults")
+            # Fall back to 1 if there's any error
+            self.ocr_session_counter = 1
+            self.translation_session_counter = 1
+
+    def _increment_pending_ocr_calls(self):
+        """Increment the count of pending OCR calls."""
+        with self._api_calls_lock:
+            self._pending_ocr_calls += 1
+
+    def _decrement_pending_ocr_calls(self):
+        """Decrement the count of pending OCR calls and try to end session if ready."""
+        with self._api_calls_lock:
+            self._pending_ocr_calls = max(0, self._pending_ocr_calls - 1)
+            # Try to end session if it was requested and no pending calls remain
+            if self._pending_ocr_calls == 0 and hasattr(self, '_ocr_session_should_end') and self._ocr_session_should_end:
+                # Schedule session end outside the lock to avoid potential deadlock
+                self.try_end_sessions_when_ready()
+
+    def _increment_pending_translation_calls(self):
+        """Increment the count of pending translation calls."""
+        with self._api_calls_lock:
+            self._pending_translation_calls += 1
+
+    def _decrement_pending_translation_calls(self):
+        """Decrement the count of pending translation calls and try to end session if ready."""
+        with self._api_calls_lock:
+            self._pending_translation_calls = max(0, self._pending_translation_calls - 1)
+            # Try to end session if it was requested and no pending calls remain
+            if self._pending_translation_calls == 0 and hasattr(self, '_translation_session_should_end') and self._translation_session_should_end:
+                # Schedule session end outside the lock to avoid potential deadlock
+                self.try_end_sessions_when_ready()
+
+    def _has_pending_calls(self):
+        """Check if there are any pending API calls."""
+        with self._api_calls_lock:
+            return self._pending_ocr_calls > 0 or self._pending_translation_calls > 0
+
     def start_ocr_session(self):
         """Start a new OCR session with numbered identifier."""
         if not self.current_ocr_session_active:
@@ -315,8 +398,13 @@ Purpose: Concise translation call results and statistics
                 log_debug(f"Error starting OCR session: {e}")
 
     def end_ocr_session(self):
-        """End the current OCR session."""
+        """End the current OCR session only if no pending OCR calls."""
         if self.current_ocr_session_active:
+            # Wait for any pending OCR calls to complete before ending session
+            if self._pending_ocr_calls > 0:
+                log_debug(f"OCR session end delayed: {self._pending_ocr_calls} pending calls")
+                return False  # Session not ended yet
+            
             timestamp = self._get_precise_timestamp()
             try:
                 with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
@@ -324,8 +412,11 @@ Purpose: Concise translation call results and statistics
                 self.current_ocr_session_active = False
                 self.ocr_session_counter += 1
                 log_debug(f"OCR Session {self.ocr_session_counter - 1} ended")
+                return True  # Session ended successfully
             except Exception as e:
                 log_debug(f"Error ending OCR session: {e}")
+                return False
+        return True  # Already inactive
 
     def start_translation_session(self):
         """Start a new translation session with numbered identifier."""
@@ -340,8 +431,13 @@ Purpose: Concise translation call results and statistics
                 log_debug(f"Error starting translation session: {e}")
 
     def end_translation_session(self):
-        """End the current translation session."""
+        """End the current translation session only if no pending translation calls."""
         if self.current_translation_session_active:
+            # Wait for any pending translation calls to complete before ending session
+            if self._pending_translation_calls > 0:
+                log_debug(f"Translation session end delayed: {self._pending_translation_calls} pending calls")
+                return False  # Session not ended yet
+            
             timestamp = self._get_precise_timestamp()
             try:
                 with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
@@ -349,13 +445,87 @@ Purpose: Concise translation call results and statistics
                 self.current_translation_session_active = False
                 self.translation_session_counter += 1
                 log_debug(f"Translation Session {self.translation_session_counter - 1} ended")
+                return True  # Session ended successfully
             except Exception as e:
                 log_debug(f"Error ending translation session: {e}")
+                return False
+        return True  # Already inactive
+
+    def try_end_sessions_when_ready(self):
+        """Try to end sessions if they're marked for ending and no pending calls remain."""
+        sessions_ended = []
+        
+        # Try to end OCR session if it should be ended
+        if hasattr(self, '_ocr_session_should_end') and self._ocr_session_should_end:
+            if self.end_ocr_session():
+                self._ocr_session_should_end = False
+                sessions_ended.append("OCR")
+        
+        # Try to end translation session if it should be ended
+        if hasattr(self, '_translation_session_should_end') and self._translation_session_should_end:
+            if self.end_translation_session():
+                self._translation_session_should_end = False
+                sessions_ended.append("Translation")
+        
+        if sessions_ended:
+            log_debug(f"Successfully ended pending sessions: {', '.join(sessions_ended)}")
+        
+        return len(sessions_ended) > 0
+
+    def request_end_ocr_session(self):
+        """Request to end OCR session - will end when no pending calls remain."""
+        if self.current_ocr_session_active:
+            if self._pending_ocr_calls == 0:
+                # Can end immediately
+                return self.end_ocr_session()
+            else:
+                # Mark for ending when calls complete
+                self._ocr_session_should_end = True
+                log_debug(f"OCR session end requested, waiting for {self._pending_ocr_calls} pending calls")
+                return False
+        return True
+
+    def request_end_translation_session(self):
+        """Request to end translation session - will end when no pending calls remain."""
+        if self.current_translation_session_active:
+            if self._pending_translation_calls == 0:
+                # Can end immediately
+                return self.end_translation_session()
+            else:
+                # Mark for ending when calls complete
+                self._translation_session_should_end = True
+                log_debug(f"Translation session end requested, waiting for {self._pending_translation_calls} pending calls")
+                return False
+        return True
 
     def force_end_sessions_on_app_close(self):
-        """End both sessions when application is closing."""
-        self.end_ocr_session()
-        self.end_translation_session()
+        """Force end both sessions when application is closing, even if there are pending calls."""
+        timestamp = self._get_precise_timestamp()
+        
+        # Force end OCR session
+        if self.current_ocr_session_active:
+            try:
+                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp} (FORCED - APP CLOSING)\n")
+                self.current_ocr_session_active = False
+                log_debug(f"OCR Session {self.ocr_session_counter} force ended (app closing)")
+            except Exception as e:
+                log_debug(f"Error force ending OCR session: {e}")
+        
+        # Force end translation session
+        if self.current_translation_session_active:
+            try:
+                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp} (FORCED - APP CLOSING)\n")
+                self.current_translation_session_active = False
+                log_debug(f"Translation Session {self.translation_session_counter} force ended (app closing)")
+            except Exception as e:
+                log_debug(f"Error force ending translation session: {e}")
+        
+        # Reset pending call counters
+        with self._api_calls_lock:
+            self._pending_ocr_calls = 0
+            self._pending_translation_calls = 0
 
     def _log_gemini_api_call(self, message_content, source_lang, target_lang, text_to_translate):
         """Deprecated - replaced by _log_complete_gemini_translation_call for atomic logging."""
@@ -617,11 +787,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         """Gemini API call with simplified message format (no system instructions)."""
         log_debug(f"Gemini translate request for: {text_to_translate_gm}")
         
-        api_key_gemini = self.app.gemini_api_key_var.get().strip()
-        if not api_key_gemini:
-            return "Gemini API key missing"
+        # Track pending call
+        self._increment_pending_translation_calls()
         
         try:
+            api_key_gemini = self.app.gemini_api_key_var.get().strip()
+            if not api_key_gemini:
+                return "Gemini API key missing"
+            
             import google.generativeai as genai
             
             # Check if we need to create a new model (minimal conditions)
@@ -760,6 +933,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         except Exception as e_gm:
             log_debug(f"Gemini API error: {type(e_gm).__name__} - {str(e_gm)}")
             return f"Gemini API error: {str(e_gm)}"
+        finally:
+            # Always decrement pending call counter
+            self._decrement_pending_translation_calls()
 
     def _initialize_gemini_session(self, source_lang, target_lang):
         """Initialize new Gemini chat session without system instructions."""
@@ -1067,11 +1243,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         """Simple OCR-only call to Gemini API for extracting text from images."""
         log_debug(f"Gemini OCR request for source language: {source_lang}")
         
-        api_key_gemini = self.app.gemini_api_key_var.get().strip()
-        if not api_key_gemini:
-            return "<ERROR>: Gemini API key missing"
+        # Track pending call
+        self._increment_pending_ocr_calls()
         
         try:
+            api_key_gemini = self.app.gemini_api_key_var.get().strip()
+            if not api_key_gemini:
+                return "<ERROR>: Gemini API key missing"
             import google.generativeai as genai
             
             # Configure Gemini API
@@ -1173,6 +1351,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         except Exception as e:
             log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
             return "<EMPTY>"
+        finally:
+            # Always decrement pending call counter
+            self._decrement_pending_ocr_calls()
     
     def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang):
         """Log complete Gemini OCR API call with atomic writing and cumulative totals."""
@@ -1333,7 +1514,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                     import deepl
                     self.app.deepl_api_client = deepl.Translator(self.app.deepl_api_key_var.get().strip())
                 except Exception as e: return f"DeepL Client init error: {e}"
-            
+                return f"DeepL Client init error: {e}"
             source_lang = self.app.deepl_source_lang 
             target_lang = self.app.deepl_target_lang
             extra_params = {"model_type": self.app.deepl_model_type_var.get()}

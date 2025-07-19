@@ -563,7 +563,7 @@ For more information, see the user manual."""
             # End OCR session if switching away from Gemini and translation is running
             if (hasattr(self, 'translation_handler') and self.is_running and 
                 self.get_ocr_model_setting() != 'gemini'):
-                self.translation_handler.end_ocr_session()
+                self.translation_handler.request_end_ocr_session()
             
             # Start OCR session if switching to Gemini and translation is running
             if (hasattr(self, 'translation_handler') and self.is_running and 
@@ -817,7 +817,7 @@ For more information, see the user manual."""
             
             # End translation session if switching away from Gemini
             if current_model != 'gemini_api':
-                self.translation_handler.end_translation_session()
+                self.translation_handler.request_end_translation_session()
             
             # Start translation session if switching to Gemini
             if current_model == 'gemini_api':
@@ -1427,8 +1427,8 @@ For more information, see the user manual."""
             
             # End sessions if they are active
             if hasattr(self, 'translation_handler'):
-                self.translation_handler.end_ocr_session()
-                self.translation_handler.end_translation_session()
+                self.translation_handler.request_end_ocr_session()
+                self.translation_handler.request_end_translation_session()
             
             # Clear Gemini context when translation is stopped
             if (hasattr(self, 'translation_handler') and 
