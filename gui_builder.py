@@ -532,13 +532,6 @@ def create_settings_tab(app):
     # Store the options for later use when updating language
     app.deepl_model_options = deepl_model_options
 
-    # DeepL Usage Display (only visible when DeepL is selected)
-    app.deepl_usage_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
-    app.deepl_usage_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
-    app.deepl_usage_var = tk.StringVar(value=app.ui_lang.get_label("deepl_usage_loading", "Loading..."))
-    app.deepl_usage_entry = ttk.Entry(frame, textvariable=app.deepl_usage_var, width=40, state='readonly')
-    app.deepl_usage_entry.grid(row=11, column=1, padx=5, pady=5, sticky="ew")
-    
     # Function to update DeepL model type options when language changes
     def update_deepl_model_type_for_language():
         if hasattr(app, 'deepl_model_type_combobox') and app.deepl_model_type_combobox.winfo_exists():
@@ -654,19 +647,19 @@ def create_settings_tab(app):
     app.update_deepl_usage_for_language = update_deepl_usage_for_language
 
     app.models_file_label = ttk.Label(frame, text=app.ui_lang.get_label("models_file_label")) 
-    app.models_file_label.grid(row=12, column=0, padx=5, pady=5, sticky="w")
+    app.models_file_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
     app.models_file_frame = ttk.Frame(frame)
-    app.models_file_frame.grid(row=12, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+    app.models_file_frame.grid(row=11, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
     app.models_file_entry = ttk.Entry(app.models_file_frame, textvariable=app.models_file_var)
     app.models_file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
     app.models_file_button = ttk.Button(app.models_file_frame, text=app.ui_lang.get_label("browse_btn"), command=app.browse_marian_models_file)
     app.models_file_button.pack(side=tk.RIGHT, padx=(5,0))
 
     app.beam_size_label = ttk.Label(frame, text=app.ui_lang.get_label("beam_size_label")) 
-    app.beam_size_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
+    app.beam_size_label.grid(row=12, column=0, padx=5, pady=5, sticky="w")
     app.beam_spinbox = ttk.Spinbox(frame, from_=1, to=50, textvariable=app.num_beams_var, width=10,
                                   validate="key", validatecommand=(validate_beam_size, '%P'))
-    app.beam_spinbox.grid(row=13, column=1, padx=5, pady=5, sticky="w")
+    app.beam_spinbox.grid(row=12, column=1, padx=5, pady=5, sticky="w")
     def on_beam_spinbox_focus_out(event):
         try:
             value = int(app.num_beams_var.get())
@@ -678,7 +671,7 @@ def create_settings_tab(app):
     app.beam_spinbox.bind("<FocusOut>", on_beam_spinbox_focus_out)
 
     app.marian_explanation_labels = [] 
-    row_offset = 16  # Adjusted from 11 to account for new OCR model selection (row 1) and updated Gemini/DeepL sections
+    row_offset = 15  # Adjusted from 16 to account for removed DeepL usage display
     if app.MARIANMT_AVAILABLE:
         texts = [
             app.ui_lang.get_label("marian_beam_explanation", "Higher beam values = better but slower translations"),
@@ -965,6 +958,150 @@ def create_settings_tab(app):
     app.settings_tab_save_button = save_settings_button
     
     frame.columnconfigure(1, weight=1)
+
+def create_api_usage_tab(app):
+    """Create the API Usage tab with statistics display and DeepL usage tracker."""
+    # Create a scrollable tab content frame
+    scrollable_content = create_scrollable_tab(app.tab_control, app.ui_lang.get_label("api_usage_tab_title"))
+    app.tab_api_usage = scrollable_content
+    
+    # Create the API usage frame inside the scrollable area
+    frame = ttk.LabelFrame(scrollable_content, text=app.ui_lang.get_label("api_usage_tab_title"))
+    frame.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    current_row = 0
+    
+    # OCR Statistics Section
+    ocr_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_ocr"))
+    ocr_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    # OCR statistics labels and values
+    ocr_stats = [
+        ("api_usage_total_ocr_cost", "Total OCR Cost:"),
+        ("api_usage_total_ocr_calls", "Total OCR Calls:"),
+        ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
+        ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
+        ("api_usage_avg_cost_per_hour", "Average Cost per Hour:")
+    ]
+    
+    app.ocr_stat_labels = {}
+    app.ocr_stat_vars = {}
+    
+    for i, (label_key, fallback_text) in enumerate(ocr_stats):
+        # Create label
+        label = ttk.Label(ocr_section, text=app.ui_lang.get_label(label_key, fallback_text))
+        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
+        app.ocr_stat_labels[label_key] = label
+        
+        # Create value variable and display
+        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
+        value_label = ttk.Label(ocr_section, textvariable=var, foreground="blue")
+        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
+        app.ocr_stat_vars[label_key] = var
+    
+    current_row += 1
+    
+    # Translation Statistics Section
+    translation_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_translation"))
+    translation_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    # Translation statistics labels and values
+    translation_stats = [
+        ("api_usage_total_translation_cost", "Total Translation Cost:"),
+        ("api_usage_total_words_translated", "Total Words Translated:"),
+        ("api_usage_total_translation_calls", "Total Translation Calls:"),
+        ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
+        ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
+        ("api_usage_words_per_minute", "Average Words per Minute:")
+    ]
+    
+    app.translation_stat_labels = {}
+    app.translation_stat_vars = {}
+    
+    for i, (label_key, fallback_text) in enumerate(translation_stats):
+        # Create label
+        label = ttk.Label(translation_section, text=app.ui_lang.get_label(label_key, fallback_text))
+        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
+        app.translation_stat_labels[label_key] = label
+        
+        # Create value variable and display
+        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
+        value_label = ttk.Label(translation_section, textvariable=var, foreground="blue")
+        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
+        app.translation_stat_vars[label_key] = var
+    
+    current_row += 1
+    
+    # Combined Statistics Section
+    combined_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_combined"))
+    combined_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    # Combined statistics labels and values
+    combined_stats = [
+        ("api_usage_total_api_cost", "Total API Cost:"),
+        ("api_usage_combined_cost_per_minute", "Combined Cost per Minute:"),
+        ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:")
+    ]
+    
+    app.combined_stat_labels = {}
+    app.combined_stat_vars = {}
+    
+    for i, (label_key, fallback_text) in enumerate(combined_stats):
+        # Create label
+        label = ttk.Label(combined_section, text=app.ui_lang.get_label(label_key, fallback_text))
+        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
+        app.combined_stat_labels[label_key] = label
+        
+        # Create value variable and display
+        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
+        value_label = ttk.Label(combined_section, textvariable=var, foreground="blue")
+        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
+        app.combined_stat_vars[label_key] = var
+    
+    current_row += 1
+    
+    # DeepL Usage Tracker Section (moved from Settings tab)
+    deepl_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_deepl"))
+    deepl_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    # DeepL usage display (moved from settings tab)
+    app.deepl_usage_label = ttk.Label(deepl_section, text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
+    app.deepl_usage_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_usage_var = tk.StringVar(value=app.ui_lang.get_label("deepl_usage_loading", "Loading..."))
+    app.deepl_usage_entry = ttk.Entry(deepl_section, textvariable=app.deepl_usage_var, width=50, state='readonly')
+    app.deepl_usage_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+    
+    current_row += 1
+    
+    # Action Buttons Section
+    button_frame = ttk.Frame(frame)
+    button_frame.grid(row=current_row, column=0, columnspan=2, padx=5, pady=10, sticky="ew")
+    
+    # Refresh Statistics button
+    app.refresh_stats_button = ttk.Button(button_frame, 
+                                        text=app.ui_lang.get_label("api_usage_refresh_btn", "Refresh Statistics"),
+                                        command=app.refresh_api_statistics)
+    app.refresh_stats_button.pack(side=tk.LEFT, padx=5)
+    
+    # Export to CSV button
+    app.export_csv_button = ttk.Button(button_frame,
+                                     text=app.ui_lang.get_label("api_usage_export_csv_btn", "Export to CSV"),
+                                     command=app.export_statistics_csv)
+    app.export_csv_button.pack(side=tk.LEFT, padx=5)
+    
+    # Export to Text button
+    app.export_text_button = ttk.Button(button_frame,
+                                      text=app.ui_lang.get_label("api_usage_export_text_btn", "Export to Text"),
+                                      command=app.export_statistics_text)
+    app.export_text_button.pack(side=tk.LEFT, padx=5)
+    
+    # Make the columns expandable
+    frame.columnconfigure(0, weight=1)
+    frame.columnconfigure(1, weight=1)
+    ocr_section.columnconfigure(1, weight=1)
+    translation_section.columnconfigure(1, weight=1)
+    combined_section.columnconfigure(1, weight=1)
+    deepl_section.columnconfigure(1, weight=1)
 
 def create_debug_tab(app):
     # Create a scrollable tab content frame
