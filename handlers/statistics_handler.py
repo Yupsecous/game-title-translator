@@ -295,36 +295,39 @@ class StatisticsHandler:
         }
     
     def export_statistics_csv(self, file_path):
-        """Export statistics to CSV format."""
+        """Export statistics to CSV format - matching GUI order."""
         try:
             stats = self.get_statistics()
             
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write("Category,Metric,Value\n")
                 
-                # OCR statistics
+                # OCR statistics - match GUI order
                 ocr = stats['ocr']
-                f.write(f"OCR,Total Cost,${ocr['total_cost']:.8f}\n")
-                f.write(f"OCR,Total Calls,{ocr['total_calls']}\n")
+                f.write(f"OCR,Total OCR Calls,{ocr['total_calls']}\n")
                 f.write(f"OCR,Average Cost per Call,${ocr['avg_cost_per_call']:.8f}\n")
                 f.write(f"OCR,Average Cost per Minute,${ocr['avg_cost_per_minute']:.8f}\n")
-                f.write(f"OCR,Average Cost per Hour,${ocr['avg_cost_per_hour']:.8f}\n")
+                f.write(f"OCR,Average Cost per Hour,${ocr['avg_cost_per_minute'] * 60:.8f}\n")
+                f.write(f"OCR,Total OCR Cost,${ocr['total_cost']:.8f}\n")
                 
-                # Translation statistics
+                # Translation statistics - match GUI order
                 trans = stats['translation']
-                f.write(f"Translation,Total Cost,${trans['total_cost']:.8f}\n")
-                f.write(f"Translation,Total Calls,{trans['total_calls']}\n")
-                f.write(f"Translation,Total Words,{trans['total_words']}\n")
+                f.write(f"Translation,Total Translation Calls,{trans['total_calls']}\n")
+                f.write(f"Translation,Total Words Translated,{trans['total_words']}\n")
+                f.write(f"Translation,Average Words per Minute,{trans['words_per_minute']:.2f}\n")
                 f.write(f"Translation,Average Cost per Word,${trans['avg_cost_per_word']:.8f}\n")
                 f.write(f"Translation,Average Cost per Minute,${trans['avg_cost_per_minute']:.8f}\n")
-                f.write(f"Translation,Average Cost per Hour,${trans['avg_cost_per_hour']:.8f}\n")
-                f.write(f"Translation,Words per Minute,{trans['words_per_minute']:.2f}\n")
+                f.write(f"Translation,Average Cost per Hour,${trans['avg_cost_per_minute'] * 60:.8f}\n")
+                f.write(f"Translation,Total Translation Cost,${trans['total_cost']:.8f}\n")
                 
-                # Combined statistics
+                # Combined statistics - match GUI order
                 combined = stats['combined']
-                f.write(f"Combined,Total Cost,${combined['total_cost']:.8f}\n")
+                f.write(f"Combined,Total API Cost,${combined['total_cost']:.8f}\n")
                 f.write(f"Combined,Combined Cost per Minute,${combined['combined_cost_per_minute']:.8f}\n")
-                f.write(f"Combined,Combined Cost per Hour,${combined['combined_cost_per_hour']:.8f}\n")
+                f.write(f"Combined,Combined Cost per Hour,${combined['combined_cost_per_minute'] * 60:.8f}\n")
+                
+                # DeepL section placeholder
+                f.write(f"DeepL,Free Monthly Limit,[Check in application]\n")
             
             log_debug(f"Statistics exported to CSV: {file_path}")
             return True
@@ -333,44 +336,90 @@ class StatisticsHandler:
             log_debug(f"Error exporting statistics to CSV: {e}")
             return False
     
-    def export_statistics_text(self, file_path):
+    def export_statistics_text(self, file_path, ui_lang=None):
         """Export statistics to text summary format."""
         try:
             stats = self.get_statistics()
             
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write("Game-Changing Translator - API Usage Statistics\n")
-                f.write("=" * 50 + "\n\n")
-                
-                # OCR Statistics
-                f.write("📊 Gemini OCR Statistics\n")
-                f.write("-" * 25 + "\n")
-                ocr = stats['ocr']
-                f.write(f"Total OCR Cost: ${ocr['total_cost']:.8f}\n")
-                f.write(f"Total OCR Calls: {ocr['total_calls']}\n")
-                f.write(f"Average Cost per Call: ${ocr['avg_cost_per_call']:.8f}\n")
-                f.write(f"Average Cost per Minute: ${ocr['avg_cost_per_minute']:.8f}/min\n")
-                f.write(f"Average Cost per Hour: ${ocr['avg_cost_per_hour']:.8f}/hr\n\n")
-                
-                # Translation Statistics
-                f.write("🔄 Gemini Translation Statistics\n")
-                f.write("-" * 30 + "\n")
-                trans = stats['translation']
-                f.write(f"Total Translation Cost: ${trans['total_cost']:.8f}\n")
-                f.write(f"Total Words Translated: {trans['total_words']}\n")
-                f.write(f"Total Translation Calls: {trans['total_calls']}\n")
-                f.write(f"Average Cost per Word: ${trans['avg_cost_per_word']:.8f}\n")
-                f.write(f"Average Cost per Minute: ${trans['avg_cost_per_minute']:.8f}/min\n")
-                f.write(f"Average Cost per Hour: ${trans['avg_cost_per_hour']:.8f}/hr\n")
-                f.write(f"Average Words per Minute: {trans['words_per_minute']:.2f}\n\n")
-                
-                # Combined Statistics
-                f.write("💰 Combined API Statistics\n")
-                f.write("-" * 25 + "\n")
-                combined = stats['combined']
-                f.write(f"Total API Cost: ${combined['total_cost']:.8f}\n")
-                f.write(f"Combined Cost per Minute: ${combined['combined_cost_per_minute']:.8f}/min\n")
-                f.write(f"Combined Cost per Hour: ${combined['combined_cost_per_hour']:.8f}/hr\n\n")
+                # Use Polish or English based on ui_lang parameter
+                if ui_lang and hasattr(ui_lang, 'current_lang') and ui_lang.current_lang == 'pol':
+                    f.write("Game-Changing Translator - Statystyki użycia API\n")
+                    f.write("=" * 50 + "\n\n")
+                    
+                    # OCR Statistics - match GUI order
+                    f.write("📊 Statystyki Gemini OCR\n")
+                    f.write("-" * 25 + "\n")
+                    ocr = stats['ocr']
+                    f.write(f"Łączne wywołania OCR: {ocr['total_calls']}\n")
+                    f.write(f"Średni koszt na wywołanie: ${ocr['avg_cost_per_call']:.8f}\n")
+                    f.write(f"Średni koszt na minutę: ${ocr['avg_cost_per_minute']:.8f}/min\n")
+                    f.write(f"Średni koszt na godzinę: ${ocr['avg_cost_per_minute'] * 60:.8f}/hr\n")
+                    f.write(f"Łączny koszt OCR: ${ocr['total_cost']:.8f}\n\n")
+                    
+                    # Translation Statistics - match GUI order
+                    f.write("🔄 Statystyki tłumaczenia Gemini\n")
+                    f.write("-" * 30 + "\n")
+                    trans = stats['translation']
+                    f.write(f"Łączne wywołania tłumaczenia: {trans['total_calls']}\n")
+                    f.write(f"Łącznie słów przetłumaczonych: {trans['total_words']}\n")
+                    f.write(f"Średnia słów na minutę: {trans['words_per_minute']:.2f}\n")
+                    f.write(f"Średni koszt na słowo: ${trans['avg_cost_per_word']:.8f}\n")
+                    f.write(f"Średni koszt na minutę: ${trans['avg_cost_per_minute']:.8f}/min\n")
+                    f.write(f"Średni koszt na godzinę: ${trans['avg_cost_per_minute'] * 60:.8f}/hr\n")
+                    f.write(f"Łączny koszt tłumaczenia: ${trans['total_cost']:.8f}\n\n")
+                    
+                    # Combined Statistics - match GUI order
+                    f.write("💰 Łączne statystyki API\n")
+                    f.write("-" * 25 + "\n")
+                    combined = stats['combined']
+                    f.write(f"Łączny koszt API: ${combined['total_cost']:.8f}\n")
+                    f.write(f"Łączny koszt na minutę: ${combined['combined_cost_per_minute']:.8f}/min\n")
+                    f.write(f"Łączny koszt na godzinę: ${combined['combined_cost_per_minute'] * 60:.8f}/hr\n\n")
+                    
+                    # DeepL section placeholder
+                    f.write("📈 Monitor użycia DeepL\n")
+                    f.write("-" * 25 + "\n")
+                    f.write("Darmowy miesięczny limit: [Sprawdź w aplikacji]\n\n")
+                    
+                else:
+                    f.write("Game-Changing Translator - API Usage Statistics\n")
+                    f.write("=" * 50 + "\n\n")
+                    
+                    # OCR Statistics - match GUI order
+                    f.write("📊 Gemini OCR Statistics\n")
+                    f.write("-" * 25 + "\n")
+                    ocr = stats['ocr']
+                    f.write(f"Total OCR Calls: {ocr['total_calls']}\n")
+                    f.write(f"Average Cost per Call: ${ocr['avg_cost_per_call']:.8f}\n")
+                    f.write(f"Average Cost per Minute: ${ocr['avg_cost_per_minute']:.8f}/min\n")
+                    f.write(f"Average Cost per Hour: ${ocr['avg_cost_per_minute'] * 60:.8f}/hr\n")
+                    f.write(f"Total OCR Cost: ${ocr['total_cost']:.8f}\n\n")
+                    
+                    # Translation Statistics - match GUI order
+                    f.write("🔄 Gemini Translation Statistics\n")
+                    f.write("-" * 30 + "\n")
+                    trans = stats['translation']
+                    f.write(f"Total Translation Calls: {trans['total_calls']}\n")
+                    f.write(f"Total Words Translated: {trans['total_words']}\n")
+                    f.write(f"Average Words per Minute: {trans['words_per_minute']:.2f}\n")
+                    f.write(f"Average Cost per Word: ${trans['avg_cost_per_word']:.8f}\n")
+                    f.write(f"Average Cost per Minute: ${trans['avg_cost_per_minute']:.8f}/min\n")
+                    f.write(f"Average Cost per Hour: ${trans['avg_cost_per_minute'] * 60:.8f}/hr\n")
+                    f.write(f"Total Translation Cost: ${trans['total_cost']:.8f}\n\n")
+                    
+                    # Combined Statistics - match GUI order
+                    f.write("💰 Combined API Statistics\n")
+                    f.write("-" * 25 + "\n")
+                    combined = stats['combined']
+                    f.write(f"Total API Cost: ${combined['total_cost']:.8f}\n")
+                    f.write(f"Combined Cost per Minute: ${combined['combined_cost_per_minute']:.8f}/min\n")
+                    f.write(f"Combined Cost per Hour: ${combined['combined_cost_per_minute'] * 60:.8f}/hr\n\n")
+                    
+                    # DeepL section placeholder
+                    f.write("📈 DeepL Usage Monitor\n")
+                    f.write("-" * 25 + "\n")
+                    f.write("Free Monthly Limit: [Check in application]\n\n")
                 
                 f.write(f"Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             

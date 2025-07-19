@@ -1109,8 +1109,9 @@ def create_api_usage_tab(app):
     combined_section.columnconfigure(1, weight=1)
     deepl_section.columnconfigure(1, weight=1)
     
-    # Auto-refresh statistics when tab is created
+    # Auto-refresh statistics when tab is created - with a longer delay to ensure GUI is ready
     app.root.after_idle(lambda: app._delayed_api_stats_refresh() if hasattr(app, '_delayed_api_stats_refresh') else None)
+    app.root.after(500, lambda: app.refresh_api_statistics() if hasattr(app, 'refresh_api_statistics') else None)
 
 def create_debug_tab(app):
     # Create a scrollable tab content frame
