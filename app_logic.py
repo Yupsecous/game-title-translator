@@ -504,6 +504,9 @@ For more information, see the user manual."""
                 self.main_tab_start_button.focus_set()
             elif selected_tab_index == 1 and hasattr(self, 'settings_tab_save_button') and self.settings_tab_save_button.winfo_exists():
                 self.settings_tab_save_button.focus_set()
+            elif selected_tab_index == 2 and hasattr(self, 'refresh_api_statistics'):
+                # API Usage tab - refresh statistics when accessed
+                self.root.after(100, self.refresh_api_statistics)
         
         self.tab_control.bind("<<NotebookTabChanged>>", on_tab_changed)
         
@@ -1105,7 +1108,7 @@ For more information, see the user manual."""
                     self.ocr_stat_vars['api_usage_total_ocr_calls'].set(str(ocr['total_calls']))
                     self.ocr_stat_vars['api_usage_avg_cost_per_call'].set(self.format_currency_for_display(ocr['avg_cost_per_call']))
                     self.ocr_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(ocr['avg_cost_per_minute'], "/min"))
-                    self.ocr_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(ocr['avg_cost_per_hour'], "/hr"))
+                    self.ocr_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(ocr['avg_cost_per_minute'] * 60, "/hr"))
                 
                 # Update Translation statistics
                 trans = stats['translation']
@@ -1115,7 +1118,7 @@ For more information, see the user manual."""
                     self.translation_stat_vars['api_usage_total_translation_calls'].set(str(trans['total_calls']))
                     self.translation_stat_vars['api_usage_avg_cost_per_word'].set(self.format_currency_for_display(trans['avg_cost_per_word']))
                     self.translation_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(trans['avg_cost_per_minute'], "/min"))
-                    self.translation_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(trans['avg_cost_per_hour'], "/hr"))
+                    self.translation_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(trans['avg_cost_per_minute'] * 60, "/hr"))
                     
                     # Format words per minute with proper decimal separator
                     wpm_str = f"{trans['words_per_minute']:.2f}"
@@ -1128,7 +1131,7 @@ For more information, see the user manual."""
                 if hasattr(self, 'combined_stat_vars'):
                     self.combined_stat_vars['api_usage_total_api_cost'].set(self.format_currency_for_display(combined['total_cost']))
                     self.combined_stat_vars['api_usage_combined_cost_per_minute'].set(self.format_currency_for_display(combined['combined_cost_per_minute'], "/min"))
-                    self.combined_stat_vars['api_usage_combined_cost_per_hour'].set(self.format_currency_for_display(combined['combined_cost_per_hour'], "/hr"))
+                    self.combined_stat_vars['api_usage_combined_cost_per_hour'].set(self.format_currency_for_display(combined['combined_cost_per_minute'] * 60, "/hr"))
                 
                 log_debug("API statistics refreshed successfully")
             else:
@@ -1142,72 +1145,92 @@ For more information, see the user manual."""
             if hasattr(self, 'statistics_handler'):
                 stats = self.statistics_handler.get_statistics()
                 
-                # Build formatted text similar to the export text format
+                # Build formatted text matching the GUI layout exactly
                 if self.ui_lang.current_lang == 'pol':
                     clipboard_text = "Game-Changing Translator - Statystyki użycia API\n"
                     clipboard_text += "=" * 50 + "\n\n"
                     
-                    # OCR Statistics
+                    # OCR Statistics - match GUI order
                     clipboard_text += "📊 Statystyki Gemini OCR\n"
                     clipboard_text += "-" * 25 + "\n"
                     ocr = stats['ocr']
-                    clipboard_text += f"Łączny koszt OCR: {self.format_currency_for_display(ocr['total_cost'])}\n"
                     clipboard_text += f"Łączne wywołania OCR: {ocr['total_calls']}\n"
                     clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
                     clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(ocr['avg_cost_per_hour'], '/godz.')}\n\n"
+                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(ocr['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    clipboard_text += f"Łączny koszt OCR: {self.format_currency_for_display(ocr['total_cost'])}\n\n"
                     
-                    # Translation Statistics
+                    # Translation Statistics - match GUI order
                     clipboard_text += "🔄 Statystyki tłumaczenia Gemini\n"
                     clipboard_text += "-" * 30 + "\n"
                     trans = stats['translation']
-                    clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(trans['total_cost'])}\n"
-                    clipboard_text += f"Łącznie słów przetłumaczonych: {trans['total_words']}\n"
                     clipboard_text += f"Łączne wywołania tłumaczenia: {trans['total_calls']}\n"
+                    clipboard_text += f"Łącznie słów przetłumaczonych: {trans['total_words']}\n"
+                    wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
+                    clipboard_text += f"Średnia słów na minutę: {wpm_str}\n"
                     clipboard_text += f"Średni koszt na słowo: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
                     clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
-                    wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
-                    clipboard_text += f"Średnia słów na minutę: {wpm_str}\n\n"
+                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(trans['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(trans['total_cost'])}\n\n"
                     
-                    # Combined Statistics
+                    # Combined Statistics - match GUI order
                     clipboard_text += "💰 Łączne statystyki API\n"
                     clipboard_text += "-" * 25 + "\n"
                     combined = stats['combined']
                     clipboard_text += f"Łączny koszt API: {self.format_currency_for_display(combined['total_cost'])}\n"
                     clipboard_text += f"Łączny koszt na minutę: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Łączny koszt na godzinę: {self.format_currency_for_display(combined['combined_cost_per_hour'], '/godz.')}\n"
+                    clipboard_text += f"Łączny koszt na godzinę: {self.format_currency_for_display(combined['combined_cost_per_minute'] * 60, '/hr')}\n\n"
+                    
+                    # DeepL Usage Monitor
+                    clipboard_text += "📈 Monitor użycia DeepL\n"
+                    clipboard_text += "-" * 25 + "\n"
+                    if hasattr(self, 'deepl_usage_var'):
+                        deepl_usage = self.deepl_usage_var.get()
+                        clipboard_text += f"Darmowy miesięczny limit: {deepl_usage}\n"
+                    else:
+                        clipboard_text += "Darmowy miesięczny limit: N/A\n"
                 else:
                     clipboard_text = "Game-Changing Translator - API Usage Statistics\n"
                     clipboard_text += "=" * 50 + "\n\n"
                     
-                    # OCR Statistics
+                    # OCR Statistics - match GUI order
                     clipboard_text += "📊 Gemini OCR Statistics\n"
                     clipboard_text += "-" * 25 + "\n"
                     ocr = stats['ocr']
-                    clipboard_text += f"Total OCR Cost: {self.format_currency_for_display(ocr['total_cost'])}\n"
                     clipboard_text += f"Total OCR Calls: {ocr['total_calls']}\n"
                     clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
                     clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(ocr['avg_cost_per_hour'], '/hr')}\n\n"
+                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(ocr['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    clipboard_text += f"Total OCR Cost: {self.format_currency_for_display(ocr['total_cost'])}\n\n"
                     
-                    # Translation Statistics
+                    # Translation Statistics - match GUI order
                     clipboard_text += "🔄 Gemini Translation Statistics\n"
                     clipboard_text += "-" * 30 + "\n"
                     trans = stats['translation']
-                    clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(trans['total_cost'])}\n"
-                    clipboard_text += f"Total Words Translated: {trans['total_words']}\n"
                     clipboard_text += f"Total Translation Calls: {trans['total_calls']}\n"
+                    clipboard_text += f"Total Words Translated: {trans['total_words']}\n"
+                    clipboard_text += f"Average Words per Minute: {trans['words_per_minute']:.2f}\n"
                     clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
                     clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Average Words per Minute: {trans['words_per_minute']:.2f}\n\n"
+                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(trans['avg_cost_per_minute'] * 60, '/hr')}\n"
+                    clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(trans['total_cost'])}\n\n"
                     
-                    # Combined Statistics
+                    # Combined Statistics - match GUI order
                     clipboard_text += "💰 Combined API Statistics\n"
                     clipboard_text += "-" * 25 + "\n"
                     combined = stats['combined']
                     clipboard_text += f"Total API Cost: {self.format_currency_for_display(combined['total_cost'])}\n"
                     clipboard_text += f"Combined Cost per Minute: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
-                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(combined['combined_cost_per_hour'], '/hr')}\n"
+                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(combined['combined_cost_per_minute'] * 60, '/hr')}\n\n"
+                    
+                    # DeepL Usage Monitor
+                    clipboard_text += "📈 DeepL Usage Monitor\n"
+                    clipboard_text += "-" * 25 + "\n"
+                    if hasattr(self, 'deepl_usage_var'):
+                        deepl_usage = self.deepl_usage_var.get()
+                        clipboard_text += f"Free Monthly Limit: {deepl_usage}\n"
+                    else:
+                        clipboard_text += "Free Monthly Limit: N/A\n"
                 
                 # Copy to clipboard
                 self.root.clipboard_clear()
@@ -1265,7 +1288,7 @@ For more information, see the user manual."""
             )
             
             if file_path and hasattr(self, 'statistics_handler'):
-                success = self.statistics_handler.export_statistics_text(file_path)
+                success = self.statistics_handler.export_statistics_text(file_path, self.ui_lang)
                 if success:
                     messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
                 else:
@@ -2025,6 +2048,9 @@ For more information, see the user manual."""
                     self.main_tab_start_button.focus_set()
                 elif selected_tab_index == 1 and hasattr(self, 'settings_tab_save_button') and self.settings_tab_save_button.winfo_exists():
                     self.settings_tab_save_button.focus_set()
+                elif selected_tab_index == 2 and hasattr(self, 'refresh_api_statistics'):
+                    # API Usage tab - refresh statistics when accessed
+                    self.root.after(100, self.refresh_api_statistics)
             
             self.tab_control.bind("<<NotebookTabChanged>>", on_tab_changed)
             
