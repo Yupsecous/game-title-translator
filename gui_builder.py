@@ -1010,6 +1010,7 @@ def create_api_usage_tab(app):
         ("api_usage_total_words_translated", "Total Words Translated:"),
         ("api_usage_words_per_minute", "Average Words per Minute:"),
         ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
+        ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
         ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
         ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
         ("api_usage_total_translation_cost", "Total Translation Cost:")
