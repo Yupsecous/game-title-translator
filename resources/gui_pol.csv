@@ -144,4 +144,5 @@ api_usage_combined_cost_per_hour,Łączny koszt na godzinę:
 api_usage_refresh_btn,Odśwież statystyki
 api_usage_export_csv_btn,Eksportuj do CSV
 api_usage_export_text_btn,Eksportuj do tekstu
+api_usage_copy_btn,Kopiuj
 api_usage_no_data,Brak dostępnych danych
