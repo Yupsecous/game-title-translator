@@ -1101,6 +1101,50 @@ def create_api_usage_tab(app):
                                      command=app.copy_statistics_to_clipboard)
     app.copy_stats_button.pack(side=tk.LEFT, padx=5)
     
+    current_row += 1
+    
+    # Information Note Section
+    info_frame = ttk.Frame(frame)
+    info_frame.grid(row=current_row, column=0, columnspan=2, padx=5, pady=(10, 5), sticky="ew")
+    
+    # Create informational note about data source using proper localization
+    app.api_usage_info_label = ttk.Label(info_frame, 
+                                        text=app.ui_lang.get_label("api_usage_info_note", 
+                                            "ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared."),
+                                        foreground="gray", 
+                                        justify=tk.LEFT, wraplength=600)
+    app.api_usage_info_label.pack(anchor="w", fill="x", padx=5, pady=2)
+    
+    # Function to update wraplength when window is resized
+    def update_info_label_wraplength(event=None):
+        if hasattr(app, 'api_usage_info_label') and app.api_usage_info_label.winfo_exists():
+            try:
+                # Get the current width of the info_frame and subtract padding
+                frame_width = info_frame.winfo_width()
+                if frame_width > 100:  # Only update if frame has been properly sized
+                    new_wraplength = max(200, frame_width - 20)  # 20px for padding
+                    app.api_usage_info_label.config(wraplength=new_wraplength)
+            except Exception as e:
+                pass  # Ignore errors during resize
+    
+    # Bind the resize function to the info_frame configure event
+    info_frame.bind('<Configure>', update_info_label_wraplength)
+    
+    # Store the function reference for later use
+    app.update_info_label_wraplength = update_info_label_wraplength
+    
+    # Function to update API usage info label when language changes
+    def update_api_usage_info_for_language():
+        if hasattr(app, 'api_usage_info_label') and app.api_usage_info_label.winfo_exists():
+            app.api_usage_info_label.config(text=app.ui_lang.get_label("api_usage_info_note", 
+                "ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared."))
+            # Update wraplength after changing text
+            app.root.after_idle(update_info_label_wraplength)
+        log_debug("Updated API usage info label for language change")
+    
+    # Store function reference for calling during language updates
+    app.update_api_usage_info_for_language = update_api_usage_info_for_language
+    
     # Make the columns expandable
     frame.columnconfigure(0, weight=1)
     frame.columnconfigure(1, weight=1)

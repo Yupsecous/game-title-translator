@@ -78,8 +78,8 @@ choose_color_btn,Wybierz kolor
 debug_tab_title,Debugowanie
 original_image_label,Obraz oryginalny
 processed_image_label,Obraz przetworzony
-ocr_results_label,Wyniki OCR
-ocr_results_placeholder,Wyniki OCR pojawią się tutaj po włączeniu tłumaczenia.
+ocr_results_label,Wyniki OCR programu Tesseract
+ocr_results_placeholder,Wyniki OCR pojawią się tutaj po włączeniu tłumaczenia i wybraniu Tesseract jako modelu OCR.
 app_log_label,Dziennik aplikacji
 save_debug_images_btn,Zapisz obrazy OCR
 refresh_log_btn,Odśwież dziennik
@@ -123,11 +123,11 @@ gemini_reset_log_button,Wyzeruj
 gemini_refresh_stats_button,Odśwież
 deepl_usage_label,Darmowy miesięczny limit
 deepl_usage_loading,Ładowanie...
-api_usage_tab_title,Użycie API
+api_usage_tab_title,Zużycie API
 api_usage_section_ocr,📊 Statystyki Gemini OCR
 api_usage_section_translation,🔄 Statystyki tłumaczenia Gemini
 api_usage_section_combined,💰 Łączne statystyki API
-api_usage_section_deepl,📈 Monitor użycia DeepL
+api_usage_section_deepl,📈 Monitor zużycia DeepL
 api_usage_total_ocr_cost,Łączny koszt OCR:
 api_usage_total_ocr_calls,Łączne wywołania OCR:
 api_usage_avg_cost_per_call,Średni koszt na wywołanie:
@@ -146,3 +146,4 @@ api_usage_export_csv_btn,Eksportuj do CSV
 api_usage_export_text_btn,Eksportuj do tekstu
 api_usage_copy_btn,Kopiuj
 api_usage_no_data,Brak dostępnych danych
+api_usage_info_note,ℹ️ Uwaga: statystyki te są oparte na plikach API_OCR_short_log.txt i API_TRA_short_log.txt. W razie usunięcia lub wyczyszczenia tych plików statystyki zostaną zresetowane.
