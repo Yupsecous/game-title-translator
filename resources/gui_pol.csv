@@ -123,3 +123,25 @@ gemini_reset_log_button,Wyzeruj
 gemini_refresh_stats_button,Odśwież
 deepl_usage_label,Darmowy miesięczny limit
 deepl_usage_loading,Ładowanie...
+api_usage_tab_title,Użycie API
+api_usage_section_ocr,📊 Statystyki Gemini OCR
+api_usage_section_translation,🔄 Statystyki tłumaczenia Gemini
+api_usage_section_combined,💰 Łączne statystyki API
+api_usage_section_deepl,📈 Monitor użycia DeepL
+api_usage_total_ocr_cost,Łączny koszt OCR:
+api_usage_total_ocr_calls,Łączne wywołania OCR:
+api_usage_avg_cost_per_call,Średni koszt na wywołanie:
+api_usage_avg_cost_per_minute,Średni koszt na minutę:
+api_usage_avg_cost_per_hour,Średni koszt na godzinę:
+api_usage_total_translation_cost,Łączny koszt tłumaczenia:
+api_usage_total_words_translated,Łącznie słów przetłumaczonych:
+api_usage_total_translation_calls,Łączne wywołania tłumaczenia:
+api_usage_avg_cost_per_word,Średni koszt na słowo:
+api_usage_words_per_minute,Średnia słów na minutę:
+api_usage_total_api_cost,Łączny koszt API:
+api_usage_combined_cost_per_minute,Łączny koszt na minutę:
+api_usage_combined_cost_per_hour,Łączny koszt na godzinę:
+api_usage_refresh_btn,Odśwież statystyki
+api_usage_export_csv_btn,Eksportuj do CSV
+api_usage_export_text_btn,Eksportuj do tekstu
+api_usage_no_data,Brak dostępnych danych

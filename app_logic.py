@@ -24,7 +24,7 @@ from logger import log_debug, set_debug_logging_enabled, is_debug_logging_enable
 from resource_handler import get_resource_path
 from marian_mt_translator import MarianMTTranslator, MARIANMT_AVAILABLE as MARIANMT_LIB_AVAILABLE
 from config_manager import load_app_config, save_app_config, load_ocr_preview_geometry, save_ocr_preview_geometry
-from gui_builder import create_main_tab, create_settings_tab, create_debug_tab
+from gui_builder import create_main_tab, create_settings_tab, create_api_usage_tab, create_debug_tab
 from ui_elements import create_scrollable_tab
 from overlay_manager import (
     select_source_area_om, select_target_area_om,
@@ -40,6 +40,7 @@ from handlers import (
     ConfigurationHandler, 
     DisplayManager, 
     HotkeyHandler, 
+    StatisticsHandler,
     TranslationHandler, 
     UIInteractionHandler
 )
@@ -264,6 +265,7 @@ class GameChangingTranslator:
         self.configuration_handler = ConfigurationHandler(self)
         self.display_manager = DisplayManager(self)
         self.hotkey_handler = HotkeyHandler(self)
+        self.statistics_handler = StatisticsHandler(self)
         self.translation_handler = TranslationHandler(self)
         self.ui_interaction_handler = UIInteractionHandler(self) # Needs self.translation_model_names
 
@@ -459,6 +461,7 @@ class GameChangingTranslator:
         # Create the main tabs
         create_main_tab(self)
         create_settings_tab(self)
+        create_api_usage_tab(self)
         create_debug_tab(self)
         
         # Create About tab with scrollable content
@@ -530,6 +533,73 @@ For more information, see the user manual."""
                 self.root.after_idle(lambda: self._delayed_gemini_stats_update())
             elif selected_model == 'deepl_api':
                 self.root.after_idle(lambda: self._delayed_deepl_usage_update())
+        
+        # Refresh API statistics for the new API Usage tab
+        self.root.after_idle(lambda: self._delayed_api_stats_refresh())
+
+    def _delayed_api_stats_refresh(self):
+        """Delayed API statistics refresh to ensure GUI is fully ready."""
+        try:
+            self.refresh_api_statistics()
+        except Exception as e:
+            log_debug(f"Error in delayed API statistics refresh: {e}")
+
+    def update_api_usage_tab_for_language(self):
+        """Update API Usage tab labels when language changes."""
+        try:
+            # Update section labels
+            if hasattr(self, 'tab_api_usage'):
+                # Refresh the entire tab content since section labels are hard to update individually
+                # The next time the user clicks on the tab, the labels will be updated
+                log_debug("API Usage tab language update requested - will update on next tab access")
+            
+            # Update button labels if they exist
+            if hasattr(self, 'refresh_stats_button') and self.refresh_stats_button.winfo_exists():
+                self.refresh_stats_button.config(text=self.ui_lang.get_label("api_usage_refresh_btn", "Refresh Statistics"))
+            if hasattr(self, 'export_csv_button') and self.export_csv_button.winfo_exists():
+                self.export_csv_button.config(text=self.ui_lang.get_label("api_usage_export_csv_btn", "Export to CSV"))
+            if hasattr(self, 'export_text_button') and self.export_text_button.winfo_exists():
+                self.export_text_button.config(text=self.ui_lang.get_label("api_usage_export_text_btn", "Export to Text"))
+            
+            # Update statistic labels if they exist
+            if hasattr(self, 'ocr_stat_labels'):
+                ocr_labels = [
+                    ("api_usage_total_ocr_cost", "Total OCR Cost:"),
+                    ("api_usage_total_ocr_calls", "Total OCR Calls:"),
+                    ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
+                    ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
+                    ("api_usage_avg_cost_per_hour", "Average Cost per Hour:")
+                ]
+                for label_key, fallback_text in ocr_labels:
+                    if label_key in self.ocr_stat_labels and self.ocr_stat_labels[label_key].winfo_exists():
+                        self.ocr_stat_labels[label_key].config(text=self.ui_lang.get_label(label_key, fallback_text))
+            
+            if hasattr(self, 'translation_stat_labels'):
+                translation_labels = [
+                    ("api_usage_total_translation_cost", "Total Translation Cost:"),
+                    ("api_usage_total_words_translated", "Total Words Translated:"),
+                    ("api_usage_total_translation_calls", "Total Translation Calls:"),
+                    ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
+                    ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
+                    ("api_usage_words_per_minute", "Average Words per Minute:")
+                ]
+                for label_key, fallback_text in translation_labels:
+                    if label_key in self.translation_stat_labels and self.translation_stat_labels[label_key].winfo_exists():
+                        self.translation_stat_labels[label_key].config(text=self.ui_lang.get_label(label_key, fallback_text))
+            
+            if hasattr(self, 'combined_stat_labels'):
+                combined_labels = [
+                    ("api_usage_total_api_cost", "Total API Cost:"),
+                    ("api_usage_combined_cost_per_minute", "Combined Cost per Minute:"),
+                    ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:")
+                ]
+                for label_key, fallback_text in combined_labels:
+                    if label_key in self.combined_stat_labels and self.combined_stat_labels[label_key].winfo_exists():
+                        self.combined_stat_labels[label_key].config(text=self.ui_lang.get_label(label_key, fallback_text))
+            
+            log_debug("Updated API Usage tab labels for language change")
+        except Exception as e:
+            log_debug(f"Error updating API Usage tab for language change: {e}")
 
     def ensure_window_visible(self):
         """Ensure the main window is visible after all initialization is complete."""
@@ -982,6 +1052,90 @@ For more information, see the user manual."""
             self.update_deepl_usage()
         except Exception as e:
             log_debug(f"Error in delayed DeepL usage update: {e}")
+
+    def refresh_api_statistics(self):
+        """Refresh and update API usage statistics display."""
+        try:
+            if hasattr(self, 'statistics_handler'):
+                stats = self.statistics_handler.get_statistics()
+                
+                # Update OCR statistics
+                ocr = stats['ocr']
+                if hasattr(self, 'ocr_stat_vars'):
+                    self.ocr_stat_vars['api_usage_total_ocr_cost'].set(f"${ocr['total_cost']:.8f}")
+                    self.ocr_stat_vars['api_usage_total_ocr_calls'].set(str(ocr['total_calls']))
+                    self.ocr_stat_vars['api_usage_avg_cost_per_call'].set(f"${ocr['avg_cost_per_call']:.8f}")
+                    self.ocr_stat_vars['api_usage_avg_cost_per_minute'].set(f"${ocr['avg_cost_per_minute']:.8f}/min")
+                    self.ocr_stat_vars['api_usage_avg_cost_per_hour'].set(f"${ocr['avg_cost_per_hour']:.8f}/hr")
+                
+                # Update Translation statistics
+                trans = stats['translation']
+                if hasattr(self, 'translation_stat_vars'):
+                    self.translation_stat_vars['api_usage_total_translation_cost'].set(f"${trans['total_cost']:.8f}")
+                    self.translation_stat_vars['api_usage_total_words_translated'].set(str(trans['total_words']))
+                    self.translation_stat_vars['api_usage_total_translation_calls'].set(str(trans['total_calls']))
+                    self.translation_stat_vars['api_usage_avg_cost_per_word'].set(f"${trans['avg_cost_per_word']:.8f}")
+                    self.translation_stat_vars['api_usage_avg_cost_per_minute'].set(f"${trans['avg_cost_per_minute']:.8f}/min")
+                    self.translation_stat_vars['api_usage_words_per_minute'].set(f"{trans['words_per_minute']:.2f}")
+                
+                # Update Combined statistics
+                combined = stats['combined']
+                if hasattr(self, 'combined_stat_vars'):
+                    self.combined_stat_vars['api_usage_total_api_cost'].set(f"${combined['total_cost']:.8f}")
+                    self.combined_stat_vars['api_usage_combined_cost_per_minute'].set(f"${combined['combined_cost_per_minute']:.8f}/min")
+                    self.combined_stat_vars['api_usage_combined_cost_per_hour'].set(f"${combined['combined_cost_per_hour']:.8f}/hr")
+                
+                log_debug("API statistics refreshed successfully")
+            else:
+                log_debug("Statistics handler not available")
+        except Exception as e:
+            log_debug(f"Error refreshing API statistics: {e}")
+    
+    def export_statistics_csv(self):
+        """Export API usage statistics to CSV file."""
+        try:
+            from tkinter import filedialog
+            
+            # Ask user for file location
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+                title="Export Statistics to CSV"
+            )
+            
+            if file_path and hasattr(self, 'statistics_handler'):
+                success = self.statistics_handler.export_statistics_csv(file_path)
+                if success:
+                    messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
+                else:
+                    messagebox.showerror("Export Failed", "Failed to export statistics to CSV.")
+            
+        except Exception as e:
+            log_debug(f"Error exporting statistics to CSV: {e}")
+            messagebox.showerror("Export Error", f"Error exporting statistics: {str(e)}")
+    
+    def export_statistics_text(self):
+        """Export API usage statistics to text file."""
+        try:
+            from tkinter import filedialog
+            
+            # Ask user for file location
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+                title="Export Statistics to Text"
+            )
+            
+            if file_path and hasattr(self, 'statistics_handler'):
+                success = self.statistics_handler.export_statistics_text(file_path)
+                if success:
+                    messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
+                else:
+                    messagebox.showerror("Export Failed", "Failed to export statistics to text.")
+            
+        except Exception as e:
+            log_debug(f"Error exporting statistics to text: {e}")
+            messagebox.showerror("Export Error", f"Error exporting statistics: {str(e)}")
 
     def toggle_debug_logging(self):
         """Toggle debug logging on/off and update button text."""
@@ -1719,6 +1873,10 @@ For more information, see the user manual."""
             # Update DeepL usage labels if they exist
             if hasattr(self, 'update_deepl_usage_for_language'):
                 self.update_deepl_usage_for_language()
+            
+            # Update API Usage tab labels if they exist
+            if hasattr(self, 'update_api_usage_tab_for_language'):
+                self.update_api_usage_tab_for_language()
             
             # Restore the tab change handler for focus behavior
             def on_tab_changed(event):
