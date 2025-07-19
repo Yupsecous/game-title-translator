@@ -54,6 +54,7 @@ a = Analysis(
         'handlers.configuration_handler',
         'handlers.display_manager',
         'handlers.hotkey_handler',
+        'handlers.statistics_handler',
         'handlers.translation_handler',
         'handlers.ui_interaction_handler',
         # Essential GUI libraries
@@ -75,6 +76,7 @@ a = Analysis(
         # Optional but needed dependencies
         'keyboard',
         'google.cloud.translate_v2',
+        'google.generativeai',
         'deepl',
         # Keep torch/transformers/sentencepiece for MarianMT (minimal exclusions)
         'torch',

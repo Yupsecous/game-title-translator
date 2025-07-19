@@ -50,6 +50,7 @@ a = Analysis(
         'handlers.configuration_handler',
         'handlers.display_manager',
         'handlers.hotkey_handler',
+        'handlers.statistics_handler',
         'handlers.translation_handler',
         'handlers.ui_interaction_handler',
         
@@ -75,7 +76,11 @@ a = Analysis(
         # Optional
         'keyboard',
         'google.cloud.translate_v2',
+        'google.generativeai',
         'deepl',
+        
+        # GPU monitoring (Windows)
+        'nvidia_ml_py3',
         
         # PyTorch (CPU + CUDA)
         'torch',
