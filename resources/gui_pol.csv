@@ -137,6 +137,7 @@ api_usage_total_translation_cost,Łączny koszt tłumaczenia:
 api_usage_total_words_translated,Łącznie słów przetłumaczonych:
 api_usage_total_translation_calls,Łączne wywołania tłumaczenia:
 api_usage_avg_cost_per_word,Średni koszt na słowo:
+api_usage_avg_cost_per_call,Średni koszt na wywołanie:
 api_usage_words_per_minute,Średnia słów na minutę:
 api_usage_total_api_cost,Łączny koszt API:
 api_usage_combined_cost_per_minute,Łączny koszt na minutę:

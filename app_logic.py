@@ -588,6 +588,7 @@ For more information, see the user manual."""
                     ("api_usage_total_words_translated", "Total Words Translated:"),
                     ("api_usage_words_per_minute", "Average Words per Minute:"),
                     ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
+                    ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
                     ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
                     ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
                     ("api_usage_total_translation_cost", "Total Translation Cost:")
@@ -1124,6 +1125,7 @@ For more information, see the user manual."""
                     self.translation_stat_vars['api_usage_total_words_translated'].set(str(trans['total_words']))
                     self.translation_stat_vars['api_usage_total_translation_calls'].set(str(trans['total_calls']))
                     self.translation_stat_vars['api_usage_avg_cost_per_word'].set(self.format_currency_for_display(trans['avg_cost_per_word']))
+                    self.translation_stat_vars['api_usage_avg_cost_per_call'].set(self.format_currency_for_display(trans['avg_cost_per_call']))
                     self.translation_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(trans['avg_cost_per_minute'], "/min"))
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
@@ -1185,6 +1187,7 @@ For more information, see the user manual."""
                     wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
                     clipboard_text += f"Średnia słów na minutę: {wpm_str}\n"
                     clipboard_text += f"Średni koszt na słowo: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
+                    clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(trans['avg_cost_per_call'])}\n"
                     clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
@@ -1236,6 +1239,7 @@ For more information, see the user manual."""
                     clipboard_text += f"Total Words Translated: {trans['total_words']}\n"
                     clipboard_text += f"Average Words per Minute: {trans['words_per_minute']:.2f}\n"
                     clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
+                    clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(trans['avg_cost_per_call'])}\n"
                     clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)

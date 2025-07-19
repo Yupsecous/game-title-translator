@@ -238,6 +238,7 @@ class StatisticsHandler:
         
         # Calculate derived statistics
         avg_cost_per_word = total_cost / total_words if total_words > 0 else 0.0
+        avg_cost_per_call = total_cost / total_calls if total_calls > 0 else 0.0
         avg_cost_per_minute = (total_cost / (total_duration / 60.0)) if total_duration > 0 else 0.0
         # Round cost per minute to 8 decimal places, then multiply by 60 for consistency
         avg_cost_per_minute_rounded = round(avg_cost_per_minute, 8)
@@ -249,6 +250,7 @@ class StatisticsHandler:
             'total_calls': total_calls,
             'total_words': total_words,
             'avg_cost_per_word': avg_cost_per_word,
+            'avg_cost_per_call': avg_cost_per_call,
             'avg_cost_per_minute': avg_cost_per_minute,
             'avg_cost_per_hour': avg_cost_per_hour,
             'words_per_minute': words_per_minute,
@@ -347,6 +349,7 @@ class StatisticsHandler:
                     wpm_str = wpm_str.replace('.', ',')
                 f.write(f"Translation,Average Words per Minute,{wpm_str}\n")
                 f.write(f"Translation,Average Cost per Word,{self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
+                f.write(f"Translation,Average Cost per Call,{self._format_currency_for_export(trans['avg_cost_per_call'], use_polish_format)}\n")
                 f.write(f"Translation,Average Cost per Minute,{self._format_currency_for_export(trans['avg_cost_per_minute'], use_polish_format)}\n")
                 # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                 cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
@@ -411,6 +414,7 @@ class StatisticsHandler:
                     wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
                     f.write(f"Średnia słów na minutę: {wpm_str}\n")
                     f.write(f"Średni koszt na słowo: {self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
+                    f.write(f"Średni koszt na wywołanie: {self._format_currency_for_export(trans['avg_cost_per_call'], use_polish_format)}\n")
                     f.write(f"Średni koszt na minutę: {self._format_currency_for_export(trans['avg_cost_per_minute'], use_polish_format)}/min\n")
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
@@ -460,6 +464,7 @@ class StatisticsHandler:
                     f.write(f"Total Words Translated: {trans['total_words']}\n")
                     f.write(f"Average Words per Minute: {trans['words_per_minute']:.2f}\n")
                     f.write(f"Average Cost per Word: {self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
+                    f.write(f"Average Cost per Call: {self._format_currency_for_export(trans['avg_cost_per_call'], use_polish_format)}\n")
                     f.write(f"Average Cost per Minute: {self._format_currency_for_export(trans['avg_cost_per_minute'], use_polish_format)}/min\n")
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
