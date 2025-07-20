@@ -992,6 +992,31 @@ For more information, see the user manual."""
         """Format cost value according to current UI language (legacy method)."""
         return self.format_currency_for_display(cost_value, " USD" if self.ui_lang.current_lang == 'pol' else "")
 
+    def format_number_with_separators(self, number):
+        """Format integer numbers with thousand separators according to current UI language."""
+        try:
+            # Convert to integer to avoid decimal formatting issues
+            num = int(number)
+            
+            if self.ui_lang.current_lang == 'pol':
+                # Polish format: use space as thousand separator
+                num_str = str(num)
+                if len(num_str) > 3:
+                    formatted = ""
+                    for i, digit in enumerate(reversed(num_str)):
+                        if i > 0 and i % 3 == 0:
+                            formatted = " " + formatted
+                        formatted = digit + formatted
+                    return formatted
+                else:
+                    return num_str
+            else:
+                # English format: use comma as thousand separator
+                return f"{num:,}"
+        except Exception as e:
+            log_debug(f"Error formatting number with separators: {e}")
+            return str(number)  # Fallback to string representation
+
     def update_gemini_stats(self):
         """Update the Gemini statistics fields by reading the log file."""
         try:
@@ -1019,7 +1044,7 @@ For more information, see the user manual."""
             total_cost = total_input_cost + total_output_cost
             
             # Update GUI fields
-            self.gemini_total_words_var.set(str(total_words))
+            self.gemini_total_words_var.set(self.format_number_with_separators(total_words))
             self.gemini_total_cost_var.set(self.format_cost_for_display(total_cost))
             
             log_debug(f"Updated Gemini stats: {total_words} words, ${total_cost:.8f}")
@@ -1027,7 +1052,7 @@ For more information, see the user manual."""
             log_debug(f"Error updating Gemini stats: {e}")
             # Set default values if there's an error
             if hasattr(self, 'gemini_total_words_var') and self.gemini_total_words_var is not None:
-                self.gemini_total_words_var.set("0")
+                self.gemini_total_words_var.set(self.format_number_with_separators(0))
             if hasattr(self, 'gemini_total_cost_var') and self.gemini_total_cost_var is not None:
                 self.gemini_total_cost_var.set(self.format_cost_for_display(0.0))
 
@@ -1110,7 +1135,7 @@ For more information, see the user manual."""
                 ocr = stats['ocr']
                 if hasattr(self, 'ocr_stat_vars'):
                     self.ocr_stat_vars['api_usage_total_ocr_cost'].set(self.format_currency_for_display(ocr['total_cost']))
-                    self.ocr_stat_vars['api_usage_total_ocr_calls'].set(str(ocr['total_calls']))
+                    self.ocr_stat_vars['api_usage_total_ocr_calls'].set(self.format_number_with_separators(ocr['total_calls']))
                     self.ocr_stat_vars['api_usage_median_duration_ocr'].set(
                         f"{ocr['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' 
                         else f"{ocr['median_duration']:.3f}s"
@@ -1126,8 +1151,8 @@ For more information, see the user manual."""
                 trans = stats['translation']
                 if hasattr(self, 'translation_stat_vars'):
                     self.translation_stat_vars['api_usage_total_translation_cost'].set(self.format_currency_for_display(trans['total_cost']))
-                    self.translation_stat_vars['api_usage_total_words_translated'].set(str(trans['total_words']))
-                    self.translation_stat_vars['api_usage_total_translation_calls'].set(str(trans['total_calls']))
+                    self.translation_stat_vars['api_usage_total_words_translated'].set(self.format_number_with_separators(trans['total_words']))
+                    self.translation_stat_vars['api_usage_total_translation_calls'].set(self.format_number_with_separators(trans['total_calls']))
                     self.translation_stat_vars['api_usage_median_duration_translation'].set(
                         f"{trans['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' 
                         else f"{trans['median_duration']:.3f}s"
@@ -1177,7 +1202,7 @@ For more information, see the user manual."""
                     clipboard_text += "📊 Statystyki Gemini OCR\n"
                     clipboard_text += "-" * 25 + "\n"
                     ocr = stats['ocr']
-                    clipboard_text += f"Łączne wywołania OCR: {ocr['total_calls']}\n"
+                    clipboard_text += f"Łączne wywołania OCR: {self.format_number_with_separators(ocr['total_calls'])}\n"
                     clipboard_text += f"Mediana czasu trwania: {ocr['median_duration']:.3f} s".replace('.', ',') + "\n"
                     clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
                     clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
@@ -1191,8 +1216,8 @@ For more information, see the user manual."""
                     clipboard_text += "🔄 Statystyki tłumaczenia Gemini\n"
                     clipboard_text += "-" * 30 + "\n"
                     trans = stats['translation']
-                    clipboard_text += f"Łączne wywołania tłumaczenia: {trans['total_calls']}\n"
-                    clipboard_text += f"Łącznie słów przetłumaczonych: {trans['total_words']}\n"
+                    clipboard_text += f"Łączne wywołania tłumaczenia: {self.format_number_with_separators(trans['total_calls'])}\n"
+                    clipboard_text += f"Łącznie słów przetłumaczonych: {self.format_number_with_separators(trans['total_words'])}\n"
                     clipboard_text += f"Mediana czasu trwania: {trans['median_duration']:.3f} s".replace('.', ',') + "\n"
                     wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
                     clipboard_text += f"Średnia słów na minutę: {wpm_str}\n"
@@ -1232,7 +1257,7 @@ For more information, see the user manual."""
                     clipboard_text += "📊 Gemini OCR Statistics\n"
                     clipboard_text += "-" * 25 + "\n"
                     ocr = stats['ocr']
-                    clipboard_text += f"Total OCR Calls: {ocr['total_calls']}\n"
+                    clipboard_text += f"Total OCR Calls: {self.format_number_with_separators(ocr['total_calls'])}\n"
                     clipboard_text += f"Median Duration: {ocr['median_duration']:.3f}s\n"
                     clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
                     clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
@@ -1246,8 +1271,8 @@ For more information, see the user manual."""
                     clipboard_text += "🔄 Gemini Translation Statistics\n"
                     clipboard_text += "-" * 30 + "\n"
                     trans = stats['translation']
-                    clipboard_text += f"Total Translation Calls: {trans['total_calls']}\n"
-                    clipboard_text += f"Total Words Translated: {trans['total_words']}\n"
+                    clipboard_text += f"Total Translation Calls: {self.format_number_with_separators(trans['total_calls'])}\n"
+                    clipboard_text += f"Total Words Translated: {self.format_number_with_separators(trans['total_words'])}\n"
                     clipboard_text += f"Median Duration: {trans['median_duration']:.3f}s\n"
                     clipboard_text += f"Average Words per Minute: {trans['words_per_minute']:.2f}\n"
                     clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
