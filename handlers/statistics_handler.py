@@ -350,6 +350,31 @@ class StatisticsHandler:
             log_debug(f"Error formatting currency for export: {e}")
             return f"${amount:.8f}"  # Fallback to English format
     
+    def _format_number_with_separators_for_export(self, number, use_polish_format=False):
+        """Format integer numbers with thousand separators for export files."""
+        try:
+            # Convert to integer to avoid decimal formatting issues
+            num = int(number)
+            
+            if use_polish_format:
+                # Polish format: use space as thousand separator
+                num_str = str(num)
+                if len(num_str) > 3:
+                    formatted = ""
+                    for i, digit in enumerate(reversed(num_str)):
+                        if i > 0 and i % 3 == 0:
+                            formatted = " " + formatted
+                        formatted = digit + formatted
+                    return formatted
+                else:
+                    return num_str
+            else:
+                # English format: use comma as thousand separator
+                return f"{num:,}"
+        except Exception as e:
+            log_debug(f"Error formatting number with separators for export: {e}")
+            return str(number)  # Fallback to string representation
+    
     def export_statistics_csv(self, file_path, ui_lang=None, deepl_usage=None):
         """Export statistics to CSV format with proper formatting."""
         try:
@@ -363,7 +388,7 @@ class StatisticsHandler:
                 
                 # OCR statistics - match GUI order with proper cost per hour calculation
                 ocr = stats['ocr']
-                f.write(f"OCR,Total OCR Calls,{ocr['total_calls']}\n")
+                f.write(f"OCR,Total OCR Calls,{self._format_number_with_separators_for_export(ocr['total_calls'], use_polish_format)}\n")
                 # Format duration with proper Polish formatting
                 duration_str = f"{ocr['median_duration']:.3f}s"
                 if use_polish_format:
@@ -379,8 +404,8 @@ class StatisticsHandler:
                 
                 # Translation statistics - match GUI order with proper cost per hour calculation
                 trans = stats['translation']
-                f.write(f"Translation,Total Translation Calls,{trans['total_calls']}\n")
-                f.write(f"Translation,Total Words Translated,{trans['total_words']}\n")
+                f.write(f"Translation,Total Translation Calls,{self._format_number_with_separators_for_export(trans['total_calls'], use_polish_format)}\n")
+                f.write(f"Translation,Total Words Translated,{self._format_number_with_separators_for_export(trans['total_words'], use_polish_format)}\n")
                 # Format duration with proper Polish formatting
                 duration_str = f"{trans['median_duration']:.3f}s"
                 if use_polish_format:
@@ -439,7 +464,7 @@ class StatisticsHandler:
                     f.write("📊 Statystyki Gemini OCR\n")
                     f.write("-" * 25 + "\n")
                     ocr = stats['ocr']
-                    f.write(f"Łączne wywołania OCR: {ocr['total_calls']}\n")
+                    f.write(f"Łączne wywołania OCR: {self._format_number_with_separators_for_export(ocr['total_calls'], use_polish_format)}\n")
                     f.write(f"Mediana czasu trwania: {ocr['median_duration']:.3f} s".replace('.', ',') + "\n")
                     f.write(f"Średni koszt na wywołanie: {self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
                     f.write(f"Średni koszt na minutę: {self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}/min\n")
@@ -453,8 +478,8 @@ class StatisticsHandler:
                     f.write("🔄 Statystyki tłumaczenia Gemini\n")
                     f.write("-" * 30 + "\n")
                     trans = stats['translation']
-                    f.write(f"Łączne wywołania tłumaczenia: {trans['total_calls']}\n")
-                    f.write(f"Łącznie słów przetłumaczonych: {trans['total_words']}\n")
+                    f.write(f"Łączne wywołania tłumaczenia: {self._format_number_with_separators_for_export(trans['total_calls'], use_polish_format)}\n")
+                    f.write(f"Łącznie słów przetłumaczonych: {self._format_number_with_separators_for_export(trans['total_words'], use_polish_format)}\n")
                     f.write(f"Mediana czasu trwania: {trans['median_duration']:.3f} s".replace('.', ',') + "\n")
                     # Format words per minute with proper decimal separator
                     wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
@@ -493,7 +518,7 @@ class StatisticsHandler:
                     f.write("📊 Gemini OCR Statistics\n")
                     f.write("-" * 25 + "\n")
                     ocr = stats['ocr']
-                    f.write(f"Total OCR Calls: {ocr['total_calls']}\n")
+                    f.write(f"Total OCR Calls: {self._format_number_with_separators_for_export(ocr['total_calls'], use_polish_format)}\n")
                     f.write(f"Median Duration: {ocr['median_duration']:.3f}s\n")
                     f.write(f"Average Cost per Call: {self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
                     f.write(f"Average Cost per Minute: {self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}/min\n")
@@ -507,8 +532,8 @@ class StatisticsHandler:
                     f.write("🔄 Gemini Translation Statistics\n")
                     f.write("-" * 30 + "\n")
                     trans = stats['translation']
-                    f.write(f"Total Translation Calls: {trans['total_calls']}\n")
-                    f.write(f"Total Words Translated: {trans['total_words']}\n")
+                    f.write(f"Total Translation Calls: {self._format_number_with_separators_for_export(trans['total_calls'], use_polish_format)}\n")
+                    f.write(f"Total Words Translated: {self._format_number_with_separators_for_export(trans['total_words'], use_polish_format)}\n")
                     f.write(f"Median Duration: {trans['median_duration']:.3f}s\n")
                     f.write(f"Average Words per Minute: {trans['words_per_minute']:.2f}\n")
                     f.write(f"Average Cost per Word: {self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
