@@ -130,12 +130,14 @@ api_usage_section_combined,💰 Combined API Statistics
 api_usage_section_deepl,📈 DeepL Usage Tracker
 api_usage_total_ocr_cost,Total OCR Cost:
 api_usage_total_ocr_calls,Total OCR Calls:
+api_usage_median_duration_ocr,Median Duration:
 api_usage_avg_cost_per_call,Average Cost per Call:
 api_usage_avg_cost_per_minute,Average Cost per Minute:
 api_usage_avg_cost_per_hour,Average Cost per Hour:
 api_usage_total_translation_cost,Total Translation Cost:
 api_usage_total_words_translated,Total Words Translated:
 api_usage_total_translation_calls,Total Translation Calls:
+api_usage_median_duration_translation,Median Duration:
 api_usage_avg_cost_per_word,Average Cost per Word:
 api_usage_avg_cost_per_call,Average Cost per Call:
 api_usage_words_per_minute,Average Words per Minute:
@@ -147,4 +149,4 @@ api_usage_export_csv_btn,Export to CSV
 api_usage_export_text_btn,Export to Text
 api_usage_copy_btn,Copy
 api_usage_no_data,No data available
-api_usage_info_note,ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared.
+api_usage_info_note,"ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared. Estimated cost tracking is provided for reference purposes only. You are responsible for monitoring your own API usage and costs through Google's billing dashboard."

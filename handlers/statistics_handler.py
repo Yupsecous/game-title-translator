@@ -197,13 +197,28 @@ class StatisticsHandler:
         total_cost = 0.0
         total_calls = 0
         total_duration = 0.0
+        call_durations = []  # List to store all individual call durations
         
         for session in sessions:
             for call in session['calls']:
                 if call.get('type') == 'ocr':
                     total_cost += call.get('cost', 0.0)
                     total_calls += 1
+                    duration = call.get('duration', 0.0)
+                    call_durations.append(duration)
             total_duration += session.get('duration_seconds', 0.0)
+        
+        # Calculate median duration
+        median_duration = 0.0
+        if call_durations:
+            call_durations.sort()
+            n = len(call_durations)
+            if n % 2 == 0:
+                # Even number of calls - average of two middle values
+                median_duration = (call_durations[n//2 - 1] + call_durations[n//2]) / 2.0
+            else:
+                # Odd number of calls - middle value
+                median_duration = call_durations[n//2]
         
         # Calculate derived statistics - ensure per-hour uses exact per-minute calculation with proper rounding
         avg_cost_per_call = total_cost / total_calls if total_calls > 0 else 0.0
@@ -215,6 +230,7 @@ class StatisticsHandler:
         return {
             'total_cost': total_cost,
             'total_calls': total_calls,
+            'median_duration': median_duration,
             'avg_cost_per_call': avg_cost_per_call,
             'avg_cost_per_minute': avg_cost_per_minute,
             'avg_cost_per_hour': avg_cost_per_hour,
@@ -227,6 +243,7 @@ class StatisticsHandler:
         total_calls = 0
         total_words = 0
         total_duration = 0.0
+        call_durations = []  # List to store all individual call durations
         
         for session in sessions:
             for call in session['calls']:
@@ -234,7 +251,21 @@ class StatisticsHandler:
                     total_cost += call.get('cost', 0.0)
                     total_calls += 1
                     total_words += call.get('word_count', 0)
+                    duration = call.get('duration', 0.0)
+                    call_durations.append(duration)
             total_duration += session.get('duration_seconds', 0.0)
+        
+        # Calculate median duration
+        median_duration = 0.0
+        if call_durations:
+            call_durations.sort()
+            n = len(call_durations)
+            if n % 2 == 0:
+                # Even number of calls - average of two middle values
+                median_duration = (call_durations[n//2 - 1] + call_durations[n//2]) / 2.0
+            else:
+                # Odd number of calls - middle value
+                median_duration = call_durations[n//2]
         
         # Calculate derived statistics
         avg_cost_per_word = total_cost / total_words if total_words > 0 else 0.0
@@ -249,6 +280,7 @@ class StatisticsHandler:
             'total_cost': total_cost,
             'total_calls': total_calls,
             'total_words': total_words,
+            'median_duration': median_duration,
             'avg_cost_per_word': avg_cost_per_word,
             'avg_cost_per_call': avg_cost_per_call,
             'avg_cost_per_minute': avg_cost_per_minute,
@@ -279,6 +311,7 @@ class StatisticsHandler:
             'ocr': {
                 'total_cost': 0.0,
                 'total_calls': 0,
+                'median_duration': 0.0,
                 'avg_cost_per_call': 0.0,
                 'avg_cost_per_minute': 0.0,
                 'avg_cost_per_hour': 0.0,
@@ -288,6 +321,7 @@ class StatisticsHandler:
                 'total_cost': 0.0,
                 'total_calls': 0,
                 'total_words': 0,
+                'median_duration': 0.0,
                 'avg_cost_per_word': 0.0,
                 'avg_cost_per_minute': 0.0,
                 'avg_cost_per_hour': 0.0,
@@ -330,6 +364,11 @@ class StatisticsHandler:
                 # OCR statistics - match GUI order with proper cost per hour calculation
                 ocr = stats['ocr']
                 f.write(f"OCR,Total OCR Calls,{ocr['total_calls']}\n")
+                # Format duration with proper Polish formatting
+                duration_str = f"{ocr['median_duration']:.3f}s"
+                if use_polish_format:
+                    duration_str = f"{ocr['median_duration']:.3f} s".replace('.', ',')
+                f.write(f"OCR,Median Duration,{duration_str}\n")
                 f.write(f"OCR,Average Cost per Call,{self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
                 f.write(f"OCR,Average Cost per Minute,{self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}\n")
                 # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
@@ -342,6 +381,11 @@ class StatisticsHandler:
                 trans = stats['translation']
                 f.write(f"Translation,Total Translation Calls,{trans['total_calls']}\n")
                 f.write(f"Translation,Total Words Translated,{trans['total_words']}\n")
+                # Format duration with proper Polish formatting
+                duration_str = f"{trans['median_duration']:.3f}s"
+                if use_polish_format:
+                    duration_str = f"{trans['median_duration']:.3f} s".replace('.', ',')
+                f.write(f"Translation,Median Duration,{duration_str}\n")
                 # Format words per minute with proper decimal separator
                 wpm = trans['words_per_minute']
                 wpm_str = f"{wpm:.2f}"
@@ -396,6 +440,7 @@ class StatisticsHandler:
                     f.write("-" * 25 + "\n")
                     ocr = stats['ocr']
                     f.write(f"Łączne wywołania OCR: {ocr['total_calls']}\n")
+                    f.write(f"Mediana czasu trwania: {ocr['median_duration']:.3f} s".replace('.', ',') + "\n")
                     f.write(f"Średni koszt na wywołanie: {self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
                     f.write(f"Średni koszt na minutę: {self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}/min\n")
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
@@ -410,6 +455,7 @@ class StatisticsHandler:
                     trans = stats['translation']
                     f.write(f"Łączne wywołania tłumaczenia: {trans['total_calls']}\n")
                     f.write(f"Łącznie słów przetłumaczonych: {trans['total_words']}\n")
+                    f.write(f"Mediana czasu trwania: {trans['median_duration']:.3f} s".replace('.', ',') + "\n")
                     # Format words per minute with proper decimal separator
                     wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
                     f.write(f"Średnia słów na minutę: {wpm_str}\n")
@@ -448,6 +494,7 @@ class StatisticsHandler:
                     f.write("-" * 25 + "\n")
                     ocr = stats['ocr']
                     f.write(f"Total OCR Calls: {ocr['total_calls']}\n")
+                    f.write(f"Median Duration: {ocr['median_duration']:.3f}s\n")
                     f.write(f"Average Cost per Call: {self._format_currency_for_export(ocr['avg_cost_per_call'], use_polish_format)}\n")
                     f.write(f"Average Cost per Minute: {self._format_currency_for_export(ocr['avg_cost_per_minute'], use_polish_format)}/min\n")
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
@@ -462,6 +509,7 @@ class StatisticsHandler:
                     trans = stats['translation']
                     f.write(f"Total Translation Calls: {trans['total_calls']}\n")
                     f.write(f"Total Words Translated: {trans['total_words']}\n")
+                    f.write(f"Median Duration: {trans['median_duration']:.3f}s\n")
                     f.write(f"Average Words per Minute: {trans['words_per_minute']:.2f}\n")
                     f.write(f"Average Cost per Word: {self._format_currency_for_export(trans['avg_cost_per_word'], use_polish_format)}\n")
                     f.write(f"Average Cost per Call: {self._format_currency_for_export(trans['avg_cost_per_call'], use_polish_format)}\n")
