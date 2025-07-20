@@ -149,7 +149,7 @@
     </div>
     <h1 id="installation-guide">Installation Guide</h1>
     <p>Copyright © 2025 Tomasz Kamiński<br>
-    <em>Last Updated: 8 July 2025</em></p>
+    <em>Last Updated: 20 July 2025</em></p>
 
     <p>This guide provides detailed instructions for installing and setting up Game-Changing Translator on your system.</p>
 
@@ -192,9 +192,29 @@
     <p>The compiled version provides the easiest installation experience with no need to install Python or dependencies. Simply download, extract, and run.</p>
 
     <h3 id="choose-your-version">Choose Your Version</h3>
-    <p>Game-Changing Translator comes in two compiled variants:</p>
+    <p>Game-Changing Translator is available in multiple versions to suit different needs and hardware configurations:</p>
 
-    <h4 id="gpu-supported-version-135gb"><strong>GPU-Supported Version</strong> (~1.35GB)</h4>
+    <h4 id="version-3-cpu-only-242mb-latest"><strong>Version 3 - CPU-Only</strong> (~242MB) <em>[Latest Version]</em></h4>
+    <ul>
+      <li><strong>Best for</strong>: All users seeking the latest features with superior Gemini Translation + Gemini OCR workflow</li>
+      <li><strong>Requirements</strong>: Any modern CPU</li>
+      <li><strong>Benefits</strong>: 
+        <ul>
+          <li>Latest Gemini API integration for exceptional translation quality</li>
+          <li>Advanced context-aware translation capabilities</li>
+          <li>Superior OCR accuracy with Gemini OCR</li>
+          <li>Comprehensive API cost tracking and monitoring</li>
+          <li>Smallest download size with all modern features</li>
+        </ul>
+      </li>
+      <li><strong>Download size</strong>: ~242MB compressed (2 files)</li>
+      <li><strong>Note</strong>: MarianMT offline translation remains available as a reliable fallback option, though the advanced Gemini workflow provides superior results for most use cases</li>
+    </ul>
+
+    <h4 id="version-2-legacy-versions">Version 2 - Legacy Versions</h4>
+    <p>Version 2 remains available for users who prefer the previous generation of the application:</p>
+
+    <h5 id="gpu-supported-version-135gb"><strong>Version 2 - GPU-Supported</strong> (~1.35GB)</h5>
     <ul>
       <li><strong>Best for</strong>: Users with NVIDIA GPUs who want faster MarianMT translation performance</li>
       <li><strong>Requirements</strong>: NVIDIA GPU with CUDA support</li>
@@ -202,7 +222,7 @@
       <li><strong>Download size</strong>: ~1.35GB compressed (3 files)</li>
     </ul>
 
-    <h4 id="cpu-only-version-188mb"><strong>CPU-Only Version</strong> (~188MB)</h4>
+    <h5 id="cpu-only-version-188mb"><strong>Version 2 - CPU-Only</strong> (~188MB)</h5>
     <ul>
       <li><strong>Best for</strong>: Users without dedicated GPUs or those prioritizing smaller download size</li>
       <li><strong>Requirements</strong>: Any modern CPU</li>
@@ -215,14 +235,20 @@
       <li>
         <p><strong>Download the required files</strong> for your chosen version:</p>
         <ul>
-          <li><strong>For GPU version:</strong> Download ALL 3 files:
+          <li><strong>For Version 3 (Latest):</strong> Download BOTH files:
+            <ul>
+              <li><code>GameChangingTranslator_CPU-only_v3.7z.001</code></li>
+              <li><code>GameChangingTranslator_CPU-only_v3.exe</code></li>
+            </ul>
+          </li>
+          <li><strong>For Version 2 GPU:</strong> Download ALL 3 files:
             <ul>
               <li><code>GameChangingTranslator_GPU-enabled_v2.7z.001</code></li>
               <li><code>GameChangingTranslator_GPU-enabled_v2.7z.002</code></li>
               <li><code>GameChangingTranslator_GPU-enabled_v2.exe</code></li>
             </ul>
           </li>
-          <li><strong>For CPU version:</strong> Download BOTH files:
+          <li><strong>For Version 2 CPU:</strong> Download BOTH files:
             <ul>
               <li><code>GameChangingTranslator_CPU-only_v2.7z.001</code></li>
               <li><code>GameChangingTranslator_CPU-only_v2.exe</code></li>
@@ -399,8 +425,9 @@ cd OCR-Translator</code></pre>
       <thead>
         <tr>
           <th>Feature</th>
-          <th>Compiled (GPU)</th>
-          <th>Compiled (CPU)</th>
+          <th>Version 3 (CPU)</th>
+          <th>Version 2 (GPU)</th>
+          <th>Version 2 (CPU)</th>
           <th>Python Source</th>
         </tr>
       </thead>
@@ -409,10 +436,12 @@ cd OCR-Translator</code></pre>
           <td><strong>Installation Complexity</strong></td>
           <td>Easiest</td>
           <td>Easiest</td>
+          <td>Easiest</td>
           <td>Moderate</td>
         </tr>
         <tr>
           <td><strong>Download Size</strong></td>
+          <td>~242MB</td>
           <td>~1.35GB</td>
           <td>~188MB</td>
           <td>~50MB</td>
@@ -421,28 +450,47 @@ cd OCR-Translator</code></pre>
           <td><strong>Python Required</strong></td>
           <td>No</td>
           <td>No</td>
+          <td>No</td>
           <td>Yes</td>
         </tr>
         <tr>
           <td><strong>Dependencies</strong></td>
           <td>All included</td>
           <td>All included</td>
+          <td>All included</td>
           <td>Manual install</td>
         </tr>
         <tr>
+          <td><strong>Gemini API Integration</strong></td>
+          <td>Advanced (latest)</td>
+          <td>Basic</td>
+          <td>Basic</td>
+          <td>Advanced (if updated)</td>
+        </tr>
+        <tr>
           <td><strong>MarianMT Performance</strong></td>
+          <td>Standard (CPU)</td>
           <td>Fastest (GPU)</td>
           <td>Standard (CPU)</td>
           <td>Depends on setup</td>
         </tr>
         <tr>
+          <td><strong>API Cost Monitoring</strong></td>
+          <td>Comprehensive</td>
+          <td>Basic</td>
+          <td>Basic</td>
+          <td>Comprehensive (if updated)</td>
+        </tr>
+        <tr>
           <td><strong>Customization</strong></td>
+          <td>Limited</td>
           <td>Limited</td>
           <td>Limited</td>
           <td>Full access</td>
         </tr>
         <tr>
           <td><strong>Updates</strong></td>
+          <td>Manual download</td>
           <td>Manual download</td>
           <td>Manual download</td>
           <td>Git pull</td>
@@ -482,20 +530,30 @@ cd OCR-Translator</code></pre>
 
     <h2 id="which-version-should-i-choose">Which Version Should I Choose?</h2>
 
-    <h3 id="choose-compiled-gpu-version-if">Choose <strong>Compiled GPU Version</strong> if:</h3>
+    <h3 id="choose-version-3-if">Choose <strong>Version 3 - CPU-Only</strong> if:</h3>
     <ul>
-      <li>You have an NVIDIA GPU with CUDA support.</li>
-      <li>You frequently use MarianMT offline translation.</li>
-      <li>You want the best performance for neural translation.</li>
-      <li>You don't mind the larger download size.</li>
+      <li>You want the latest features and improvements.</li>
+      <li>You prefer advanced Gemini API integration with superior translation quality.</li>
+      <li>You need comprehensive API cost tracking and monitoring.</li>
+      <li>You want the smallest download size for a modern feature set.</li>
+      <li>You primarily use online translation services (Gemini, DeepL, Google Translate).</li>
+      <li>You don't mind using MarianMT as a reliable fallback rather than primary translation method.</li>
     </ul>
 
-    <h3 id="choose-compiled-cpu-version-if">Choose <strong>Compiled CPU Version</strong> if:</h3>
+    <h3 id="choose-version-2-gpu-if">Choose <strong>Version 2 - GPU-Supported</strong> if:</h3>
     <ul>
-      <li>You don't have a dedicated GPU.</li>
-      <li>You prefer smaller download sizes.</li>
-      <li>You primarily use API-based translation services.</li>
-      <li>You want maximum compatibility.</li>
+      <li>You have an NVIDIA GPU with CUDA support.</li>
+      <li>You frequently use MarianMT offline translation as your primary method.</li>
+      <li>You want the absolute best performance for neural translation.</li>
+      <li>You don't mind the larger download size for maximum MarianMT performance.</li>
+    </ul>
+
+    <h3 id="choose-version-2-cpu-if">Choose <strong>Version 2 - CPU-Only</strong> if:</h3>
+    <ul>
+      <li>You prefer the previous generation interface.</li>
+      <li>You don't have a dedicated GPU but want Version 2 features.</li>
+      <li>You primarily use API-based translation services but prefer Version 2.</li>
+      <li>You want maximum compatibility with Version 2 workflows.</li>
     </ul>
 
     <h3 id="choose-python-source-version-if">Choose <strong>Python Source Version</strong> if:</h3>
@@ -506,7 +564,7 @@ cd OCR-Translator</code></pre>
       <li>You're comfortable with Python development environments.</li>
     </ul>
 
-    <p>For most users, the <strong>compiled CPU version</strong> provides the best balance of ease-of-use, performance, and download size.</p>
+    <p>For most users, <strong>Version 3 - CPU-Only</strong> provides the best balance of modern features, translation quality, ease-of-use, and download size. Users who heavily rely on MarianMT offline translation and have compatible NVIDIA hardware may prefer Version 2 - GPU-Supported for maximum offline performance.</p>
 
   </body>
 </html>
