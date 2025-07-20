@@ -977,6 +977,7 @@ def create_api_usage_tab(app):
     # OCR statistics labels and values - reordered as requested
     ocr_stats = [
         ("api_usage_total_ocr_calls", "Total OCR Calls:"),
+        ("api_usage_median_duration_ocr", "Median Duration:"),
         ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
         ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
         ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
@@ -1008,6 +1009,7 @@ def create_api_usage_tab(app):
     translation_stats = [
         ("api_usage_total_translation_calls", "Total Translation Calls:"),
         ("api_usage_total_words_translated", "Total Words Translated:"),
+        ("api_usage_median_duration_translation", "Median Duration:"),
         ("api_usage_words_per_minute", "Average Words per Minute:"),
         ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
         ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
