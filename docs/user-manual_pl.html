@@ -214,7 +214,7 @@
     </div>
     <h1 id="game-changing-translator-user-manual">Instrukcja obsługi programu Game-Changing Translator</h1>
     <p>Copyright © 2025 Tomasz Kamiński<br>
-    <em>Ostatnia aktualizacja: 7 lipca 2025 r.</em></p>
+    <em>Ostatnia aktualizacja: 20 lipca 2025 r.</em></p>
     <p>
       <img src="screenshots/screenshot2_pol_deepl.jpg" alt="Główny interfejs Game-Changing Translator" class="logo-image" />
     </p>
@@ -234,6 +234,12 @@
       </li>
       <li>
         <a href="#settings-configuration">Konfiguracja ustawień</a>
+      </li>
+      <li>
+        <a href="#gemini-ocr-premium-text-recognition">Gemini OCR – premium rozpoznawanie tekstu</a>
+      </li>
+      <li>
+        <a href="#api-usage-monitoring">Monitorowanie zużycia API</a>
       </li>
       <li>
         <a href="#translation-methods">Metody tłumaczenia</a>
@@ -258,7 +264,7 @@
     <p>Przed rozpoczęciem korzystania z <strong>Game-Changing Translator</strong>  sprawdź, czy system spełnia następujące wymagania:</p>
     <ul>
       <li>System operacyjny Windows.</li>
-      <li>Zainstalowany program <a href="https://github.com/UB-Mannheim/tesseract/wiki">Tesseract OCR</a>.</li>
+      <li>Zainstalowany program <a href="https://github.com/UB-Mannheim/tesseract/wiki">Tesseract OCR</a> (wymagany tylko przy korzystaniu z Tesseract OCR, ale zalecany w standardowych scenariuszach z wyraźnymi napisami).</li>
       <li>Niniejsza aplikacja zainstalowana zgodnie z <a href="installation_pl.html">instrukcją instalacji</a>.</li>
     </ul>
     <h3 id="first-run">Pierwsze uruchomienie</h3>
@@ -277,7 +283,7 @@
       <li>Widoczność <strong>okna tłumaczenia</strong> można przełączać ręcznie w dowolnym momencie za pomocą skrótu <strong>Alt+2</strong>.</li>
     </ol>
     <h2 id="main-interface">Interfejs główny</h2>
-    <p>Interfejs główny jest podzielony na cztery zakładki:</p>
+    <p>Interfejs główny jest podzielony na pięć zakładek:</p>
     <h3 id="main-tab">Zakładka Start</h3>
     <p>
       <img src="screenshots/Home_pl.png" alt="Zakładka Start" />
@@ -313,11 +319,13 @@
       <li>
         <strong>Model tłumaczenia</strong> – wybierz spośród różnych modeli tłumaczeń.</li>
       <li>
+        <strong>Model OCR</strong> – wybierz między <strong>Tesseract (lokalny)</strong> a <strong>Gemini API (online)</strong>.</li>
+      <li>
         <strong>Język źródłowy</strong> – język źródłowy i rozpoznawany przez OCR (tylko DeepL i Google Translate).</li>
       <li>
         <strong>Język docelowy</strong> – język tłumaczenia (tylko DeepL i Google Translate).</li>
       <li>
-        <strong>Klucz API</strong> – tylko w przypadku DeepL lub Google Translate.</li>
+        <strong>Klucz API</strong> – tylko w przypadku Gemini, DeepL lub Google Translate.</li>
       <li>
         <strong>Jakość</strong> – wybierz między opcjami <strong>Klasyczna</strong> (szybsze tłumaczenie) lub <strong>Nowej generacji</strong> (potencjalnie lepsza jakość) (tylko DeepL).</li>
       <li>
@@ -325,33 +333,33 @@
       <li>
         <strong>Opcje Gemini</strong> – tanie tłumaczenie modelem LLM z uwzględnieniem kontekstu (tylko Gemini).</li>
       <li>
-        <strong>Ścieżka do Tesseract</strong> – ścieżka do pliku wykonywalnego Tesseract OCR.</li>
+        <strong>Ścieżka do Tesseract</strong> – ścieżka do pliku wykonywalnego Tesseract OCR (tylko Tesseract).</li>
       <li>
         <strong>Interwał skanowania (ms)</strong> – jak często ma być przechwytywany ekran.</li>
       <li>
         <strong>Czas wyświetlania tłumaczenia (s)</strong> – czas, po którym tłumaczenie zostanie usunięte, gdy zniknie tekst źródłowy.</li>
       <li>
-        <strong>Próg stabilności tekstu</strong> – liczba identycznych odczytów wymaganych przed tłumaczeniem.</li>
+        <strong>Próg stabilności tekstu</strong> – liczba identycznych odczytów wymaganych przed tłumaczeniem (tylko Tesseract).</li>
       <li>
-        <strong>Próg pewności OCR</strong> – minimalna pewność dla uwzględnienia tekstu wykrytego przez OCR.</li>
+        <strong>Próg pewności OCR</strong> – minimalna pewność dla uwzględnienia tekstu wykrytego przez OCR (tylko Tesseract).</li>
       <li>
-        <strong>Tryb przetwarzania obrazu</strong> – sposób przetwarzania obrazów przez OCR.</li>
+        <strong>Tryb przetwarzania obrazu</strong> – sposób przetwarzania obrazów przez OCR (tylko Tesseract).</li>
       <li>
-        <strong>Debugowanie OCR</strong> – opcja wyświetlania obrazów debugowania i tekstu na zakładce <strong>Ustawienia</strong>.</li>
+        <strong>Debugowanie OCR</strong> – opcja wyświetlania obrazów debugowania i tekstu na zakładce <strong>Ustawienia</strong> (tylko Tesseract).</li>
       <li>
-        Przycisk <strong>Podgląd</strong> – otwiera okno podglądu OCR.</li>
+        Przycisk <strong>Podgląd</strong> – otwiera okno podglądu OCR (tylko Tesseract).</li>
       <li>
-        <strong>Usuń śmieci na końcu</strong> – opcja usuwania tekstu po ostatnim znaku interpunkcyjnym.</li>
+        <strong>Usuń śmieci na końcu</strong> – opcja usuwania tekstu po ostatnim znaku interpunkcyjnym (tylko Tesseract).</li>
       <li>
         <strong>Opcje wyglądu</strong> – kolory i rozmiary czcionek dla nakładek.</li>
       <li>
         <strong>Opcje buforowania do plików</strong> – ustawienia włączania/wyłączania buforowania w przypadku DeepL i Google Translate.</li>
     </ol>
-    <h3 id="ocr-preview">Podgląd OCR</h3>
+    <h3 id="ocr-preview">Podgląd OCR (tylko Tesseract)</h3>
     <p>
       <img src="screenshots/OCR_Preview_pl.png" alt="Okno podglądu OCR" />
     </p>
-    <p>Kliknięcie przycisku <strong>Podgląd</strong> w zakładce <strong>Ustawienia</strong> otwiera osobne okno <strong>Podgląd OCR</strong>. To okno wyświetla:</p>
+    <p>Kliknięcie przycisku <strong>Podgląd</strong> w zakładce <strong>Ustawienia</strong> otwiera osobne okno <strong>Podgląd OCR</strong> podczas korzystania z Tesseract OCR. To okno wyświetla:</p>
     <ol>
       <li>
         <strong>Przetworzony obraz (skala 1:1)</strong> – wstępnie przetworzony obraz używany do rozpoznawania OCR.</li>
@@ -359,6 +367,24 @@
         <strong>Rozpoznany tekst</strong> – tekst obecnie rozpoznawany przez silnik OCR.</li>
     </ol>
     <p>To okno podglądu jest szczególnie przydatne do precyzyjnego dostrajania ustawień OCR i zrozumienia, dlaczego niektóre teksty mogą nie być rozpoznawane prawidłowo. Można je przesuwać i zmieniać jego rozmiar niezależnie od <strong>głównego okna aplikacji</strong>.</p>
+    <h3 id="api-usage-tab">Zakładka Zużycie API</h3>
+    <p>
+      <img src="screenshots/API_Stats_pl.png" alt="Zakładka Zużycie API" />
+    </p>
+    <p>Ta zakładka umożliwia kompleksowe monitorowanie i analizę zużycia Gemini API. Obejmuje:</p>
+    <ol>
+      <li>
+        <strong>Statystyki OCR Gemini</strong> – śledzenie kosztów i wskaźniki wydajności OCR.</li>
+      <li>
+        <strong>Statystyki tłumaczenia Gemini</strong> – liczby słów, koszty i wskaźniki wydajności tłumaczeń.</li>
+      <li>
+        <strong>Łączne statystyki API</strong> – ogólna analiza kosztów i prognozy.</li>
+      <li>
+        <strong>Monitor zużycia DeepL</strong> – monitorowanie darmowych miesięcznych limitów DeepL API.</li>
+      <li>
+        <strong>Narzędzia eksportu i zarządzania</strong> – eksport statystyk do pliku CSV, pliku tekstowego i kopiowanie do schowka.</li>
+    </ol>    
+    <p>Szczegółowe informacje o wszystkich dostępnych statystykach i funkcjach śledzenia kosztów znajdziesz w sekcji <a href="#api-usage-monitoring">Monitorowanie zużycia API</a>.</p>
     <h3 id="debug-tab">Zakładka Debugowanie</h3>
     <p>
       <img src="screenshots/Debugging_pl.png" alt="Zakładka Debugowanie" />
@@ -446,7 +472,18 @@
     <ol>
       <li>
         <p>
-          <strong>Ścieżka do Tesseract</strong>:</p>
+          <strong>Model OCR</strong>:</p>
+        <ul>
+          <li>
+            <strong>Tesseract (lokalny)</strong> – tradycyjne narzędzie OCR, bezpłatne i działa offline. Zalecane dla wyraźnych napisów o dobrym kontraście (np. biały tekst na ciemnym tle).</li>
+          <li>
+            <strong>Gemini API (online)</strong> – zaawansowane OCR z wykorzystaniem sztucznej inteligencji o doskonałej jakości w przypadku słabo widocznych napisów. Wymaga klucza API i połączenia z Internetem.</li>
+          <li>Podczas korzystania z Gemini OCR jedynym ustawieniem OCR jest <strong>Interwał skanowania</strong>.</li>
+        </ul>
+      </li>
+      <li>
+        <p>
+          <strong>Ścieżka do Tesseract (tylko Tesseract)</strong>:</p>
         <ul>
           <li>Powinna wskazywać miejsce instalacji programu Tesseract (np. <code>C:\Program Files\Tesseract-OCR\tesseract.exe</code>).</li>
           <li>Użyj przycisku <strong>Wskaż</strong>, aby wskazać lokalizację.</li>
@@ -454,7 +491,7 @@
       </li>
       <li>
         <p>
-          <strong>Tryb przetwarzania obrazu</strong>:</p>
+          <strong>Tryb przetwarzania obrazu (tylko Tesseract)</strong>:</p>
         <ul>
           <li>
             <strong>Brak</strong> – bez przetwarzania, dobry dla wyraźnego tekstu.</li>
@@ -468,7 +505,7 @@
       </li>
       <li>
         <p>
-          <strong>Tryb adaptacyjny</strong>:</p>
+          <strong>Tryb adaptacyjny (tylko Tesseract)</strong>:</p>
         <p>Po wybraniu trybu przetwarzania <strong>Adaptacyjny</strong> system odblokowuje zaawansowane możliwości progowania adaptacyjnego, które doskonale sprawdzają się w trudnych środowiskach graficznych. Ten tryb jest szczególnie cenny w przypadku kłopotliwych warunków, takich jak małe napisy nałożone na dynamiczne, migające tła o stale zmieniających się kolorach i oświetleniu.</p>
         <p>W przeciwieństwie do trzech standardowych trybów przetwarzania tryb adaptacyjny zapewnia dwa regulowane parametry, które pozwalają na precyzyjne dostrojenie procesu rozpoznawania OCR:</p>
         <ul>
@@ -480,7 +517,7 @@
       </li>
       <li>
         <p>
-          <strong>Próg pewności OCR</strong>:</p>
+          <strong>Próg pewności OCR (tylko Tesseract)</strong>:</p>
         <ul>
           <li>Wyższe wartości (np. 80) dają mniej wyników, ale są bardziej dokładne.</li>
           <li>Niższe wartości (np. 40) wychwytują więcej tekstu, ale mogą zawierać błędy.</li>
@@ -488,7 +525,7 @@
       </li>
       <li>
         <p>
-          <strong>Próg stabilności tekstu</strong>:</p>
+          <strong>Próg stabilności tekstu (tylko Tesseract)</strong>:</p>
         <ul>
           <li>Określa, ile identycznych odczytów OCR jest potrzebnych przed rozpoczęciem tłumaczenia.</li>
           <li>Wyższe wartości zmniejszają migotanie, ale zwiększają opóźnienie.</li>
@@ -497,7 +534,7 @@
       </li>
       <li>
         <p>
-          <strong>Debugowanie OCR</strong>:</p>
+          <strong>Debugowanie OCR (tylko Tesseract)</strong>:</p>
         <ul>
           <li>Po włączeniu pokazuje przechwycone obrazy i wyniki OCR w zakładce <strong>Debugowanie</strong>.</li>
           <li>Przydatne przy rozwiązywaniu problemów z rozpoznawaniem tekstu.</li>
@@ -505,7 +542,7 @@
       </li>
       <li>
         <p>
-          <strong>Usuń śmieci na końcu</strong>:</p>
+          <strong>Usuń śmieci na końcu (tylko Tesseract)</strong>:</p>
         <ul>
           <li>Po włączeniu usuwa tekst występujący po ostatnim znaku interpunkcyjnym (kropce, wykrzykniku lub znaku zapytania).</li>
           <li>Przydatna funkcja do usuwania błędów OCR, które często pojawiają się na końcu rozpoznanego tekstu.</li>
@@ -581,6 +618,133 @@
       <li>
         <strong>Rozmiar czcionki okna tłumaczenia</strong> – wielkość przetłumaczonego tekstu.</li>
     </ol>
+    <h2 id="gemini-ocr-premium-text-recognition">Gemini OCR – zaawansowane rozpoznawanie tekstu</h2>
+    
+    <p>Gemini OCR to zaawansowanie rozpoznawaniu tekstu z wykorzystaniem sztucznej inteligencji. Doskonale rozpoznaje mało czytelny tekst, z którym tradycyjne programy OCR, takie jak Tesseract, sobie nie radzą. Ta zaawansowana funkcja wykorzystuje model Gemini 2.5 Flash-Lite firmy Google, gwarantując doskonałe rozpoznawanie tekstu przy bardzo dobrym stosunku jakości do ceny.</p>
+    
+    <h3 id="challenging-subtitles-scenarios">Mało czytelne napisy</h3>
+    
+    <p>Gemini OCR najlepiej nadaje się do mało czytelnych napisów z powodu:</p>
+    <ul>
+      <li>złożonych teł o zmieniających się kolorach i teksturach;</li>
+      <li>tekstu o niskim kontraście nałożonego na dynamiczne sceny;</li>
+      <li>małych lub stylizowanych czcionek, z którymi nie radzą sobie tradycyjne programy OCR;</li>
+      <li>rozmycia ruchu lub artefaktów kompresji w filmach.</li>
+    </ul>
+    
+    <p><strong>Porównanie Tesseract i Gemini pod kątem jakości OCR</strong></p>
+    
+    <p>
+      <img src="screenshots/ocr_1.png" alt="Przykład trudnego napisu 1" />
+    </p>
+    
+    <p><strong>Wynik Tesseract OCR:</strong> <code>~ Trust me, OD tite WE loca mS</code><br>
+    <strong>Wynik Gemini OCR:</strong> <code>Trust me, Oakmonters know a newcomer when they see one. We locals can tell.</code></p>
+    
+    <p>
+      <img src="screenshots/ocr_2.png" alt="Przykład trudnego napisu 2" />
+    </p>
+    
+    <p><strong>Wynik Tesseract OCR:</strong> <code>' Paulie: Driv: show, Tom. Next stop's Bi the motel. 7 jj ie</code><br>
+    <strong>Wynik Gemini OCR:</strong> <code>Paulie: Drive before the cops show, Tom. Next stop's Bill at the motel.</code></p>
+    
+    <h3 id="superior-premium-feature">Doskonała jakość</h3>
+    
+    <p>Gemini OCR to zaawansowana funkcja, która znacznie przewyższa tradycyjne metody rozpoznawania tekstu. Szczególnie zalecamy jej użycie, gdy:</p>
+    <ul>
+      <li>napisy są trudne do rozpoznania za pomocą standardowego OCR,</li>
+      <li>napisy są wyświetlane średnio przez 1 sekundę lub dłużej,</li>
+      <li>jakość ma priorytet nad szybkością w przypadku ważnych treści.</li>
+    </ul>
+    
+    <p><strong>Wydajność i koszty:</strong></p>
+    <ul>
+      <li>Wywołania API OCR zwykle trwają 0,8–1,5 sekundy.</li>
+      <li>Wywołania tłumaczenia OCR wymagają dodatkowych 0,3 sekundy.</li>
+      <li>Oczekiwany koszt: około 0,3–0,4 USD za godzinę lub 1,3–1,4 USD za 10 godzin przy interwale skanowania 0,5 s.</li>
+      <li>Rzeczywiste koszty mogą się różnić w zależności od konkretnego zastosowania i złożoności napisów.</li>
+    </ul>
+    
+    <h3 id="cost-quality-ratio">Doskonały stosunek jakości do ceny</h3>
+    
+    <p>Gemini 2.5 Flash-Lite zapewnia wyjątkowo szybkie i dokładne rozpoznawanie tekstu, które znacznie przewyższa Tesseract czy Paddle OCR. Chociaż wyniki mogą czasami być mniej spójne niż w przypadku dedykowanego rozwiązania Google Cloud Vision API, stosunek jakości do ceny jest niezrównany wśród bezpłatnych i płatnych narzędzi do rozpoznawania tekstu.</p>
+    
+    <p><strong>Porównanie kosztów:</strong></p>
+    <ul>
+      <li><strong>Gemini 2.5 Flash-Lite:</strong> ok. 0,00004 USD za zrzut ekranu napisów.</li>
+      <li><strong>Google Cloud Vision API:</strong> 0,0015 USD za zrzut ekranu napisów.</li>
+      <li><strong>Różnica:</strong> Gemini jest ok. 37,5 razy tańszy (0,04 USD wobec 1,5 USD za 1000 wywołań API).</li>
+    </ul>
+    
+    <h3 id="best-practices-gemini-ocr">Najlepsze praktyki z Gemini OCR</h3>
+    
+    <ul>
+      <li><strong>Minimalny interwał skanowania:</strong> minimalny interwał skanowania w przypadku Gemini wynosi 500 ms i wystarcza w większości przypadków.</li>
+      <li><strong>Dłuższe interwały dla dłuższych treści:</strong> w grach z długimi napisami (np. seria Wiedźmin) rozważ zwiększenie interwału skanowania, aby zminimalizować koszty przy zachowaniu jakości.</li>
+      <li><strong>Szersze obszary przechwytywania:</strong> w przeciwieństwie do tradycyjnych programów OCR duże modele językowe (LLM) zapewniają lepsze wyniki przy szerszym kontekście. Wybierz szeroki obszar wokół napisów zamiast ciasnego kadrowania, aby uzyskać spójne, dokładne rozpoznawanie identycznego tekstu wyświetlanego przez kilka sekund.</li>
+    </ul>
+    
+    <p>Zakładka <strong>Zużycie API</strong> (szczegółowo opisana w następnej sekcji) pomaga monitorować koszty i szacować wydatki dla konkretnych zastosowań, zapewniając optymalizację zużycia OCR przy zachowaniu doskonałej jakości.</p>
+    
+    <h2 id="api-usage-monitoring">Monitorowanie zużycia API</h2>
+    
+    <p>Zakładka <strong>Zużycie API</strong> umożliwia kompleksowe monitorowanie i analizę kosztów Gemini API, pomagając śledzić wydatki i optymalizować wykorzystanie API zarówno dla usług OCR, jak i tłumaczenia.</p>
+    
+    <p>
+      <img src="screenshots/API_Stats_pl.png" alt="Zakładka Zużycie API" />
+    </p>
+    
+    <p>Zakładka zawiera szczegółowe statystyki w kilku kategoriach:</p>
+    
+    <h3 id="gemini-ocr-statistics">📊 Statystyki OCR Gemini</h3>
+    <ul>
+      <li><strong>Łączne wywołania OCR</strong> – liczba żądań OCR wysłanych do API.</li>
+      <li><strong>Mediana czasu trwania</strong> – typowy czas odpowiedzi dla żądań OCR.</li>
+      <li><strong>Średni koszt na wywołanie</strong> – średni koszt indywidualnych operacji OCR.</li>
+      <li><strong>Średni koszt na minutę/godzinę</strong> – prognozy kosztów dla ciągłego użytkowania.</li>
+      <li><strong>Łączny koszt OCR</strong> – skumulowany koszt wszystkich wywołań API OCR.</li>      
+    </ul>
+    
+    <h3 id="gemini-translation-statistics">🔄 Statystyki tłumaczenia Gemini</h3>
+    <ul>
+      <li><strong>Łączne wywołania tłumaczenia</strong> – liczba wysłanych żądań tłumaczenia.</li>
+      <li><strong>Łącznie słów przetłumaczonych</strong> – liczba słów przetworzonych przez API.</li>
+      <li><strong>Mediana czasu trwania</strong> – typowy czas odpowiedzi dla żądań tłumaczenia.</li>
+      <li><strong>Średnia słów na minutę</strong> – wskaźniki przepustowości tłumaczenia.</li>
+      <li><strong>Średni koszt na słowo/wywołanie</strong> – jednostkowe koszty operacji tłumaczenia.</li>
+      <li><strong>Średni koszt na minutę/godzinę</strong> – prognozy kosztów dla ciągłego użytkowania.</li>
+      <li><strong>Łączny koszt tłumaczenia</strong> – skumulowany koszt wszystkich wywołań API tłumaczenia.</li>
+    </ul>
+    
+    <h3 id="combined-api-statistics">💰 Łączne statystyki API</h3>
+    <ul>
+      <li><strong>Łączny koszt API</strong> – całkowity koszt wszystkich usług Gemini API.</li>
+      <li><strong>Łączny koszt na minutę/godzinę</strong> – jednolite prognozy kosztów.</li>
+    </ul>
+    
+    <h3 id="deepl-usage-tracker">📈 Monitor zużycia DeepL</h3>
+    <ul>
+      <li><strong>Darmowy miesięczny limit</strong> – monitoruj wykorzystanie limitu bezpłatnej wersji DeepL.</li>
+    </ul>
+    
+    <h3 id="statistics-management">Zarządzanie statystykami</h3>
+    <p>Zakładka zawiera kilka opcji zarządzania:</p>
+    <ul>
+      <li><strong>Odśwież statystyki</strong> – zaktualizuj wszystkie wyświetlane dane o bieżące zużycie.</li>
+      <li><strong>Eksportuj do CSV</strong> – eksportuj szczegółowe statystyki do pliku CSV.</li>
+      <li><strong>Eksportuj do tekstu</strong> – eksportuj szczegółowe statystyki do pliku tekstowego.</li>
+      <li><strong>Kopiuj</strong> – skopiuj statystyki do schowka.</li>
+    </ul>
+    
+    <p><strong>Uwaga:</strong> statystyki opierają się na plikach <code>API_OCR_short_log.txt</code> i <code>API_TRA_short_log.txt</code>. Dane zostaną zresetowane po usunięciu tych plików.</p>
+    
+    <div class="disclaimer-note">
+      <div class="disclaimer-note-icon">❗</div>
+      <div class="disclaimer-note-content">
+        <strong>Ważne:</strong> śledzenie kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie rzeczywistego zużycia API i kosztów w panelu rozliczeniowym Google.
+      </div>
+    </div>
+    
     <h2 id="translation-methods">Metody tłumaczenia</h2>
     <h3 id="gemini-api">Gemini API (zalecane)</h3>
     <p>Gemini 2.5 Flash-Lite to najnowszy ekonomiczny model sztucznej inteligencji firmy Google, który zapewnia wyjątkową jakość tłumaczeń z inteligentnym uwzględnianiem kontekstu. Ta przełomowa technologia łączy wysokiej klasy tłumaczenia z wyjątkowo niską ceną, dzięki czemu umożliwia tłumaczenie dużych ilości tekstu, na przykład wszystkich napisów w grze, za zaledwie kilka dolarów.</p>
@@ -633,7 +797,7 @@
       <li>Zapewnia tłumaczenia premium, ale obsługuje mniej języków.</li>
       <li>Uznawany przez wielu za lidera branży pod względem jakości tłumaczenia.</li>
       <li>Darmowy plan DeepL API pozwala na tłumaczenie 500 000 znaków miesięcznie bez opłat (stan na maj 2025 r.).</li>
-      <li>W zakładce <strong>Ustawienia</strong> pole <strong>Darmowy miesięczny limit</strong> śledzi oficjalne wykorzystanie darmowego miesięcznego limitu kont DeepL API Free.</li>
+      <li>Wykorzystanie DeepL można sprawdzić w zakładce <a href="#api-usage-monitoring">Zużycie API</a> (pod statystykami API modelu Gemini).</li>
       <li>Konfiguracja:
         <ul>
           <li>Wybierz <strong>DeepL API</strong> jako model tłumaczenia.</li>
@@ -683,7 +847,7 @@
     <p><strong>Technologia okna kontekstu</strong></p>
     <p>W przeciwieństwie do tradycyjnych metod, które tłumaczą każdy napis osobno, Gemini API zapewnia konfigurowalne przesuwne okno kontekstu, które uwzględnia tłumaczenie poprzednich zdań. To rewolucyjne podejście zapewnia spójność narracji i poprawność gramatyczną oraz umożliwia bardziej naturalne i poprawne tłumaczenie dialogów.</p>
     
-    <p>Okno kontekstu może obejmować 0–2 poprzednie napisy, co umożliwia sztucznej inteligencji:</p>
+    <p>Okno kontekstu może obejmować 0–5 poprzednich napisów, co umożliwia sztucznej inteligencji:</p>
     <ul>
       <li>utrzymanie spójnego stylu wypowiedzi postaci w dialogach;</li>
       <li>zachowanie ciągłości narracyjnej w treściach fabularnych;</li>
@@ -846,10 +1010,12 @@
     <p><strong>Wbudowane monitorowanie kosztów</strong></p>
     <p>Game-Changing Translator umożliwia kompleksowe monitorowanie kosztów, zaprojektowane specjalnie na potrzeby Gemini API:</p>
     <ul>
-      <li><strong>Wyświetlanie kosztów w czasie rzeczywistym</strong> – koszty sumują się na bieżąco podczas tłumaczenia.</li>
-      <li><strong>Analiza zużycia tokenów</strong> – śledzenie dokładnego zużycia tokenów wejściowych i wyjściowych.</li>
-      <li><strong>Rejestrowanie zapytań API</strong> – opcjonalne, szczegółowe rejestrowanie zapewniające pełną przejrzystość.</li>
-      <li><strong>Licznik słów</strong> – monitorowanie łącznej liczby przetłumaczonych słów we wszystkich sesjach.</li>
+      <li><strong>Wyświetlanie kosztów w czasie rzeczywistym</strong> – Koszty sumują się na bieżąco podczas tłumaczenia.</li>
+      <li><strong>Analiza zużycia tokenów</strong> – Śledzenie dokładnego zużycia tokenów wejściowych i wyjściowych.</li>
+      <li><strong>Rejestrowanie zapytań API</strong> – Opcjonalne, szczegółowe rejestrowanie zapewniające pełną przejrzystość w pliku <code>Gemini_API_call_logs.txt</code>.</li>
+      <li><strong>Krótsze dzienniki API</strong> – Skondensowane dzienniki w pliku <code>API_TRA_short_log.txt</code> dla usprawnionego śledzenia kosztów.</li>
+      <li><strong>Licznik słów</strong> – Monitorowanie łącznej liczby przetłumaczonych słów we wszystkich sesjach.</li>
+      <li><strong>Zintegrowane monitorowanie</strong> – Śledzenie kosztów zarówno Gemini OCR, jak i tłumaczenia razem w zakładce <a href="#api-usage-monitoring">Zużycie API</a>.</li>
     </ul>
     
     <p><strong>Szczegółowy przykład zapytania do API</strong></p>
@@ -916,7 +1082,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         <ul>
           <li><strong>0 (brak)</strong> – szybkie tłumaczenie bez kontekstu.</li>
           <li><strong>1 (ostatni napis)</strong> – kontekst poprzedniego napisu.</li>
-          <li><strong>2 (dwa napisy)</strong> – maksymalny kontekst dla spójności narracji.</li>
+          <li><strong>2 (dwa napisy)</strong> – rozszerzony kontekst dla spójności narracji.</li>
+          <li><strong>3 (trzy napisy)</strong> – rozszerzony kontekst dla złożonych dialogów.</li>
+          <li><strong>4 (cztery napisy)</strong> – rozszerzony kontekst dla języków azjatyckich.</li>
+          <li><strong>5 (pięć napisów)</strong> – maksymalny kontekst dla języków azjatyckich, które w większym stopniu opierają się na kontekście.</li>
         </ul>
       </li>
       <li><strong>Włącz rejestr API</strong> – opcjonalne, szczegółowe rejestrowanie analizy kosztów i wykonanych tłumaczeń (zapytania do API są zapisywane w pliku <strong>Gemini_API_call_logs.txt</strong>).</li>

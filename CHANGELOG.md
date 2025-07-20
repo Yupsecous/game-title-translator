@@ -5,6 +5,35 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-07-20
+
+### Added
+- **Gemini OCR - Premium Text Recognition**: Revolutionary AI-powered OCR using Gemini 2.5 Flash-Lite model for superior accuracy in challenging subtitle scenarios
+  - Exceptional OCR quality with outstanding cost-to-quality ratio (~$0.00004 per screenshot)
+  - 37.5 times more cost-effective than Google Cloud Vision API while delivering superior results
+  - Handles complex backgrounds, low-contrast text, stylized fonts, and motion blur that confuse traditional OCR
+  - Unique gaming translation solution combining premium AI OCR with real-time subtitle translation
+- **API Usage Monitoring Tab**: Comprehensive cost tracking and usage analytics for all API services
+  - Real-time cost monitoring for Gemini OCR and Translation services
+  - Detailed statistics with rough cost estimates and performance metrics
+  - Export functionality for usage data (CSV/TXT formats)
+  - DeepL free usage tracking integration
+- **Extended Context Window**: Expanded sliding history window support from 2 to 5 previous subtitles
+  - Enhanced narrative coherence and grammatical consistency for longer conversations
+  - Improved support for Asian languages that rely heavily on contextual understanding
+  - Better pronoun resolution and character voice consistency
+
+### Changed
+- Enhanced OCR model selection with Gemini API as premium option alongside traditional Tesseract OCR
+- Improved translation context awareness with configurable sliding window (0-5 previous subtitles)
+- Updated user interface to accommodate new Gemini OCR configuration options and API usage monitoring
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## [2.0.0] - 2025-07-07
 
 ### Added
