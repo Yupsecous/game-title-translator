@@ -17,6 +17,30 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
+### 🚀 NEW in Version 3.0.0
+
+- **Gemini OCR - Premium Text Recognition**: Revolutionary AI-powered OCR that delivers exceptional accuracy for challenging subtitle scenarios where traditional OCR engines struggle
+  - Superior OCR quality with outstanding cost-to-quality ratio using Gemini 2.5 Flash-Lite model
+  - **Challenging Screenshot Examples**: See the dramatic difference in quality:
+  
+    ![OCR Comparison Example 1](docs/screenshots/ocr_1.png)
+    
+    **Tesseract OCR Result:** `~ Trust me, OD tite WE loca mS`  
+    **Gemini OCR Result:** `Trust me, Oakmonters know a newcomer when they see one. We locals can tell.`
+    
+    ![OCR Comparison Example 2](docs/screenshots/ocr_2.png)
+    
+    **Tesseract OCR Result:** `' Paulie: Driv: show, Tom. Next stop's Bi the motel. 7 jj ie`  
+    **Gemini OCR Result:** `Paulie: Drive before the cops show, Tom. Next stop's Bill at the motel.`
+  
+  - **Professional Results**: Handles low-contrast text, stylized fonts, and dynamic backgrounds that confuse traditional OCR
+  - **Cost-Effective Excellence**: ~$0.00004 per subtitle screenshot - 37.5 times cheaper than Google Cloud Vision API while delivering superior results
+  - **Unique Gaming Translation Solution**: First-of-its-kind integration of premium AI OCR with real-time game subtitle translation
+  - **Special Cost Estimation**: Dedicated API Usage tab with rough cost estimates and comprehensive usage monitoring
+- **Extended Context Window**: Expanded sliding history window from 2 to 5 previous subtitles for enhanced translation quality
+  - **Better Context Awareness**: Improved narrative coherence and grammatical consistency across longer conversations
+  - **Enhanced Asian Language Support**: Extended context particularly beneficial for languages that rely heavily on contextual understanding
+
 ### 🚀 NEW in Version 2.0.0
 
 - **Gemini 2.5 Flash-Lite Integration**: Revolutionary AI-powered translation with advanced context awareness and cost-effectiveness
