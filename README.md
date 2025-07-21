@@ -85,7 +85,7 @@ If you want to start using Game-Changing Translator immediately without installi
 2. Run the .exe installer file to unpack and install the application to your preferred folder.
 3. Install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) (one-time requirement).
 4. Launch the application by running `GameChangingTranslator.exe` from your installation folder.
-5. Experience premium AI OCR and enhanced context translation! 🤖.
+5. Experience premium AI OCR and enhanced context translation! 🤖
 
 ### Need Help?
 
