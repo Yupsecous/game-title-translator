@@ -75,25 +75,17 @@ This application was developed or rather vibe-coded with the support of the foll
 
 **🎮 Perfect for Gamers and Non-Technical Users!**
 
-If you want to start using Game-Changing Translator immediately without installing Python or dealing with dependencies, we've prepared ready-to-use compiled versions for you:
+If you want to start using Game-Changing Translator immediately without installing Python or dealing with dependencies, we've prepared a ready-to-use compiled version for you:
 
 ### Quick Start Options
 
 **📥 [Download from Releases](https://github.com/tomkam1702/OCR-Translator/releases)**
 
-Choose your version:
-- **GPU-Enabled Version** (~1.34 GB) - For users with NVIDIA graphics cards, provides faster offline translation
-- **CPU-Only Version** (~182 MB) - For all other users, smaller download size
-
-### Simple Installation Steps
-
-1. **Download** the required files for your chosen version from the [Releases page](https://github.com/tomkam1702/OCR-Translator/releases):
-   - **GPU Version**: Download ALL 3 files (.7z.001, .7z.002, and .exe)
-   - **CPU Version**: Download BOTH files (.7z.001 and .exe)
-2. **Run** the .exe installer file
-3. **Install Tesseract OCR** (one-time requirement) - [Download here](https://github.com/UB-Mannheim/tesseract/wiki)
-4. **Run** `GameChangingTranslator.exe` from the installed folder
-5. **Start translating!** 🚀
+1. Download both files.
+2. Run the .exe installer file to unpack and install the application to your preferred folder.
+3. Install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) (one-time requirement).
+4. Launch the application by running `GameChangingTranslator.exe` from your installation folder.
+5. Experience premium AI OCR and enhanced context translation! 🤖.
 
 ### Need Help?
 
