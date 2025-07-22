@@ -63,9 +63,9 @@ a = Analysis(
         '_tkinter',
         
         # Image processing
+        'PIL',
         'PIL.Image',
         'PIL.ImageTk',
-        'PIL._tkinter_finder',
         
         # Core dependencies
         'numpy',
@@ -75,8 +75,10 @@ a = Analysis(
         
         # Optional
         'keyboard',
+        'urllib.parse',
         'google.cloud.translate_v2',
         'google.generativeai',
+        'google.auth',
         # Pre-load critical Gemini modules for performance
         'google.generativeai.types',
         'google.generativeai.client',
@@ -195,7 +197,7 @@ a = Analysis(
         'torchaudio',
         'torchtext',
     ],
-    optimize=2,  # Python optimization level for better performance
+    optimize=1,  # Use level 1 instead of 2 to avoid potential optimization issues
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

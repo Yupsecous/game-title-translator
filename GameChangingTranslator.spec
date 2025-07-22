@@ -64,24 +64,22 @@ a = Analysis(
         'tkinter.filedialog',
         'tkinter.colorchooser',
         '_tkinter',
-        # Essential image processing
+        # Image processing
+        'PIL',
         'PIL.Image',
         'PIL.ImageTk',
-        'PIL._tkinter_finder',
-        # Essential dependencies with explicit numpy handling
+        # Scientific libraries (simplified to avoid docstring issues)
         'numpy',
-        'numpy.core',
-        'numpy.core._multiarray_umath',
-        'numpy.core._multiarray_tests',
-        'numpy.linalg',
-        'numpy.linalg._umath_linalg',
         'cv2',
         'pytesseract',
         'pyautogui',
         # Optional but needed dependencies
         'keyboard',
+        'requests',
+        'urllib.parse',
         'google.cloud.translate_v2',
         'google.generativeai',
+        'google.auth',
         # Pre-load critical Gemini modules for performance
         'google.generativeai.types',
         'google.generativeai.client',
@@ -100,48 +98,39 @@ a = Analysis(
     runtime_hooks=[],
     # Only exclude clearly unnecessary libraries (be very conservative)
     excludes=[
-        # Only exclude libraries that are definitely not used
+        # Exclude clearly unused libraries
+        'matplotlib',
+        'pandas',
+        'scipy',
+        'sklearn',
         'tensorflow',
         'keras',
-        'sklearn',
-        'pandas',
-        'matplotlib',
-        'seaborn',
-        'plotly',
-        'bokeh',
-        'dash',
         'jupyter',
-        'ipython',
         'notebook',
-        'sphinx',
         'pytest',
-        'networkx',
-        'PySide2',
-        'PySide6',
+        'sphinx',
+        'doctest',
+        
+        # GUI frameworks we don't use
         'PyQt5',
         'PyQt6',
+        'PySide2',
+        'PySide6',
+        
+        # Web frameworks
         'flask',
         'django',
         'fastapi',
-        'dask',
-        'numba',
-        'h5py',
-        'tables',
-        'mediapipe',
-        'face_recognition',
-        'dlib',
-        'librosa',
-        'soundfile',
-        # Only exclude obvious PyTorch modules not needed for basic inference
+        
+        # Large PyTorch modules we don't need
         'torchvision',
         'torchaudio',
-        'torchtext',
-        # Exclude test modules for performance
+        
+        # Test modules
         'tkinter.test',
-        'unittest',
-        'doctest',
+        'unittest.mock',
     ],
-    optimize=2,  # Python optimization level for better performance
+    optimize=1,  # Use level 1 instead of 2 to avoid potential optimization issues
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

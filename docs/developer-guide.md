@@ -65,7 +65,6 @@ ocr-translator/
 ├── __init__.py                    # Package initialization
 ├── main.py                        # Application entry point
 ├── app_logic.py                   # Main application logic
-├── bundled_app.py                 # All-in-one bundler for PyInstaller
 ├── resource_copier.py             # Resource management for compiled executables
 ├── config_manager.py              # Configuration handling
 ├── constants.py                   # Constant definitions
