@@ -60,7 +60,7 @@ DEFAULT_CONFIG_SETTINGS = {
     'ocr_preview_x': '100',
     'ocr_preview_y': '100',
     # Gemini API settings
-    'gemini_model_name': 'gemini-2.5-flash-lite-preview-06-17',
+    'gemini_model_name': 'gemini-2.5-flash-lite',
     'gemini_model_temp': '0.0',
     'input_token_cost': '0.1',
     'output_token_cost': '0.4'
