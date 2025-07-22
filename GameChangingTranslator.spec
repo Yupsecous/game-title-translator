@@ -15,7 +15,7 @@ current_dir = os.path.dirname(os.path.abspath('__file__'))
 block_cipher = None
 
 a = Analysis(
-    ['bundled_app.py'],  # Use bundled_app.py to ensure proper imports
+    ['main.py'],  # Use main.py instead of bundled_app.py (same as working Alternative spec)
     pathex=[current_dir],  # Include current directory in Python path
     binaries=[],
     # Include all necessary data files
@@ -68,8 +68,13 @@ a = Analysis(
         'PIL.Image',
         'PIL.ImageTk',
         'PIL._tkinter_finder',
-        # Essential dependencies
+        # Essential dependencies with explicit numpy handling
         'numpy',
+        'numpy.core',
+        'numpy.core._multiarray_umath',
+        'numpy.core._multiarray_tests',
+        'numpy.linalg',
+        'numpy.linalg._umath_linalg',
         'cv2',
         'pytesseract',
         'pyautogui',
@@ -77,7 +82,14 @@ a = Analysis(
         'keyboard',
         'google.cloud.translate_v2',
         'google.generativeai',
+        # Pre-load critical Gemini modules for performance
+        'google.generativeai.types',
+        'google.generativeai.client',
+        'google.ai.generativelanguage',
         'deepl',
+        # Threading optimization
+        'concurrent.futures',
+        'threading',
         # Keep torch/transformers/sentencepiece for MarianMT (minimal exclusions)
         'torch',
         'transformers',
@@ -124,7 +136,12 @@ a = Analysis(
         'torchvision',
         'torchaudio',
         'torchtext',
+        # Exclude test modules for performance
+        'tkinter.test',
+        'unittest',
+        'doctest',
     ],
+    optimize=2,  # Python optimization level for better performance
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

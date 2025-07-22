@@ -36,13 +36,38 @@ import tkinter.messagebox
 import tkinter.filedialog
 import tkinter.colorchooser
 
-# Import all third-party libraries
-import numpy
-import cv2
-import pytesseract
-import PIL
-from PIL import Image, ImageTk
-import pyautogui
+# Import all third-party libraries with error handling for PyInstaller compatibility
+try:
+    import numpy
+    import numpy.core._multiarray_umath  # Explicit import for PyInstaller
+except ImportError as e:
+    print(f"Warning: numpy import failed: {e}")
+    numpy = None
+
+try:
+    import cv2
+except ImportError as e:
+    print(f"Warning: cv2 import failed: {e}")
+    cv2 = None
+
+try:
+    import pytesseract
+except ImportError as e:
+    print(f"Warning: pytesseract import failed: {e}")
+    pytesseract = None
+
+try:
+    import PIL
+    from PIL import Image, ImageTk
+except ImportError as e:
+    print(f"Warning: PIL import failed: {e}")
+    PIL = None
+
+try:
+    import pyautogui
+except ImportError as e:
+    print(f"Warning: pyautogui import failed: {e}")
+    pyautogui = None
 
 # Additional imports that might be needed by dependencies
 try:
@@ -58,6 +83,15 @@ except ImportError:
 
 try:
     from google.cloud import translate_v2 as google_translate
+except ImportError:
+    pass
+
+try:
+    import google.generativeai
+    # Pre-load critical Gemini modules for PyInstaller
+    import google.generativeai.types
+    import google.generativeai.client
+    import google.ai.generativelanguage
 except ImportError:
     pass
 
