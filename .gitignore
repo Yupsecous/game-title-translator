@@ -85,3 +85,7 @@ ocr_translator_config.ini
 # Download statistics files
 downloads.py
 downloads.html
+
+# Obsolete files (no longer used)
+bundled_app.py
+GameChangingTranslator_Alternative.spec
