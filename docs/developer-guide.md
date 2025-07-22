@@ -20,6 +20,7 @@ Game-Changing Translator follows a modular design with the following key compone
    - `ConfigurationHandler` - Manages loading and saving of application settings
    - `DisplayManager` - Handles UI updates for overlays and debug information
    - `HotkeyHandler` - Manages keyboard shortcuts
+   - `StatisticsHandler` - API usage statistics parsing, cost monitoring, and export functionality
    - `TranslationHandler` - Coordinates translation with different providers and unified cache
    - `UIInteractionHandler` - Manages UI interactions and settings
 
@@ -36,6 +37,7 @@ Game-Changing Translator follows a modular design with the following key compone
 
 5. **Specialized Modules**
    - `marian_mt_translator.py` - Neural machine translation implementation
+   - `convert_marian.py` - HuggingFace conversion script for Tatoeba models (© 2020 The HuggingFace Team, Apache License 2.0)
    - `unified_translation_cache.py` - Unified LRU cache system for all translation providers
    - `ocr_utils.py` - OCR utility functions with adaptive preprocessing
    - `translation_utils.py` - Translation utility functions
@@ -75,12 +77,14 @@ ocr-translator/
 │   ├── configuration_handler.py   # Settings and configuration
 │   ├── display_manager.py         # Display and UI updates
 │   ├── hotkey_handler.py          # Keyboard shortcuts
+│   ├── statistics_handler.py      # API usage statistics and cost monitoring
 │   ├── translation_handler.py     # Translation coordination
 │   └── ui_interaction_handler.py  # UI event handling
 ├── language_manager.py            # Language code management and mapping
 ├── language_ui.py                 # UI localization support
 ├── logger.py                      # Logging functionality
 ├── marian_mt_translator.py        # Neural translation implementation
+├── convert_marian.py              # HuggingFace conversion script (© HuggingFace Team)
 ├── ocr_utils.py                   # OCR utility functions
 ├── overlay_manager.py             # Overlay window management
 ├── resource_handler.py            # Resource path resolution
@@ -118,8 +122,24 @@ ocr-translator/
 ├── googletrans_cache.txt          # Cached translations from Google Translate API
 ├── gemini_cache.txt               # Cached translations from Gemini API
 ├── Gemini_API_call_logs.txt       # Detailed Gemini API call logging with cost tracking
+├── API_OCR_short_log.txt          # Short log for Gemini OCR API usage statistics
+├── API_TRA_short_log.txt          # Short log for Gemini Translation API usage statistics
 ├── marian_models_cache/           # Directory for cached MarianMT models
 └── translator_debug.log           # Application debug log file
+```
+
+### Build and Setup Files
+
+```
+ocr-translator/
+├── GameChangingTranslator.spec    # PyInstaller specification (standard CPU version)
+├── GameChangingTranslator_GPU.spec # PyInstaller specification (GPU/CUDA optimized)
+├── compile_app.py                 # Python compilation utility for building executables
+├── setup.py                       # Setup configuration for building executables
+├── run_python_compiler.bat        # Windows batch script for compiling the application
+├── install_dependencies.bat       # Windows batch script to install dependencies
+├── run.bat                        # Windows batch script to run the application
+└── requirements.txt               # Python package dependencies
 ```
 
 ### Debug Resources
@@ -172,6 +192,43 @@ Translation Request
 - **Incomplete cache clearing**: Cache clearing didn't clear all cache levels, leaving stale data
 - **Memory waste**: Multiple caches storing the same translations
 - **Thread safety issues**: Inconsistent locking mechanisms across different cache implementations
+
+### API Usage Statistics and Monitoring System
+
+The application includes a comprehensive API usage monitoring system for tracking costs and performance across all translation providers, with particular focus on Gemini API cost management.
+
+#### Statistics Handler (`handlers/statistics_handler.py`)
+The StatisticsHandler provides real-time monitoring and analysis of API usage:
+
+**Core Features:**
+- **Real-time monitoring** of Gemini OCR and Translation API usage
+- **Cost calculation** with proper currency formatting for different locales
+- **Export functionality** for statistics in CSV and TXT formats  
+- **Clipboard integration** for easy data sharing
+- **Multi-language support** with proper Polish number formatting
+
+**API Usage Tab Integration:**
+The GUI includes a dedicated "API Usage" tab that displays:
+- **Gemini OCR Statistics**: Total calls, average cost per call/minute/hour, total cost
+- **Gemini Translation Statistics**: Total calls, words translated, words per minute, cost per word/call/minute/hour, total cost
+- **Combined API Statistics**: Total API cost, combined cost per minute/hour
+- **DeepL Usage Tracker**: Free monthly limit monitoring
+
+#### API Log Files
+The system maintains multiple log levels for different use cases:
+
+**Short Log Files (Statistics Processing):**
+- **`API_OCR_short_log.txt`** - Condensed log for OCR API calls with timing and cost data
+- **`API_TRA_short_log.txt`** - Condensed log for Translation API calls with timing and cost data
+
+**Detailed Log Files (Full Analysis):**
+- **`Gemini_API_call_logs.txt`** - Complete request/response data with token analysis
+
+#### Export and Sharing Features
+- **CSV Export**: Structured data export with proper localization
+- **Text Export**: Human-readable summary reports in English/Polish
+- **Clipboard Copy**: Quick sharing with proper formatting for each language
+- **Automatic Currency Formatting**: Proper decimal separators and currency symbols for different locales
 
 ### Gemini API Integration and Logging
 
@@ -376,12 +433,26 @@ The application can be packaged as a standalone executable:
    pip install pyinstaller
    ```
 
-2. Use the provided spec file:
+2. Use the appropriate spec file:
+   
+   **For standard CPU-only builds:**
    ```
    pyinstaller GameChangingTranslator.spec
    ```
+   
+   **For GPU/CUDA optimized builds:**
+   ```
+   pyinstaller GameChangingTranslator_GPU.spec
+   ```
+   
+   **Alternative compilation using batch script:**
+   ```
+   run_python_compiler.bat
+   ```
 
 3. The executable will be in the `dist/GameChangingTranslator` directory
+
+**Note:** The GPU version includes additional CUDA libraries and is optimized for systems with NVIDIA graphics cards. Both versions have been recently fixed to resolve numpy docstring compilation errors that previously caused PyInstaller crashes.
 
 ### Using cx_Freeze
 
@@ -483,7 +554,21 @@ The application uses multiple threads for capture, OCR, and translation with imp
 
 The application has been enhanced with several recent features:
 
-### Gemini API Integration (Latest)
+### Thread Management Optimization (Latest)
+- **Optimized worker thread performance** for faster capture, OCR, and translation processing
+- **Improved thread synchronization** and resource management
+- **Enhanced build compilation** with streamlined dependency handling
+- **PyInstaller fixes** resolving numpy docstring compilation errors that caused crashes
+- **Unified build approach** with all spec files using `main.py` as entry point instead of separate bundled scripts
+
+### Build System Improvements
+- **Fixed PyInstaller compilation errors** related to aggressive optimization and numpy docstrings
+- **Dual build support** with both CPU-optimized and GPU/CUDA-optimized spec files
+- **Streamlined dependency management** with better import handling
+- **Removed obsolete files** (`bundled_app.py`, redundant spec files) for cleaner builds
+- **Enhanced error handling** in build process with better debugging information
+
+### Gemini API Integration
 - **Context-aware translation** with configurable sliding window for narrative coherence
 - **Comprehensive API call logging** with detailed cost tracking and token analysis
 - **OCR error intelligence** that automatically corrects recognition imperfections
@@ -533,6 +618,25 @@ This project is considered complete and is not accepting contributions. If you w
 
 Please do not submit pull requests or feature requests as they will not be reviewed or accepted. The project is shared as-is for educational purposes and for others to build upon as they see fit.
 
+## Third-Party Components and Licensing
+
+The application includes third-party components that are properly licensed and attributed:
+
+### HuggingFace Components
+- **`convert_marian.py`** - Model conversion script for Tatoeba to MarianMT format
+  - **Copyright**: © 2020 The HuggingFace Team
+  - **License**: Apache License 2.0
+  - **Usage**: Utility script for converting translation models
+  - **Compliance**: Original copyright notices and license terms preserved
+  - **Legal Status**: Fully compliant with Apache 2.0 permissive license terms
+
+### License Compatibility
+- **Apache 2.0 (HuggingFace)** ↔ **GPL v3 (Main Project)**: Compatible for distribution
+- **Third-party attribution**: All original copyright notices preserved
+- **Legal compliance**: All usage falls within permitted license terms
+
+For complete third-party attribution details, see `ATTRIBUTION.md` in the project root.
+
 ## Code Style
 
 The project follows these general conventions:
@@ -544,6 +648,35 @@ The project follows these general conventions:
 - Use descriptive variable names
 - Break complex operations into smaller, well-named functions
 - Add log statements for important operations or potential failure points
+
+## Setup and Deployment
+
+The project includes several utility scripts for easy setup and deployment:
+
+### Windows Batch Scripts
+- **`install_dependencies.bat`** - Automatically installs all required Python packages from `requirements.txt`
+- **`run.bat`** - Quick launcher script to run the application from command line
+- **`run_python_compiler.bat`** - Automated compilation script using PyInstaller with appropriate spec file
+
+### Setup Files
+- **`setup.py`** - Alternative build configuration for cx_Freeze compilation
+- **`compile_app.py`** - Python-based compilation utility with advanced options
+- **`requirements.txt`** - Complete list of Python package dependencies with versions
+
+### Usage Examples
+```bash
+# Install all dependencies
+install_dependencies.bat
+
+# Run the application
+run.bat
+
+# Compile using PyInstaller
+run_python_compiler.bat
+
+# Alternative compilation with cx_Freeze
+python setup.py build
+```
 
 ## Dependencies and Imports
 
