@@ -10,6 +10,7 @@ import hashlib
 import random
 import re
 import traceback 
+from datetime import datetime
 
 from logger import log_debug
 from ocr_utils import (
@@ -454,17 +455,14 @@ def run_gemini_ocr_only(app, screenshot_pil):
             log_debug(f"Max concurrent OCR calls ({app.max_concurrent_ocr_calls}) reached, skipping batch {sequence_number}")
             return
         
-        # Start OCR processing immediately (no queue for Gemini)
+        # Start OCR processing immediately using thread pool
         app.active_ocr_calls.add(sequence_number)
         
-        import threading
-        ocr_thread = threading.Thread(
-            target=process_gemini_ocr_async,
-            args=(app, webp_image_data, source_lang, sequence_number),
-            name=f"GeminiOCR-{sequence_number}",
-            daemon=True
+        # Submit to thread pool instead of creating new thread
+        future = app.ocr_thread_pool.submit(
+            process_gemini_ocr_async,
+            app, webp_image_data, source_lang, sequence_number
         )
-        ocr_thread.start()
         
         log_debug(f"Started Gemini OCR batch {sequence_number} (active calls: {len(app.active_ocr_calls)})")
         
@@ -474,27 +472,42 @@ def run_gemini_ocr_only(app, screenshot_pil):
 
 def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number):
     """Process Gemini OCR API call asynchronously with timeout handling."""
-    start_time = time.monotonic()
+    thread_start_time = time.monotonic()
     
     try:
+        log_debug(f"TIMING: Thread {sequence_number} started execution at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
         log_debug(f"Processing Gemini OCR batch {sequence_number}")
         
         # Make the Gemini OCR API call - logging is handled inside the function
+        api_start_time = time.monotonic()
+        log_debug(f"TIMING: API call {sequence_number} starting at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
+        
         ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang)
         
+        api_end_time = time.monotonic()
+        api_duration = api_end_time - api_start_time
+        log_debug(f"TIMING: API call {sequence_number} completed at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, duration: {api_duration:.3f}s")
+        
         # Check timeout (3 seconds total including API call)
-        elapsed_time = time.monotonic() - start_time
+        timeout_check_time = time.monotonic()
+        elapsed_time = timeout_check_time - thread_start_time
+        log_debug(f"TIMING: Timeout check {sequence_number} at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, total elapsed: {elapsed_time:.3f}s")
+        
         if elapsed_time > 3.0:
-            log_debug(f"Batch {sequence_number} exceeded 3-second timeout ({elapsed_time:.2f}s), discarding")
+            log_debug(f"TIMING: Batch {sequence_number} exceeded 3-second timeout ({elapsed_time:.2f}s), discarding")
+            log_debug(f"TIMING: Thread start: {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, API duration: {api_duration:.3f}s, total elapsed: {elapsed_time:.3f}s")
             return
         
+        log_debug(f"TIMING: Batch {sequence_number} passed timeout check, scheduling response processing")
         log_debug(f"Gemini OCR batch {sequence_number} completed: '{ocr_result}'")
         
         # Schedule processing of the OCR response on the main thread
         app.root.after(0, process_gemini_ocr_response, app, ocr_result, sequence_number, source_lang)
         
     except Exception as e:
-        elapsed_time = time.monotonic() - start_time
+        exception_time = time.monotonic()
+        elapsed_time = exception_time - thread_start_time
+        log_debug(f"TIMING: Exception in batch {sequence_number} at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, elapsed: {elapsed_time:.3f}s")
         log_debug(f"Error in async Gemini OCR batch {sequence_number} after {elapsed_time:.2f}s: {type(e).__name__} - {e}")
         
         # Schedule error handling on main thread if not timed out
@@ -593,17 +606,14 @@ def start_async_translation(app, text_to_translate, ocr_sequence_number):
             log_debug(f"Max concurrent translation calls ({app.max_concurrent_translation_calls}) reached, skipping translation {translation_sequence}")
             return
         
-        # Start translation processing immediately (no queue for async translations)
+        # Start translation processing immediately using thread pool
         app.active_translation_calls.add(translation_sequence)
         
-        import threading
-        translation_thread = threading.Thread(
-            target=process_translation_async,
-            args=(app, text_to_translate, translation_sequence, ocr_sequence_number),
-            name=f"Translation-{translation_sequence}",
-            daemon=True
+        # Submit to thread pool instead of creating new thread
+        future = app.translation_thread_pool.submit(
+            process_translation_async,
+            app, text_to_translate, translation_sequence, ocr_sequence_number
         )
-        translation_thread.start()
         
         log_debug(f"Started async translation {translation_sequence} for OCR batch {ocr_sequence_number} (active calls: {len(app.active_translation_calls)}): '{text_to_translate}'")
         

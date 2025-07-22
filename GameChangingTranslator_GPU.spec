@@ -15,7 +15,7 @@ current_dir = os.path.dirname(os.path.abspath('__file__'))
 block_cipher = None
 
 a = Analysis(
-    ['bundled_app.py'],
+    ['main.py'],  # Use main.py instead of bundled_app.py (same as working Alternative spec)
     pathex=[current_dir],
     binaries=[],
     datas=[
@@ -77,6 +77,10 @@ a = Analysis(
         'keyboard',
         'google.cloud.translate_v2',
         'google.generativeai',
+        # Pre-load critical Gemini modules for performance
+        'google.generativeai.types',
+        'google.generativeai.client',
+        'google.ai.generativelanguage',
         'deepl',
         
         # GPU monitoring (Windows)
@@ -191,6 +195,7 @@ a = Analysis(
         'torchaudio',
         'torchtext',
     ],
+    optimize=2,  # Python optimization level for better performance
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

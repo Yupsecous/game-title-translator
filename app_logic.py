@@ -19,6 +19,7 @@ import gc
 import traceback
 import io
 import base64
+import concurrent.futures
 
 from logger import log_debug, set_debug_logging_enabled, is_debug_logging_enabled
 from resource_handler import get_resource_path
@@ -151,6 +152,17 @@ class GameChangingTranslator:
         self.active_translation_calls = set()  # Track active async translation calls
         self.max_concurrent_translation_calls = 5  # Limit concurrent translation API calls
         
+        # Initialize thread pools for optimized performance (especially for compiled version)
+        self.ocr_thread_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=10, 
+            thread_name_prefix="GeminiOCR"
+        )
+        self.translation_thread_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=5, 
+            thread_name_prefix="Translation"
+        )
+        log_debug("Initialized thread pools for OCR and translation processing")
+        
         # OCR Preview window
         self.ocr_preview_window = None
 
@@ -268,6 +280,9 @@ class GameChangingTranslator:
         self.statistics_handler = StatisticsHandler(self)
         self.translation_handler = TranslationHandler(self)
         self.ui_interaction_handler = UIInteractionHandler(self) # Needs self.translation_model_names
+
+        # Pre-initialize Gemini model for optimal performance (especially for compiled version)
+        self._pre_initialize_gemini_model()
 
         # Initialize trace suppression mechanism and UI update detection
         self._suppress_traces = False
@@ -774,6 +789,40 @@ For more information, see the user manual."""
             log_debug(f"Error converting image to WebP for Gemini: {e}")
             return None
 
+    def _pre_initialize_gemini_model(self):
+        """Pre-initialize Gemini model at startup to avoid thread initialization delays."""
+        try:
+            # Only pre-initialize if Gemini API is available and configured
+            if not self.GEMINI_API_AVAILABLE:
+                log_debug("Gemini API libraries not available, skipping pre-initialization")
+                return
+            
+            gemini_api_key = self.gemini_api_key_var.get().strip()
+            if not gemini_api_key:
+                log_debug("Gemini API key not configured, skipping pre-initialization")
+                return
+            
+            # Pre-initialize for translation if Gemini is the selected translation model
+            if self.translation_model_var.get() == 'gemini_api':
+                log_debug("Pre-initializing Gemini translation model...")
+                self.translation_handler._initialize_gemini_session(
+                    self.gemini_source_lang or 'en', 
+                    self.gemini_target_lang or 'pl'
+                )
+                log_debug("Gemini translation model pre-initialization completed")
+            
+            # Always pre-configure the API since OCR can be used regardless of translation model
+            if self.GEMINI_API_AVAILABLE:
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=gemini_api_key)
+                    log_debug("Gemini API pre-configured for OCR")
+                except Exception as e:
+                    log_debug(f"Error pre-configuring Gemini API: {e}")
+                    
+        except Exception as e:
+            log_debug(f"Error in Gemini model pre-initialization: {e}")
+    
     # Gemini OCR Batch Processing Methods (Phase 1)
     def get_ocr_model_setting(self):
         """Get the current OCR model setting."""
@@ -2208,6 +2257,23 @@ For more information, see the user manual."""
                 log_debug("MarianMT thread pool shutdown complete.")
             except Exception as e_mtps:
                 log_debug(f"Error shutting down MarianMT thread pool: {e_mtps}")
+        
+        # Shutdown OCR and translation thread pools
+        if hasattr(self, 'ocr_thread_pool'):
+            try:
+                log_debug("Shutting down OCR thread pool...")
+                self.ocr_thread_pool.shutdown(wait=False, cancel_futures=True)
+                log_debug("OCR thread pool shutdown complete.")
+            except Exception as e_otp:
+                log_debug(f"Error shutting down OCR thread pool: {e_otp}")
+        
+        if hasattr(self, 'translation_thread_pool'):
+            try:
+                log_debug("Shutting down translation thread pool...")
+                self.translation_thread_pool.shutdown(wait=False, cancel_futures=True)
+                log_debug("Translation thread pool shutdown complete.")
+            except Exception as e_ttp:
+                log_debug(f"Error shutting down translation thread pool: {e_ttp}")
         try:
             log_debug("Saving final settings before closing...")
             if self._fully_initialized:

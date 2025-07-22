@@ -16,6 +16,25 @@ from logger import log_debug
 from marian_mt_translator import MarianMTTranslator # Already imported
 from unified_translation_cache import UnifiedTranslationCache
 
+# Pre-load heavy libraries at module level for compiled version performance
+try:
+    import google.generativeai as genai
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold
+    GENAI_AVAILABLE = True
+    log_debug("Pre-loaded Google Generative AI libraries")
+except ImportError:
+    GENAI_AVAILABLE = False
+    log_debug("Google Generative AI libraries not available")
+
+try:
+    import requests
+    import urllib.parse
+    REQUESTS_AVAILABLE = True
+    log_debug("Pre-loaded requests library")
+except ImportError:
+    REQUESTS_AVAILABLE = False
+    log_debug("Requests library not available")
+
 class TranslationHandler:
     def __init__(self, app):
         self.app = app
@@ -63,10 +82,10 @@ class TranslationHandler:
         if not api_key_google:
             return "Google Translate API key missing"
         
+        if not REQUESTS_AVAILABLE:
+            return "Requests library not available for Google Translate"
+        
         try:
-            import requests
-            import urllib.parse
-            
             api_call_start_time = time.time()
             
             # Google Translate REST API endpoint
@@ -94,7 +113,6 @@ class TranslationHandler:
             if result and 'data' in result and 'translations' in result['data']:
                 translated_text_gt = result['data']['translations'][0]['translatedText']
                 # Unescape HTML entities
-                import html
                 translated_text_gt = html.unescape(translated_text_gt)
                 return translated_text_gt
             else:
@@ -179,9 +197,11 @@ class TranslationHandler:
             log_debug("DeepL API key missing for usage check")
             return None
         
+        if not REQUESTS_AVAILABLE:
+            log_debug("Requests library not available for DeepL usage check")
+            return None
+        
         try:
-            import requests
-            
             # API endpoint for Free users (works for both Free and Pro)
             url = "https://api-free.deepl.com/v2/usage"
             
@@ -795,7 +815,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if not api_key_gemini:
                 return "Gemini API key missing"
             
-            import google.generativeai as genai
+            if not GENAI_AVAILABLE:
+                return "Google Generative AI libraries not available"
             
             # Check if we need to create a new model (minimal conditions)
             needs_new_session = (
@@ -939,9 +960,12 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 
     def _initialize_gemini_session(self, source_lang, target_lang):
         """Initialize new Gemini chat session without system instructions."""
-        try:
-            import google.generativeai as genai
+        if not GENAI_AVAILABLE:
+            log_debug("Google Generative AI libraries not available for Gemini session")
+            self.gemini_model = None
+            return
             
+        try:
             genai.configure(api_key=self.app.gemini_api_key_var.get().strip())
             
             # Get configuration values
@@ -959,7 +983,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             }
             
             # Gaming-appropriate safety settings
-            from google.generativeai.types import HarmCategory, HarmBlockThreshold
             safety_settings = {
                 HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
                 HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
@@ -1250,7 +1273,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             api_key_gemini = self.app.gemini_api_key_var.get().strip()
             if not api_key_gemini:
                 return "<ERROR>: Gemini API key missing"
-            import google.generativeai as genai
+            if not GENAI_AVAILABLE:
+                return "<e>: Google Generative AI libraries not available"
             
             # Configure Gemini API
             genai.configure(api_key=api_key_gemini)
