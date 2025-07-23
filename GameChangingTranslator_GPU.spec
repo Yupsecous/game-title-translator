@@ -169,6 +169,8 @@ a = Analysis(
         'logging',
         'warnings',
         'traceback',
+        # Fix for MarianMT in compiled version - include unittest.mock that transformers needs
+        'unittest.mock',
     ],
     hookspath=[],
     hooksconfig={},

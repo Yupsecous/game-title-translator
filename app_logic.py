@@ -92,11 +92,29 @@ class GameChangingTranslator:
         self.GEMINI_API_AVAILABLE = GEMINI_API_AVAILABLE
         self.MARIANMT_AVAILABLE = MARIANMT_AVAILABLE
         
-        if not KEYBOARD_AVAILABLE: log_debug("Keyboard library not available. Hotkeys disabled.")
-        if not GOOGLE_TRANSLATE_API_AVAILABLE: log_debug("Google Translate API libraries not available.")
-        if not DEEPL_API_AVAILABLE: log_debug("DeepL API libraries not available.")
-        if not GEMINI_API_AVAILABLE: log_debug("Gemini API libraries not available.")
-        if not MARIANMT_AVAILABLE: log_debug("MarianMT libraries not available.")
+        # Debug: Log execution environment information
+        import sys
+        is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+        log_debug(f"Application execution environment:")
+        log_debug(f"  Compiled/Frozen: {is_compiled}")
+        if is_compiled:
+            log_debug(f"  Executable path: {sys.executable}")
+            log_debug(f"  Bundle dir: {getattr(sys, '_MEIPASS', 'Unknown')}")
+        else:
+            log_debug(f"  Python script mode")
+            log_debug(f"  Script path: {__file__}")
+        
+        log_debug(f"Library availability check:")
+        if not KEYBOARD_AVAILABLE: log_debug("  Keyboard library not available. Hotkeys disabled.")
+        else: log_debug("  Keyboard library: available")
+        if not GOOGLE_TRANSLATE_API_AVAILABLE: log_debug("  Google Translate API libraries not available.")
+        else: log_debug("  Google Translate API libraries: available")
+        if not DEEPL_API_AVAILABLE: log_debug("  DeepL API libraries not available.")
+        else: log_debug("  DeepL API libraries: available")
+        if not GEMINI_API_AVAILABLE: log_debug("  Gemini API libraries not available.")
+        else: log_debug("  Gemini API libraries: available")
+        if not MARIANMT_AVAILABLE: log_debug("  MarianMT libraries not available.")
+        else: log_debug("  MarianMT libraries: available")
 
         # Process-Level CPU Affinity: Limit application to exactly 3 cores
         if ENABLE_PROCESS_CPU_AFFINITY:

@@ -91,7 +91,18 @@ a = Analysis(
         # Keep torch/transformers/sentencepiece for MarianMT (minimal exclusions)
         'torch',
         'transformers',
+        'transformers.models',
+        'transformers.models.marian',
+        'transformers.models.marian.modeling_marian',
+        'transformers.models.marian.tokenization_marian',
+        'transformers.models.marian.configuration_marian',
+        'transformers.tokenization_utils',
+        'transformers.tokenization_utils_base',
+        'transformers.modeling_utils',
+        'transformers.configuration_utils',
         'sentencepiece',
+        # Fix for MarianMT in compiled version - include unittest.mock that transformers needs
+        'unittest.mock',
     ],
     hookspath=[],
     hooksconfig={},
@@ -128,7 +139,6 @@ a = Analysis(
         
         # Test modules
         'tkinter.test',
-        'unittest.mock',
     ],
     optimize=1,  # Use level 1 instead of 2 to avoid potential optimization issues
     win_no_prefer_redirects=False,

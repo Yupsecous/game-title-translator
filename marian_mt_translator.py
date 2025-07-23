@@ -18,8 +18,13 @@ ENABLE_PYTORCH_THREAD_LIMITING = False  # Set to False to disable PyTorch thread
 
 # --- For MarianMT Translation with GPU Support ---
 try:
+    log_debug("MarianMT: Attempting to import transformers...")
     from transformers import MarianMTModel, MarianTokenizer
+    log_debug("MarianMT: transformers import successful")
+    
+    log_debug("MarianMT: Attempting to import torch...")
     import torch
+    log_debug("MarianMT: torch import successful")
     
     # Detailed GPU and CUDA Library Detection
     # Check if PyTorch was compiled with CUDA support (works for both compiled and Python modes)
@@ -83,15 +88,26 @@ try:
             log_debug("GPU: not found, GPU libraries: not found, MarianMT running on CPU.")
     
     MARIANMT_AVAILABLE = True
+    log_debug("MarianMT: All imports successful, MARIANMT_AVAILABLE = True")
     
-except ImportError:
+except ImportError as import_error:
     MARIANMT_AVAILABLE = False
     torch = None
     GPU_AVAILABLE = False
     GPU_DEVICE = None
     GPU_NAME = None
     GPU_MEMORY = 0
+    log_debug(f"MarianMT: Import failed with ImportError: {import_error}")
     log_debug("GPU: unknown, GPU libraries: not found, MarianMT not available (transformers/torch not installed).")
+except Exception as general_error:
+    MARIANMT_AVAILABLE = False
+    torch = None
+    GPU_AVAILABLE = False
+    GPU_DEVICE = None
+    GPU_NAME = None
+    GPU_MEMORY = 0
+    log_debug(f"MarianMT: Import failed with unexpected error: {general_error}")
+    log_debug("GPU: unknown, GPU libraries: not found, MarianMT not available (unexpected import error).")
 
 class MarianMTTranslator:
     """GPU-accelerated MarianMT translator with automatic CPU fallback."""
