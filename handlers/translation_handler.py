@@ -1538,7 +1538,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                     import deepl
                     self.app.deepl_api_client = deepl.Translator(self.app.deepl_api_key_var.get().strip())
                 except Exception as e: return f"DeepL Client init error: {e}"
-                return f"DeepL Client init error: {e}"
             source_lang = self.app.deepl_source_lang 
             target_lang = self.app.deepl_target_lang
             extra_params = {"model_type": self.app.deepl_model_type_var.get()}

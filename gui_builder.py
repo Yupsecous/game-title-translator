@@ -159,10 +159,19 @@ def create_settings_tab(app):
     ttk.Label(frame, text=app.ui_lang.get_label("translation_model_label")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
     
     translation_models_available_for_ui = []
+    log_debug(f"GUI Builder: Translation model availability check:")
+    log_debug(f"  GEMINI_API_AVAILABLE: {app.GEMINI_API_AVAILABLE}")
+    log_debug(f"  MARIANMT_AVAILABLE: {app.MARIANMT_AVAILABLE}")  
+    log_debug(f"  DEEPL_API_AVAILABLE: {app.DEEPL_API_AVAILABLE}")
+    log_debug(f"  GOOGLE_TRANSLATE_API_AVAILABLE: {app.GOOGLE_TRANSLATE_API_AVAILABLE}")
+    
     if app.GEMINI_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['gemini_api'])
     if app.MARIANMT_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['marianmt'])
     if app.DEEPL_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['deepl_api'])
     if app.GOOGLE_TRANSLATE_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['google_api'])
+    
+    log_debug(f"GUI Builder: Available translation models for UI: {translation_models_available_for_ui}")
+    
     if not translation_models_available_for_ui: 
         default_model_key_from_var = app.translation_model_var.get() 
         translation_models_available_for_ui.append(app.translation_model_names.get(default_model_key_from_var, "MarianMT (offline and free)"))
