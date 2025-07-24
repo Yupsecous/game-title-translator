@@ -663,6 +663,11 @@ def process_translation_response(app, translation_result, translation_sequence, 
     try:
         log_debug(f"Processing translation response for sequence {translation_sequence}: '{translation_result}'")
         
+        # Handle timeout case (None result) - don't display anything, just return silently
+        if translation_result is None:
+            log_debug(f"Translation {translation_sequence}: Timeout occurred, no message displayed (suppressed)")
+            return
+        
         # Initialize last displayed sequence if not exists
         if not hasattr(app, 'last_displayed_translation_sequence'):
             app.last_displayed_translation_sequence = 0
@@ -676,7 +681,7 @@ def process_translation_response(app, translation_result, translation_sequence, 
         # This is a newer translation - proceed with display
         log_debug(f"Translation {translation_sequence}: Processing newer sequence (last displayed: {app.last_displayed_translation_sequence})")
         
-        # Handle error responses
+        # Handle error responses (excluding timeout which is now handled as None above)
         error_prefixes = ("Err:", "MarianMT error:", "Google API error:", "DeepL API error:", 
                           "No translation for model:", "MarianMT not initialized.", 
                           "MarianMT language pair not determined:", "Google API key missing:",
@@ -684,8 +689,7 @@ def process_translation_response(app, translation_result, translation_sequence, 
                           "DeepL Client init error:", "Translation error:", 
                           "Google Translate API client not initialized", 
                           "DeepL API client not initialized", 
-                          "MarianMT translator not initialized",
-                          "Translation timeout:", "Translation error:")
+                          "MarianMT translator not initialized")
         
         if isinstance(translation_result, str) and any(translation_result.startswith(p) for p in error_prefixes):
             log_debug(f"Translation error in sequence {translation_sequence}: {translation_result}")
