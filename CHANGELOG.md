@@ -5,6 +5,31 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2025-07-24
+
+### Added
+- Enhanced debugging and logging capabilities for better troubleshooting in compiled versions
+- Comprehensive library availability detection and import status reporting
+
+### Changed
+- **Updated Gemini Model**: Default Gemini model name changed from `gemini-2.5-flash-lite-preview-06-17` to `gemini-2.5-flash-lite` (stable release)
+  - Provides enhanced stability and reliability with Google's official stable model
+  - Automatic upgrade for existing users upon restart
+- Improved error handling and exception reporting throughout the application
+- Enhanced PyInstaller compilation configuration for better dependency inclusion
+
+### Fixed
+- **Critical DeepL Translation Bug**: Fixed "cannot access local variable 'e'" error that occurred when enabling DeepL translation for the first time
+  - Previously required disabling and re-enabling translation to work correctly
+  - Now works correctly on first attempt without workarounds
+- **MarianMT Compilation Issue**: Resolved missing MarianMT translation model in compiled version
+  - MarianMT was missing from Translation Model dropdown in compiled applications
+  - Fixed by including `unittest.mock` dependency required by transformers library
+  - MarianMT now properly available in both Python and compiled versions
+
+### Removed
+- N/A
+
 ## [3.0.0] - 2025-07-20
 
 ### Added
