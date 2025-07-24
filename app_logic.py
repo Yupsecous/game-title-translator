@@ -168,7 +168,7 @@ class GameChangingTranslator:
         self.translation_sequence_counter = 0  # Track translation sequence numbers
         self.last_displayed_translation_sequence = 0  # Track chronological order for translations
         self.active_translation_calls = set()  # Track active async translation calls
-        self.max_concurrent_translation_calls = 5  # Limit concurrent translation API calls
+        self.max_concurrent_translation_calls = 8  # Limit concurrent translation API calls
         
         # Initialize thread pools for optimized performance (especially for compiled version)
         self.ocr_thread_pool = concurrent.futures.ThreadPoolExecutor(
@@ -902,7 +902,7 @@ For more information, see the user manual."""
             log_debug("Initialized active_translation_calls")
         
         if not hasattr(self, 'max_concurrent_translation_calls'):
-            self.max_concurrent_translation_calls = 5
+            self.max_concurrent_translation_calls = 8
             log_debug("Initialized max_concurrent_translation_calls")
     
     def check_clear_timeout(self):
