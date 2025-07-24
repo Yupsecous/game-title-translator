@@ -1488,9 +1488,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         thread.join(timeout=timeout_seconds)
         
         if thread.is_alive():
-            # Translation timed out
-            log_debug(f"Translation timed out after {timeout_seconds}s for: '{text_content}'")
-            return f"Translation timeout: exceeded {timeout_seconds}s"
+            # Translation timed out - don't return timeout message, just return None
+            log_debug(f"Translation timed out after {timeout_seconds}s for: '{text_content}' (message suppressed)")
+            return None
         
         if exception[0]:
             # Translation had an exception

@@ -127,10 +127,7 @@ class CacheManager:
             # First, ensure our in-memory cache is up-to-date before we check/save
             self.check_file_cache(cache_type, "dummy_key_to_force_reload")
 
-            # Update in-memory cache
-            memory_cache[cache_key] = translated_text
-            
-            # Key parsing logic remains the same
+            # Key parsing logic to extract original text
             parts = cache_key.split(':', 3)
             if len(parts) >= 4:
                 source_lang = parts[1].upper()
@@ -140,12 +137,46 @@ class CacheManager:
             else:
                 lang_pair = "UNK-UNK"
                 original_text = cache_key
+
+            # Check if an entry with the same source text already exists
+            if os.path.exists(cache_file_path):
+                try:
+                    with open(cache_file_path, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line or line.startswith('#') or ':==:' not in line:
+                                continue
+                            
+                            parts_check = line.split(':==:', 1)
+                            if len(parts_check) == 2:
+                                full_cache_key_from_file = parts_check[0]
+                                
+                                # Extract source text from existing entry
+                                if ')' in full_cache_key_from_file:
+                                    try:
+                                        # Split on ')' to separate service part and text part
+                                        service_part, text_part = full_cache_key_from_file.split(')', 1)
+                                        # Clean up the text part (remove leading ':')
+                                        existing_source_text = text_part.lstrip(':')
+                                        
+                                        # If we find an entry with identical source text, don't save
+                                        if existing_source_text == original_text:
+                                            log_debug(f"Duplicate source text found in {cache_type} file cache, skipping save: {original_text}")
+                                            return False
+                                    except (ValueError, IndexError):
+                                        # Continue checking other lines if this one is malformed
+                                        continue
+                except Exception as e_check:
+                    log_debug(f"Error checking for duplicates in {cache_type} file cache: {e_check}")
+                    # Continue with save if we can't check for duplicates
+
+            # Update in-memory cache
+            memory_cache[cache_key] = translated_text
             
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
             formatted_cache_key = f"{service_name}({lang_pair},{timestamp}):{original_text}"
             
-            # Simplified append logic. We trust the calling function to avoid duplicates.
-            # The original logic was complex and could fail if timestamps differed.
+            # Append new entry only if no duplicate was found
             with open(cache_file_path, 'a', encoding='utf-8') as f:
                 f.write(f"{formatted_cache_key}:==:{translated_text}\n")
             
