@@ -482,24 +482,23 @@ def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number)
         api_start_time = time.monotonic()
         log_debug(f"TIMING: API call {sequence_number} starting at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
         
-        ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang)
+        ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang, sequence_number)
         
         api_end_time = time.monotonic()
         api_duration = api_end_time - api_start_time
         log_debug(f"TIMING: API call {sequence_number} completed at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, duration: {api_duration:.3f}s")
         
-        # Check timeout (3 seconds total including API call)
+        # Check timeout (5 seconds from API call start)
         timeout_check_time = time.monotonic()
-        elapsed_time = timeout_check_time - thread_start_time
-        log_debug(f"TIMING: Timeout check {sequence_number} at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, total elapsed: {elapsed_time:.3f}s")
+        elapsed_time = timeout_check_time - api_start_time
+        log_debug(f"TIMING: Timeout check {sequence_number} at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, API elapsed: {elapsed_time:.3f}s")
         
-        if elapsed_time > 3.0:
-            log_debug(f"TIMING: Batch {sequence_number} exceeded 3-second timeout ({elapsed_time:.2f}s), discarding")
-            log_debug(f"TIMING: Thread start: {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, API duration: {api_duration:.3f}s, total elapsed: {elapsed_time:.3f}s")
+        if elapsed_time > 5.0:
+            log_debug(f"TIMING: Batch {sequence_number} exceeded 5-second timeout ({elapsed_time:.2f}s), discarding")
+            log_debug(f"TIMING: Thread start: {datetime.now().strftime('%H:%M:%S.%f')[:-3]}, API duration: {api_duration:.3f}s, API elapsed: {elapsed_time:.3f}s")
             return
         
-        log_debug(f"TIMING: Batch {sequence_number} passed timeout check, scheduling response processing")
-        log_debug(f"Gemini OCR batch {sequence_number} completed: '{ocr_result}'")
+        log_debug(f"Gemini OCR batch {sequence_number} completed: '{ocr_result}', scheduling response processing")
         
         # Schedule processing of the OCR response on the main thread
         app.root.after(0, process_gemini_ocr_response, app, ocr_result, sequence_number, source_lang)
@@ -629,7 +628,7 @@ def process_translation_async(app, text_to_translate, translation_sequence, ocr_
         log_debug(f"Processing async translation {translation_sequence}")
         
         # Make the translation API call with timeout consideration
-        translation_result = app.translation_handler.translate_text_with_timeout(text_to_translate, timeout_seconds=10.0)
+        translation_result = app.translation_handler.translate_text_with_timeout(text_to_translate, timeout_seconds=10.0, ocr_batch_number=ocr_sequence_number)
         
         # Check if translation took too long (consider potentially stale)
         elapsed_time = time.monotonic() - start_time

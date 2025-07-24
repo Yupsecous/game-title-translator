@@ -1262,7 +1262,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 
     # ==================== GEMINI OCR METHODS (Phase 2) ====================
     
-    def _gemini_ocr_only(self, webp_image_data, source_lang):
+    def _gemini_ocr_only(self, webp_image_data, source_lang, batch_number=None):
         """Simple OCR-only call to Gemini API for extracting text from images."""
         log_debug(f"Gemini OCR request for source language: {source_lang}")
         
@@ -1369,7 +1369,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 call_duration, input_tokens, output_tokens, source_lang
             )
             
-            log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s)")
+            batch_info = f", Batch {batch_number}" if batch_number is not None else ""
+            log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s){batch_info}")
             return parsed_text
             
         except Exception as e:
@@ -1466,7 +1467,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         """Deprecated - replaced by _log_complete_gemini_ocr_call."""
         pass
 
-    def translate_text_with_timeout(self, text_content, timeout_seconds=10.0):
+    def translate_text_with_timeout(self, text_content, timeout_seconds=10.0, ocr_batch_number=None):
         """Wrapper for translate_text with timeout support for async processing."""
         import threading
         import time
@@ -1476,7 +1477,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         def translation_worker():
             try:
-                result[0] = self.translate_text(text_content)
+                result[0] = self.translate_text(text_content, ocr_batch_number)
             except Exception as e:
                 exception[0] = e
         
@@ -1499,7 +1500,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         return result[0]
 
-    def translate_text(self, text_content_main):
+    def translate_text(self, text_content_main, ocr_batch_number=None):
         cleaned_text_main = text_content_main.strip() if text_content_main else ""
         if not cleaned_text_main or len(cleaned_text_main) < 1: return None 
         if self.is_placeholder_text(cleaned_text_main): return None
@@ -1560,7 +1561,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             selected_translation_model, **extra_params
         )
         if cached_result:
-            log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
+            batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
+            log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache{batch_info}")
             
             # ### FIX: Added cache synchronization logic here. ###
             # If we found it in memory, ensure it's also saved to disk for future sessions.
@@ -1602,7 +1604,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             file_cache_hit = self.app.cache_manager.check_file_cache('deepl', key)
         
         if file_cache_hit:
-            log_debug(f"Found \"{cleaned_text_main}\" in {selected_translation_model} file cache.")
+            batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
+            log_debug(f"Found \"{cleaned_text_main}\" in {selected_translation_model} file cache{batch_info}.")
             self.unified_cache.store(
                 cleaned_text_main, source_lang, target_lang,
                 selected_translation_model, file_cache_hit, **extra_params
@@ -1612,7 +1615,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             return file_cache_hit
 
         # 3. All Caches Miss - Perform API Call  
-        log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API.")
+        batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
+        log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API{batch_info}.")
         translated_api_text = None
         if selected_translation_model == 'marianmt':
             translated_api_text = self._marian_translate(cleaned_text_main, source_lang, target_lang, beam_val)
@@ -1647,7 +1651,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if selected_translation_model == 'gemini_api':
                 self._update_sliding_window(cleaned_text_main, translated_api_text)
         
-        log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s")
+        batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
+        log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s{batch_info}")
         return translated_api_text
     
     def _is_error_message(self, text):
