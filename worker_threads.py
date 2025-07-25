@@ -39,6 +39,11 @@ def run_capture_thread(app):
             scan_interval_ms = app.current_scan_interval  # ← Use adaptive value
             base_scan_interval = max(min_interval, scan_interval_ms / 1000.0)
             
+            # DEBUG: Log when using adaptive interval (every 20 seconds to avoid spam)
+            if not hasattr(app, '_last_adaptive_debug') or now - app._last_adaptive_debug > 20.0:
+                app._last_adaptive_debug = now
+                log_debug(f"ADAPTIVE: Capture thread using scan interval: {scan_interval_ms}ms (base: {app.scan_interval_var.get()}ms)")
+            
             # Simple logic for Gemini OCR - strict scan interval adherence
             ocr_model = app.get_ocr_model_setting()
             if ocr_model == 'gemini':
