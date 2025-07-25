@@ -181,6 +181,13 @@ class GameChangingTranslator:
         )
         log_debug("Initialized thread pools for OCR and translation processing")
         
+        # Adaptive Scan Interval Infrastructure
+        self.base_scan_interval = 500  # User's preferred setting (will be updated from config)
+        self.current_scan_interval = 500  # Dynamic value used by capture thread
+        self.load_check_timer = 0
+        self.overload_detected = False
+        log_debug("Initialized adaptive scan interval infrastructure")
+        
         # OCR Preview window
         self.ocr_preview_window = None
 
@@ -275,6 +282,13 @@ class GameChangingTranslator:
         self.tesseract_path_var = tk.StringVar(value=tesseract_path_from_config)
 
         self.scan_interval_var = tk.IntVar(value=int(self.config['Settings'].get('scan_interval', '100')))
+        
+        # Initialize adaptive scan interval values from user configuration
+        initial_scan_interval = self.scan_interval_var.get()
+        self.base_scan_interval = initial_scan_interval  # Update with user's actual setting
+        self.current_scan_interval = initial_scan_interval  # Start with user's setting
+        log_debug(f"Initialized adaptive scan interval: base={self.base_scan_interval}ms, current={self.current_scan_interval}ms")
+        
         self.clear_translation_timeout_var = tk.IntVar(value=int(self.config['Settings'].get('clear_translation_timeout', '3')))
         self.stability_var = tk.IntVar(value=int(self.config['Settings'].get('stability_threshold', '2')))
         self.confidence_var = tk.IntVar(value=int(self.config['Settings'].get('confidence_threshold', '60')))
@@ -326,6 +340,19 @@ class GameChangingTranslator:
                         log_debug(f"Scan interval {current_value}ms too low for Gemini OCR, setting to 500ms minimum")
                         self.scan_interval_var.set(500)
                         return  # Skip save_settings since we just changed the value
+                
+                # Update adaptive scan interval when user changes scan interval
+                new_scan_interval = self.scan_interval_var.get()
+                if hasattr(self, 'base_scan_interval') and new_scan_interval != self.base_scan_interval:
+                    self.base_scan_interval = new_scan_interval
+                    # Reset to new base if not currently overloaded, or update overloaded value
+                    if not self.overload_detected:
+                        self.current_scan_interval = new_scan_interval
+                        log_debug(f"Adaptive scan interval updated: base={self.base_scan_interval}ms, current={self.current_scan_interval}ms")
+                    else:
+                        self.current_scan_interval = int(new_scan_interval * 1.5)  # Maintain 150% overload ratio
+                        log_debug(f"Adaptive scan interval updated during overload: base={self.base_scan_interval}ms, current={self.current_scan_interval}ms")
+                
                 self.save_settings()
             elif self._suppress_traces:
                 log_debug("Scan interval trace suppressed during UI update")
@@ -845,6 +872,44 @@ For more information, see the user manual."""
     def get_ocr_model_setting(self):
         """Get the current OCR model setting."""
         return self.ocr_model_var.get()
+    
+    def update_adaptive_scan_interval(self):
+        """Adjust scan interval based on current OCR API load to prevent bottlenecks."""
+        now = time.monotonic()
+        
+        # Check load every 2 seconds
+        if now - self.load_check_timer < 2.0:
+            return
+            
+        self.load_check_timer = now
+        
+        # Measure current OCR load
+        active_ocr_count = len(self.active_ocr_calls)
+        max_ocr_calls = self.max_concurrent_ocr_calls
+        
+        # Get user's preferred base interval
+        base_interval = self.scan_interval_var.get()  # User's setting in milliseconds
+        
+        # Update base_scan_interval to track user changes
+        self.base_scan_interval = base_interval
+        
+        # Apply the user's specific requirements:
+        # If active OCR API calls > 7, increase scan interval to 150% of current value
+        # If active OCR API calls fall below 5, restore original scan interval
+        if active_ocr_count > 7:
+            if not self.overload_detected:
+                # First detection of overload
+                self.current_scan_interval = int(base_interval * 1.5)  # 150%
+                self.overload_detected = True
+                log_debug(f"OCR overload detected ({active_ocr_count} active calls), increasing scan interval to {self.current_scan_interval}ms")
+            # Stay at increased interval while overloaded
+            
+        elif active_ocr_count < 5:
+            if self.overload_detected:
+                # Load has decreased, return to normal
+                self.current_scan_interval = base_interval
+                self.overload_detected = False
+                log_debug(f"OCR load normalized ({active_ocr_count} active calls), returning scan interval to {self.current_scan_interval}ms")
     
     def handle_empty_ocr_result(self):
         """Handle <EMPTY> OCR result and manage clear translation timeout."""

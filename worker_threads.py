@@ -32,7 +32,11 @@ def run_capture_thread(app):
     while app.is_running:
         now = time.monotonic()
         try:
-            scan_interval_ms = app.scan_interval_var.get()
+            # Update adaptive scan interval based on OCR load
+            app.update_adaptive_scan_interval()
+            
+            # Use dynamic interval instead of static setting
+            scan_interval_ms = app.current_scan_interval  # ← Use adaptive value
             base_scan_interval = max(min_interval, scan_interval_ms / 1000.0)
             
             # Simple logic for Gemini OCR - strict scan interval adherence
