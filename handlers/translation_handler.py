@@ -1353,6 +1353,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 if not parsed_text:
                     parsed_text = "<EMPTY>"
             
+            # Replace line breaks with spaces in the extracted text
+            if parsed_text != "<EMPTY>":
+                parsed_text = parsed_text.replace('\n', ' ').replace('\r', ' ')
+            
             # Extract exact token counts from API response metadata
             input_tokens, output_tokens = 0, 0
             try:
