@@ -18,13 +18,21 @@ from unified_translation_cache import UnifiedTranslationCache
 
 # Pre-load heavy libraries at module level for compiled version performance
 try:
-    import google.generativeai as genai
-    from google.generativeai.types import HarmCategory, HarmBlockThreshold
+    # NEW: Google Gen AI library (migrated from google.generativeai)
+    from google import genai
+    from google.genai import types
     GENAI_AVAILABLE = True
-    log_debug("Pre-loaded Google Generative AI libraries")
+    log_debug("Pre-loaded Google Gen AI libraries (new library)")
 except ImportError:
-    GENAI_AVAILABLE = False
-    log_debug("Google Generative AI libraries not available")
+    # Fallback to old library if new one not available
+    try:
+        import google.generativeai as genai
+        from google.generativeai.types import HarmCategory, HarmBlockThreshold
+        GENAI_AVAILABLE = True
+        log_debug("Pre-loaded Google Generative AI libraries (legacy fallback)")
+    except ImportError:
+        GENAI_AVAILABLE = False
+        log_debug("Google Generative AI libraries not available")
 
 try:
     import requests
@@ -818,18 +826,18 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if not GENAI_AVAILABLE:
                 return "Google Generative AI libraries not available"
             
-            # Check if we need to create a new model (minimal conditions)
+            # Check if we need to create a new client (minimal conditions)
             needs_new_session = (
-                not hasattr(self, 'gemini_model') or 
-                self.gemini_model is None or
+                not hasattr(self, 'gemini_client') or 
+                self.gemini_client is None or
                 self.should_reset_session(api_key_gemini)  # API key changed
             )
             
             if needs_new_session:
                 if hasattr(self, 'gemini_session_api_key') and self.gemini_session_api_key != api_key_gemini:
-                    log_debug("Creating new Gemini model (API key changed)")
+                    log_debug("Creating new Gemini client (API key changed)")
                 else:
-                    log_debug("Creating new Gemini model (no existing model)")
+                    log_debug("Creating new Gemini client (no existing client)")
                 self._initialize_gemini_session(source_lang_gm, target_lang_gm)
             else:
                 # Check if language pair changed - clear context
@@ -842,8 +850,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             self.gemini_current_source_lang = source_lang_gm
             self.gemini_current_target_lang = target_lang_gm
             
-            if self.gemini_model is None:
-                return "Gemini model initialization failed"
+            if self.gemini_client is None:
+                return "Gemini client initialization failed"
             
             # Get display names for source and target languages
             source_lang_name = self._get_language_display_name(source_lang_gm, 'gemini')
@@ -899,10 +907,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Note: API call logging now happens atomically after the response
             
             api_call_start_time = time.time()
-            if not hasattr(self, 'gemini_model') or self.gemini_model is None:
-                return "Gemini model not initialized"
+            if not hasattr(self, 'gemini_client') or self.gemini_client is None:
+                return "Gemini client not initialized"
             
-            response = self.gemini_model.generate_content(message_content)
+            response = self.gemini_client.models.generate_content(
+                model=self.gemini_model_name,
+                contents=message_content,
+                config=self.gemini_generation_config
+            )
             call_duration = time.time() - api_call_start_time
             log_debug(f"Gemini API call took {call_duration:.3f}s")
 
@@ -959,46 +971,52 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             self._decrement_pending_translation_calls()
 
     def _initialize_gemini_session(self, source_lang, target_lang):
-        """Initialize new Gemini chat session without system instructions."""
+        """Initialize new Gemini client session without system instructions."""
         if not GENAI_AVAILABLE:
-            log_debug("Google Generative AI libraries not available for Gemini session")
-            self.gemini_model = None
+            log_debug("Google Gen AI libraries not available for Gemini session")
+            self.gemini_client = None
             return
             
         try:
-            genai.configure(api_key=self.app.gemini_api_key_var.get().strip())
+            # NEW: Client-based approach
+            self.gemini_client = genai.Client(
+                api_key=self.app.gemini_api_key_var.get().strip()
+            )
             
             # Get configuration values
             model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
             model_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite-preview-06-17')
             
-            # Optimal generation configuration for translation
-            generation_config = {
-                "temperature": model_temperature,        # Configurable temperature for translations
-                "max_output_tokens": 1024,       # Sufficient for subtitle translations
-                "candidate_count": 1,            # Single response needed
-                "top_p": 0.95,                   # Slightly constrain token selection
-                "top_k": 40,                     # Limit candidate tokens
-                "response_mime_type": "text/plain"
-            }
-            
-            # Gaming-appropriate safety settings
-            safety_settings = {
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            }
-            
-            # Create model with optimized settings (no system instructions)
-            model = genai.GenerativeModel(
-                model_name=model_name,           # Configurable model name
-                generation_config=generation_config,
-                safety_settings=safety_settings
+            # Store config for later use in API calls
+            self.gemini_generation_config = types.GenerateContentConfig(
+                temperature=model_temperature,
+                max_output_tokens=1024,
+                candidate_count=1,
+                top_p=0.95,
+                top_k=40,
+                response_mime_type="text/plain",
+                safety_settings=[
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_HARASSMENT',
+                        threshold='BLOCK_NONE'
+                    ),
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_HATE_SPEECH', 
+                        threshold='BLOCK_NONE'
+                    ),
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                        threshold='BLOCK_NONE'
+                    ),
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                        threshold='BLOCK_NONE'
+                    )
+                ]
             )
             
-            # Store model directly for stateless calls (no chat session)
-            self.gemini_model = model
+            # Store model name for API calls
+            self.gemini_model_name = model_name
             
             # Initialize sliding window memory and session tracking
             self.gemini_context_window = []
@@ -1008,18 +1026,20 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             self.gemini_current_source_lang = source_lang
             self.gemini_current_target_lang = target_lang
             
-            log_debug(f"Gemini model initialized for stateless calls (no chat session)")
+            log_debug(f"Gemini client initialized for stateless calls (no chat session)")
             
         except Exception as e:
-            log_debug(f"Failed to initialize Gemini model: {e}")
-            self.gemini_model = None
+            log_debug(f"Failed to initialize Gemini client: {e}")
+            self.gemini_client = None
 
     def _reset_gemini_session(self):
-        """Reset Gemini model and context completely."""
+        """Reset Gemini client and context completely."""
         try:
             # Clear all session-related attributes
             session_attrs = [
-                'gemini_model',
+                'gemini_client',  # NEW: Updated to use client instead of model
+                'gemini_generation_config',  # NEW: Added config clearing
+                'gemini_model_name',  # NEW: Added model name clearing
                 'gemini_context_window', 
                 'gemini_session_api_key',
                 'gemini_current_source_lang',
@@ -1034,11 +1054,11 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Initialize empty context window
             self.gemini_context_window = []
             
-            log_debug("Gemini model reset completed - all state cleared")
+            log_debug("Gemini client reset completed - all state cleared")
         except Exception as e:
-            log_debug(f"Error resetting Gemini model: {e}")
-        # Always ensure model is None to force reinitialization
-        self.gemini_model = None
+            log_debug(f"Error resetting Gemini client: {e}")
+        # Always ensure client is None to force reinitialization
+        self.gemini_client = None
 
     def force_gemini_session_reset(self, reason="Manual reset"):
         """Force a complete session reset when actually necessary (API key changes, etc.)."""
@@ -1055,7 +1075,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
     def should_reset_session(self, api_key):
         """Check if session needs to be reset due to API key change."""
-        if not hasattr(self, 'gemini_session_api_key'):
+        if not hasattr(self, 'gemini_client'):
             return True
         return self.gemini_session_api_key != api_key
     
@@ -1276,37 +1296,31 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if not GENAI_AVAILABLE:
                 return "<e>: Google Generative AI libraries not available"
             
-            # Configure Gemini API
-            genai.configure(api_key=api_key_gemini)
+            # Configure Gemini API with new client approach
+            client = genai.Client(api_key=api_key_gemini)
             
             # Get model configuration for OCR calls
             model_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite-preview-06-17')
             
-            # Optimal configuration for OCR tasks
-            generation_config = {
-                "temperature": 0.0,           # Deterministic for OCR
-                "max_output_tokens": 512,     # Sufficient for OCR text
-                "candidate_count": 1,         # Single response needed
-                "top_p": 1.0,                 # Full token consideration for OCR
-                "top_k": 40,                  # Limit candidate tokens
-                "response_mime_type": "text/plain"
-            }
-            
-            # Gaming-appropriate safety settings (same as translation)
-            from google.generativeai.types import HarmCategory, HarmBlockThreshold
-            safety_settings = {
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            }
+            # Optimal configuration for OCR tasks with MEDIA_RESOLUTION_MEDIUM (PRIMARY GOAL!)
+            ocr_config = types.GenerateContentConfig(
+                temperature=0.0,
+                max_output_tokens=512,
+                candidate_count=1,
+                top_p=1.0,
+                top_k=40,
+                response_mime_type="text/plain",
+                media_resolution="MEDIA_RESOLUTION_MEDIUM",  # 🎯 PRIMARY GOAL ACHIEVED!
+                safety_settings=[
+                    types.SafetySetting(category='HARM_CATEGORY_HARASSMENT', threshold='BLOCK_NONE'),
+                    types.SafetySetting(category='HARM_CATEGORY_HATE_SPEECH', threshold='BLOCK_NONE'),
+                    types.SafetySetting(category='HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold='BLOCK_NONE'),
+                    types.SafetySetting(category='HARM_CATEGORY_DANGEROUS_CONTENT', threshold='BLOCK_NONE')
+                ]
+            )
             
             # Create model for OCR calls
-            model = genai.GenerativeModel(
-                model_name=model_name,
-                generation_config=generation_config,
-                safety_settings=safety_settings
-            )
+            # Removed - using client-based approach now
             
             # Get language display name for prompt
             source_lang_name = self._get_language_display_name(source_lang, 'gemini')
@@ -1315,12 +1329,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             prompt = f"""1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image without line breaks. Don't return anything else.
 2. If there is no text in the image, return only: <EMPTY>."""
             
-            # Prepare image data for Gemini
-            image_part = {
-                'mime_type': 'image/webp',
-                'data': webp_image_data
-            }
-            
             log_debug(f"Making Gemini OCR API call for language: {source_lang_name}")
             
             # Save the image before sending to API
@@ -1328,7 +1336,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Make the API call and track timing
             api_call_start_time = time.time()
-            response = model.generate_content([image_part, prompt])
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Part.from_bytes(data=webp_image_data, mime_type='image/webp'),
+                    prompt
+                ],
+                config=ocr_config
+            )
             call_duration = time.time() - api_call_start_time
             
             # Extract the response text
