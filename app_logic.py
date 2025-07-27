@@ -2310,10 +2310,27 @@ For more information, see the user manual."""
             if hasattr(self, 'update_adaptive_fields_visibility'):
                 self.update_adaptive_fields_visibility()
             
-            # Update translation model display variable with new localized name
+            # Update translation model display variable with configured model from config
             current_model_code = self.translation_model_var.get()
-            new_display_name = self.translation_model_names.get(current_model_code, list(self.translation_model_names.values())[0])
-            self.translation_model_display_var.set(new_display_name)
+            if current_model_code == 'gemini_api':
+                # For Gemini translation, read the specific model from config
+                saved_gemini_translation_model = self.config['Settings'].get('gemini_translation_model', '')
+                if saved_gemini_translation_model and self.GEMINI_API_AVAILABLE and saved_gemini_translation_model in self.gemini_models_manager.get_translation_model_names():
+                    self.translation_model_display_var.set(saved_gemini_translation_model)
+                    log_debug(f"Language change: Set translation model from config: {saved_gemini_translation_model}")
+                elif self.GEMINI_API_AVAILABLE and self.gemini_models_manager.get_translation_model_names():
+                    self.translation_model_display_var.set(self.gemini_models_manager.get_translation_model_names()[0])
+                    log_debug(f"Language change: Set translation model to first Gemini: {self.gemini_models_manager.get_translation_model_names()[0]}")
+                else:
+                    # Fallback to generic name
+                    new_display_name = self.translation_model_names.get(current_model_code, list(self.translation_model_names.values())[0])
+                    self.translation_model_display_var.set(new_display_name)
+                    log_debug(f"Language change: Set translation model to fallback: {new_display_name}")
+            else:
+                # For non-Gemini models, use the localized name
+                new_display_name = self.translation_model_names.get(current_model_code, list(self.translation_model_names.values())[0])
+                self.translation_model_display_var.set(new_display_name)
+                log_debug(f"Language change: Set translation model to localized name: {new_display_name}")
             
             # Update all dropdowns with localized names for current language
             self.ui_interaction_handler.update_all_dropdowns_for_language_change()
