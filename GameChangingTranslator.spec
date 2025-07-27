@@ -4,6 +4,9 @@
 Game-Changing Translator PyInstaller Specification File - Optimized Version
 This spec file includes all necessary dependencies while excluding unnecessary bloat.
 Keeps ALL functionality but optimizes package size by excluding unused parts of heavy libraries.
+
+Updated for Google Gen AI library migration (google.genai) with fallback support.
+
 To build: pyinstaller GameChangingTranslator.spec
 """
 
@@ -78,6 +81,12 @@ a = Analysis(
         'requests',
         'urllib.parse',
         'google.cloud.translate_v2',
+        # NEW: Google Gen AI library (primary)
+        'google.genai',
+        'google.genai.types',
+        'google.genai.client',
+        'google.genai.models',
+        # OLD: Google Generative AI (fallback)
         'google.generativeai',
         'google.auth',
         # Pre-load critical Gemini modules for performance
@@ -85,6 +94,20 @@ a = Analysis(
         'google.generativeai.client',
         'google.ai.generativelanguage',
         'deepl',
+        
+        # NEW: Additional dependencies for google.genai
+        'pydantic',
+        'pydantic.types',
+        'pydantic.validators',
+        'httpx',
+        'httpx._client',
+        'httpx._models',
+        'anyio',
+        'sniffio',
+        'h11',
+        'httpcore',
+        'websockets',
+        'tenacity',
         # Threading optimization
         'concurrent.futures',
         'threading',

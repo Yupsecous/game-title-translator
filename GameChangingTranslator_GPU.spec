@@ -4,6 +4,9 @@
 Game-Changing Translator PyInstaller Specification File - Simple GPU Version
 This spec file bundles everything needed for CUDA support without detection.
 Just includes all necessary dependencies statically.
+
+Updated for Google Gen AI library migration (google.genai) with fallback support.
+
 To build: pyinstaller GameChangingTranslator_GPU.spec
 """
 
@@ -77,6 +80,12 @@ a = Analysis(
         'keyboard',
         'urllib.parse',
         'google.cloud.translate_v2',
+        # NEW: Google Gen AI library (primary)
+        'google.genai',
+        'google.genai.types',
+        'google.genai.client',
+        'google.genai.models',
+        # OLD: Google Generative AI (fallback)
         'google.generativeai',
         'google.auth',
         # Pre-load critical Gemini modules for performance
@@ -84,6 +93,20 @@ a = Analysis(
         'google.generativeai.client',
         'google.ai.generativelanguage',
         'deepl',
+        
+        # NEW: Additional dependencies for google.genai
+        'pydantic',
+        'pydantic.types',
+        'pydantic.validators',
+        'httpx',
+        'httpx._client',
+        'httpx._models',
+        'anyio',
+        'sniffio',
+        'h11',
+        'httpcore',
+        'websockets',
+        'tenacity',
         
         # GPU monitoring (Windows)
         'nvidia_ml_py3',
