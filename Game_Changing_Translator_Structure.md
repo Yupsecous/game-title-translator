@@ -19,6 +19,24 @@ Central Coordinator (app_logic.py)
 Unified Cache System → File Persistence
 ```
 
+## 🌟 Key Features
+
+### **Dynamic Gemini Model Configuration**
+- **CSV-based model management** - All Gemini models configured in `resources/gemini_models.csv`
+- **Separate OCR and Translation models** - Different models can be selected for each operation
+- **Automatic cost calculation** - Token costs update based on selected models
+- **Real-time model switching** - No application restart required
+
+### **Unified Caching System**
+- **Two-tier cache architecture** - In-memory LRU cache + persistent file storage
+- **40-60% memory reduction** compared to previous multi-cache approach
+- **Thread-safe operations** with proper locking mechanisms
+
+### **Comprehensive API Monitoring**
+- **Real-time cost tracking** for Gemini API usage (OCR + Translation)
+- **Detailed logging** with token analysis and performance metrics
+- **Export capabilities** for usage statistics and billing analysis
+
 ## 📁 Core Application Files
 
 ### **Entry Point & Coordination**
@@ -30,6 +48,7 @@ Unified Cache System → File Persistence
 - **`cache_manager.py`** - File-based translation cache persistence
 - **`configuration_handler.py`** - Settings and configuration management
 - **`display_manager.py`** - UI updates for overlays and debug info
+- **`gemini_models_manager.py`** - Dynamic Gemini model configuration management
 - **`hotkey_handler.py`** - Keyboard shortcut management
 - **`statistics_handler.py`** - API usage monitoring and cost tracking
 - **`translation_handler.py`** - Translation provider coordination
@@ -82,7 +101,8 @@ resources/
 ├── Translation APIs
 │   ├── google_trans_source.csv / google_trans_target.csv
 │   ├── deepl_trans_source.csv / deepl_trans_target.csv
-│   └── gemini_trans_source.csv / gemini_trans_target.csv
+│   ├── gemini_trans_source.csv / gemini_trans_target.csv
+│   └── gemini_models.csv         # Gemini model configurations and costs
 ├── MarianMT Models
 │   ├── MarianMT_select_models.csv
 │   └── MarianMT_models_short_list.csv

@@ -19,6 +19,7 @@ Game-Changing Translator follows a modular design with the following key compone
    - `CacheManager` - Manages translation file caching and persistence (Level 2)
    - `ConfigurationHandler` - Manages loading and saving of application settings
    - `DisplayManager` - Handles UI updates for overlays and debug information
+   - `GeminiModelsManager` - Manages Gemini model configurations from CSV file
    - `HotkeyHandler` - Manages keyboard shortcuts
    - `StatisticsHandler` - API usage statistics parsing, cost monitoring, and export functionality
    - `TranslationHandler` - Coordinates translation with different providers and unified cache
@@ -76,6 +77,7 @@ ocr-translator/
 │   ├── cache_manager.py           # Translation cache management
 │   ├── configuration_handler.py   # Settings and configuration
 │   ├── display_manager.py         # Display and UI updates
+│   ├── gemini_models_manager.py   # Gemini model configuration management
 │   ├── hotkey_handler.py          # Keyboard shortcuts
 │   ├── statistics_handler.py      # API usage statistics and cost monitoring
 │   ├── translation_handler.py     # Translation coordination
@@ -107,6 +109,7 @@ ocr-translator/
     ├── deepl_trans_target.csv     # Target language codes for DeepL API
     ├── gemini_trans_source.csv    # Source language codes for Gemini API
     ├── gemini_trans_target.csv    # Target language codes for Gemini API
+    ├── gemini_models.csv          # Gemini model configurations (names, API names, costs, availability)
     ├── MarianMT_select_models.csv # Available MarianMT translation models
     ├── MarianMT_models_short_list.csv # Preferred/recommended MarianMT models
     ├── language_display_names.csv # Localized language display names
@@ -327,6 +330,48 @@ Gemini(LANG_PAIR,timestamp):original_text:==:translated_text
 - Works alongside unified in-memory cache (Level 1)
 - Reduces API costs through intelligent caching
 - Cache effectiveness depends on OCR consistency
+
+### Dynamic Gemini Models Configuration
+
+The application features a dynamic Gemini model management system that allows flexible configuration of models for different operations (OCR vs Translation) through CSV-based configuration.
+
+#### Gemini Models Manager (`handlers/gemini_models_manager.py`)
+
+The GeminiModelsManager class provides centralized management of Gemini model configurations:
+
+**Core Features:**
+- **CSV-based configuration** - All model information loaded from `resources/gemini_models.csv`
+- **Separate OCR and Translation models** - Different models can be selected for each operation
+- **Dynamic cost management** - Token costs automatically updated based on selected models
+- **Real-time model switching** - Models can be changed without application restart
+- **Availability filtering** - Models are filtered based on Translation/OCR capability flags
+
+**Configuration File Format (`gemini_models.csv`):**
+```csv
+Model Name,API Name,Input Cost per 1M,Output Cost per 1M,Translation,OCR
+Gemini 2.5 Flash-Lite,gemini-2.5-flash-lite,0.1,0.4,yes,yes
+Gemini 2.0 Flash,gemini-2.0-flash-001,0.1,0.4,yes,yes
+Gemini 2.0 Flash-Lite,gemini-2.0-flash-lite-001,0.075,0.3,no,yes
+```
+
+**Key Methods:**
+- `get_translation_model_names()` - Returns models available for translation
+- `get_ocr_model_names()` - Returns models available for OCR
+- `get_model_costs(api_name)` - Retrieves cost information for a specific model
+- `get_api_name_by_display_name(display_name)` - Converts display names to API names
+- `reload_models()` - Refreshes model list from CSV file
+
+**Integration Points:**
+- **GUI Dropdowns**: Translation and OCR model dropdowns are populated from CSV data
+- **Cost Updates**: Token costs in configuration are updated when models change  
+- **API Calls**: Translation and OCR operations use the appropriate selected model
+- **Settings Persistence**: Model selections are saved to configuration file
+
+**Benefits:**
+- ✅ **Flexible Model Selection**: Different models for OCR vs Translation operations
+- ✅ **Dynamic Configuration**: No code changes needed to add/remove models
+- ✅ **Accurate Cost Tracking**: Costs automatically reflect selected models
+- ✅ **Easy Maintenance**: Model information centralized in single CSV file
 
 ### Multi-Language UI Support
 

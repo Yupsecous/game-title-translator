@@ -189,6 +189,43 @@ def create_settings_tab(app):
                                            values=translation_models_available_for_ui, width=25, state='readonly')
     app.translation_model_combobox.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
     
+    # Set initial value from config - follow same pattern as OCR model
+    current_translation_model = app.translation_model_var.get()
+    log_debug(f"Current translation model type: {current_translation_model}")
+    
+    if current_translation_model == 'gemini_api':
+        # For Gemini translation, read the specific model from config
+        if hasattr(app, 'config'):
+            saved_gemini_translation_model = app.config['Settings'].get('gemini_translation_model', '')
+            if saved_gemini_translation_model and saved_gemini_translation_model in translation_models_available_for_ui:
+                app.translation_model_display_var.set(saved_gemini_translation_model)
+                log_debug(f"Set translation model from config: {saved_gemini_translation_model}")
+            elif app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_translation_model_names():
+                app.translation_model_display_var.set(app.gemini_models_manager.get_translation_model_names()[0])
+                log_debug(f"Set translation model to first Gemini: {app.gemini_models_manager.get_translation_model_names()[0]}")
+            else:
+                app.translation_model_display_var.set(translation_models_available_for_ui[0] if translation_models_available_for_ui else "MarianMT (offline and free)")
+                log_debug(f"Set translation model to first available: {translation_models_available_for_ui[0] if translation_models_available_for_ui else 'MarianMT'}")
+        else:
+            # Fallback to first available Gemini model or first overall
+            if app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_translation_model_names():
+                app.translation_model_display_var.set(app.gemini_models_manager.get_translation_model_names()[0])
+            else:
+                app.translation_model_display_var.set(translation_models_available_for_ui[0] if translation_models_available_for_ui else "MarianMT (offline and free)")
+    elif current_translation_model == 'marianmt' and app.MARIANMT_AVAILABLE:
+        app.translation_model_display_var.set(app.translation_model_names['marianmt'])
+        log_debug(f"Set translation model to MarianMT: {app.translation_model_names['marianmt']}")
+    elif current_translation_model == 'deepl_api' and app.DEEPL_API_AVAILABLE:
+        app.translation_model_display_var.set(app.translation_model_names['deepl_api'])
+        log_debug(f"Set translation model to DeepL: {app.translation_model_names['deepl_api']}")
+    elif current_translation_model == 'google_api' and app.GOOGLE_TRANSLATE_API_AVAILABLE:
+        app.translation_model_display_var.set(app.translation_model_names['google_api'])
+        log_debug(f"Set translation model to Google: {app.translation_model_names['google_api']}")
+    else:
+        # Default to first available option
+        app.translation_model_display_var.set(translation_models_available_for_ui[0] if translation_models_available_for_ui else "MarianMT (offline and free)")
+        log_debug(f"Set translation model to default: {translation_models_available_for_ui[0] if translation_models_available_for_ui else 'MarianMT'}")
+    
     def handle_translation_model_selection(event):
         app.on_translation_model_selection_changed(event=event, initial_setup=False)
     app.translation_model_combobox.bind('<<ComboboxSelected>>', 
@@ -210,16 +247,26 @@ def create_settings_tab(app):
     ocr_models_available_for_ui.append(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
     
     app.ocr_model_display_var = tk.StringVar()
-    # Set initial display value - try to match current setting
+    # Set initial display value - try to match current setting from config
     current_ocr_model = app.ocr_model_var.get()
     if current_ocr_model == 'tesseract':
         app.ocr_model_display_var.set(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
     elif current_ocr_model == 'gemini':
-        # For backward compatibility, if config has 'gemini', use the first available Gemini model
-        if app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_ocr_model_names():
-            app.ocr_model_display_var.set(app.gemini_models_manager.get_ocr_model_names()[0])
+        # For Gemini OCR, read the specific model from config
+        if hasattr(app, 'config'):
+            saved_gemini_ocr_model = app.config['Settings'].get('gemini_ocr_model', '')
+            if saved_gemini_ocr_model and app.GEMINI_API_AVAILABLE and saved_gemini_ocr_model in app.gemini_models_manager.get_ocr_model_names():
+                app.ocr_model_display_var.set(saved_gemini_ocr_model)
+            elif app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_ocr_model_names():
+                app.ocr_model_display_var.set(app.gemini_models_manager.get_ocr_model_names()[0])
+            else:
+                app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
         else:
-            app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
+            # Fallback to first available Gemini model or first overall
+            if app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_ocr_model_names():
+                app.ocr_model_display_var.set(app.gemini_models_manager.get_ocr_model_names()[0])
+            else:
+                app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
     else:
         # Default to first available option
         app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
