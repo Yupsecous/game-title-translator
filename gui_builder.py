@@ -165,10 +165,19 @@ def create_settings_tab(app):
     log_debug(f"  DEEPL_API_AVAILABLE: {app.DEEPL_API_AVAILABLE}")
     log_debug(f"  GOOGLE_TRANSLATE_API_AVAILABLE: {app.GOOGLE_TRANSLATE_API_AVAILABLE}")
     
-    if app.GEMINI_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['gemini_api'])
-    if app.MARIANMT_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['marianmt'])
-    if app.DEEPL_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['deepl_api'])
-    if app.GOOGLE_TRANSLATE_API_AVAILABLE: translation_models_available_for_ui.append(app.translation_model_names['google_api'])
+    # Add Gemini models first (from CSV file)
+    if app.GEMINI_API_AVAILABLE:
+        gemini_translation_models = app.gemini_models_manager.get_translation_model_names()
+        translation_models_available_for_ui.extend(gemini_translation_models)
+        log_debug(f"Added Gemini translation models: {gemini_translation_models}")
+    
+    # Add other translation models
+    if app.MARIANMT_AVAILABLE: 
+        translation_models_available_for_ui.append(app.translation_model_names['marianmt'])
+    if app.DEEPL_API_AVAILABLE: 
+        translation_models_available_for_ui.append(app.translation_model_names['deepl_api'])
+    if app.GOOGLE_TRANSLATE_API_AVAILABLE: 
+        translation_models_available_for_ui.append(app.translation_model_names['google_api'])
     
     log_debug(f"GUI Builder: Available translation models for UI: {translation_models_available_for_ui}")
     
@@ -185,49 +194,70 @@ def create_settings_tab(app):
     app.translation_model_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(handle_translation_model_selection))
 
-    # Row 0.5: OCR Model Selection (Phase 1 - Gemini OCR)
+    # Row 0.5: OCR Model Selection
     ttk.Label(frame, text=app.ui_lang.get_label("ocr_model_label", "OCR Model")).grid(row=1, column=0, padx=5, pady=5, sticky="w")
     
-    ocr_models_available = [
-        ("tesseract", app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)")),
-        ("gemini", app.ui_lang.get_label("ocr_model_gemini", "Gemini API (online)"))
-    ]
+    # Build OCR models list with Gemini models first, then Tesseract
+    ocr_models_available_for_ui = []
+    
+    # Add Gemini OCR models first (from CSV file)
+    if app.GEMINI_API_AVAILABLE:
+        gemini_ocr_models = app.gemini_models_manager.get_ocr_model_names()
+        ocr_models_available_for_ui.extend(gemini_ocr_models)
+        log_debug(f"Added Gemini OCR models: {gemini_ocr_models}")
+    
+    # Add Tesseract
+    ocr_models_available_for_ui.append(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
     
     app.ocr_model_display_var = tk.StringVar()
-    # Set initial display value based on current setting
+    # Set initial display value - try to match current setting
     current_ocr_model = app.ocr_model_var.get()
-    for value, display in ocr_models_available:
-        if value == current_ocr_model:
-            app.ocr_model_display_var.set(display)
-            break
+    if current_ocr_model == 'tesseract':
+        app.ocr_model_display_var.set(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
+    elif current_ocr_model == 'gemini':
+        # For backward compatibility, if config has 'gemini', use the first available Gemini model
+        if app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_ocr_model_names():
+            app.ocr_model_display_var.set(app.gemini_models_manager.get_ocr_model_names()[0])
+        else:
+            app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
     else:
-        # Fallback if current setting doesn't match any option
-        app.ocr_model_display_var.set(ocr_models_available[0][1])  # Default to Tesseract
+        # Default to first available option
+        app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
     
     app.ocr_model_combobox = ttk.Combobox(frame, textvariable=app.ocr_model_display_var,
-                                        values=[display for _, display in ocr_models_available], 
+                                        values=ocr_models_available_for_ui, 
                                         width=25, state='readonly')
     app.ocr_model_combobox.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
     
     def on_ocr_model_changed(event):
         selected_display = app.ocr_model_display_var.get()
-        # Find the corresponding value
-        for value, display in ocr_models_available:
-            if display == selected_display:
-                app.ocr_model_var.set(value)
-                log_debug(f"OCR model changed to: {value} (display: {display})")
-                # Update UI immediately for responsive feedback
-                if hasattr(app, 'ui_interaction_handler'):
-                    app.ui_interaction_handler.update_ocr_model_ui()
-                if app._fully_initialized:
-                    app.save_settings()
-                break
+        log_debug(f"OCR model display changed to: {selected_display}")
+        
+        # Determine if this is a Gemini model or Tesseract
+        if selected_display == app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"):
+            app.ocr_model_var.set('tesseract')
+            log_debug("OCR model set to tesseract")
+        elif app.GEMINI_API_AVAILABLE and selected_display in app.gemini_models_manager.get_ocr_model_names():
+            app.ocr_model_var.set('gemini')
+            # Store the specific Gemini model selection
+            app.gemini_ocr_model_var.set(selected_display)
+            # Update costs based on selected model
+            app.update_gemini_costs_from_models()
+            log_debug(f"OCR model set to gemini, specific model: {selected_display}")
+        else:
+            log_debug(f"Unknown OCR model selection: {selected_display}")
+        
+        # Update UI immediately for responsive feedback
+        if hasattr(app, 'ui_interaction_handler'):
+            app.ui_interaction_handler.update_ocr_model_ui()
+        if app._fully_initialized:
+            app.save_settings()
     
     app.ocr_model_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_ocr_model_changed))
 
     # Store the options for later use when updating language
-    app.ocr_model_options = ocr_models_available
+    app.ocr_model_options = ocr_models_available_for_ui
 
     app.source_lang_label = ttk.Label(frame, text=app.ui_lang.get_label("source_lang_label"))
     app.source_lang_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")

@@ -910,8 +910,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if not hasattr(self, 'gemini_client') or self.gemini_client is None:
                 return "Gemini client not initialized"
             
+            # Get the appropriate model for translation
+            translation_model_api_name = self.app.get_current_gemini_model_for_translation()
+            if not translation_model_api_name:
+                # Fallback to config if no specific model selected
+                translation_model_api_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite')
+            
             response = self.gemini_client.models.generate_content(
-                model=self.gemini_model_name,
+                model=translation_model_api_name,
                 contents=message_content,
                 config=self.gemini_generation_config
             )
@@ -985,7 +991,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Get configuration values
             model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
-            model_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite-preview-06-17')
             
             # Store config for later use in API calls
             self.gemini_generation_config = types.GenerateContentConfig(
@@ -1014,9 +1019,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                     )
                 ]
             )
-            
-            # Store model name for API calls
-            self.gemini_model_name = model_name
             
             # Initialize sliding window memory and session tracking
             self.gemini_context_window = []
@@ -1300,7 +1302,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             client = genai.Client(api_key=api_key_gemini)
             
             # Get model configuration for OCR calls
-            model_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite-preview-06-17')
+            ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
+            if not ocr_model_api_name:
+                # Fallback to config if no specific model selected
+                ocr_model_api_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite')
             
             # Optimal configuration for OCR tasks with MEDIA_RESOLUTION_MEDIUM (PRIMARY GOAL!)
             ocr_config = types.GenerateContentConfig(
@@ -1337,7 +1342,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Make the API call and track timing
             api_call_start_time = time.time()
             response = client.models.generate_content(
-                model=model_name,
+                model=ocr_model_api_name,
                 contents=[
                     types.Part.from_bytes(data=webp_image_data, mime_type='image/webp'),
                     prompt
