@@ -654,13 +654,14 @@ Purpose: Concise translation call results and statistics
             
         return total_input, total_output, total_cost
 
-    def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result):
+    def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result, model_name, model_source):
         """Write concise OCR call log entry."""
         if not self.app.gemini_api_log_enabled_var.get():
             return
             
         try:
             log_entry = f"""========= OCR CALL ===========
+Model: {model_name} ({model_source})
 Start: {call_start_time}
 End: {call_end_time}
 Duration: {call_duration:.3f}s
@@ -677,7 +678,7 @@ Result:
         except Exception as e:
             log_debug(f"Error writing short OCR log: {e}")
 
-    def _write_short_translation_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, original_text, translated_text, source_lang, target_lang):
+    def _write_short_translation_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, original_text, translated_text, source_lang, target_lang, model_name, model_source):
         """Write concise translation call log entry."""
         if not self.app.gemini_api_log_enabled_var.get():
             return
@@ -688,6 +689,7 @@ Result:
             target_lang_name = self._get_language_display_name(target_lang, 'gemini').upper()
             
             log_entry = f"""===== TRANSLATION CALL =======
+Model: {model_name} ({model_source})
 Start: {call_start_time}
 End: {call_end_time}
 Duration: {call_duration:.3f}s
@@ -705,7 +707,7 @@ Result:
         except Exception as e:
             log_debug(f"Error writing short translation log: {e}")
 
-    def _log_complete_gemini_translation_call(self, message_content, response_text, call_duration, input_tokens, output_tokens, original_text, source_lang, target_lang):
+    def _log_complete_gemini_translation_call(self, message_content, response_text, call_duration, input_tokens, output_tokens, original_text, source_lang, target_lang, model_name, model_source):
         """Log complete Gemini translation API call with atomic writing (request + response + stats)."""
         # Check if API logging is enabled
         if not self.app.gemini_api_log_enabled_var.get():
@@ -763,6 +765,7 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
 
 
 RESPONSE RECEIVED:
+Model: {model_name} ({model_source})
 Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
 
@@ -799,7 +802,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                                                 input_tokens, output_tokens, total_call_cost,
                                                 new_total_input, new_total_output, 
                                                 total_input_cost + total_output_cost, 
-                                                original_text, response_text, source_lang, target_lang)
+                                                original_text, response_text, source_lang, target_lang, model_name, model_source)
                 
                 log_debug(f"Complete Gemini translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
                     
@@ -926,13 +929,23 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 
             # Extract exact token counts from API response metadata
             input_tokens, output_tokens = 0, 0
+            model_name = translation_model_api_name  # Fallback to the model we requested
+            model_source = "fallback"  # Track whether we got it from API or fallback
             try:
                 if response.usage_metadata:
                     input_tokens = response.usage_metadata.prompt_token_count
                     output_tokens = response.usage_metadata.candidates_token_count
                     log_debug(f"Gemini usage metadata found: In={input_tokens}, Out={output_tokens}")
+                # Try to extract model name from response metadata
+                if hasattr(response, 'model_version') and response.model_version:
+                    model_name = response.model_version
+                    model_source = "api_response"
+                elif hasattr(response, '_response') and hasattr(response._response, 'model_version'):
+                    model_name = response._response.model_version
+                    model_source = "api_response"
+                log_debug(f"Gemini model used: {model_name} (source: {model_source})")
             except (AttributeError, KeyError):
-                log_debug("Could not find usage_metadata in Gemini response. Tokens will be logged as 0.")
+                log_debug("Could not find usage_metadata or model info in Gemini response. Using requested model name as fallback.")
 
             translation_result = response.text.strip()
             
@@ -965,7 +978,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Log complete API call atomically (request + response + stats together)
             self._log_complete_gemini_translation_call(message_content, translation_result, call_duration, 
                                                      input_tokens, output_tokens, text_to_translate_gm, 
-                                                     source_lang_gm, target_lang_gm)
+                                                     source_lang_gm, target_lang_gm, model_name, model_source)
             
             return translation_result
             
@@ -993,32 +1006,65 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
             
             # Store config for later use in API calls
-            self.gemini_generation_config = types.GenerateContentConfig(
-                temperature=model_temperature,
-                max_output_tokens=1024,
-                candidate_count=1,
-                top_p=0.95,
-                top_k=40,
-                response_mime_type="text/plain",
-                safety_settings=[
-                    types.SafetySetting(
-                        category='HARM_CATEGORY_HARASSMENT',
-                        threshold='BLOCK_NONE'
-                    ),
-                    types.SafetySetting(
-                        category='HARM_CATEGORY_HATE_SPEECH', 
-                        threshold='BLOCK_NONE'
-                    ),
-                    types.SafetySetting(
-                        category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                        threshold='BLOCK_NONE'
-                    ),
-                    types.SafetySetting(
-                        category='HARM_CATEGORY_DANGEROUS_CONTENT',
-                        threshold='BLOCK_NONE'
-                    )
-                ]
-            )
+            try:
+                # Try to use thinking_config for models that support it (Gemini 2.5 series)
+                self.gemini_generation_config = types.GenerateContentConfig(
+                    temperature=model_temperature,
+                    max_output_tokens=1024,
+                    candidate_count=1,
+                    top_p=0.95,
+                    top_k=40,
+                    response_mime_type="text/plain",
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),  # Use non-thinking mode for speed/cost
+                    safety_settings=[
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HARASSMENT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HATE_SPEECH', 
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                            threshold='BLOCK_NONE'
+                        )
+                    ]
+                )
+                log_debug("Gemini session initialized with thinking_budget=0 for non-thinking mode")
+            except (AttributeError, TypeError) as e:
+                # Fallback for models that don't support thinking_config
+                log_debug(f"Model doesn't support thinking_config, using fallback config: {e}")
+                self.gemini_generation_config = types.GenerateContentConfig(
+                    temperature=model_temperature,
+                    max_output_tokens=1024,
+                    candidate_count=1,
+                    top_p=0.95,
+                    top_k=40,
+                    response_mime_type="text/plain",
+                    safety_settings=[
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HARASSMENT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HATE_SPEECH', 
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                            threshold='BLOCK_NONE'
+                        )
+                    ]
+                )
             
             # Initialize sliding window memory and session tracking
             self.gemini_context_window = []
@@ -1379,18 +1425,28 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             
             # Extract exact token counts from API response metadata
             input_tokens, output_tokens = 0, 0
+            model_name = ocr_model_api_name  # Fallback to the model we requested
+            model_source = "fallback"  # Track whether we got it from API or fallback
             try:
                 if response.usage_metadata:
                     input_tokens = response.usage_metadata.prompt_token_count
                     output_tokens = response.usage_metadata.candidates_token_count
                     log_debug(f"Gemini OCR usage metadata: In={input_tokens}, Out={output_tokens}")
+                # Try to extract model name from response metadata
+                if hasattr(response, 'model_version') and response.model_version:
+                    model_name = response.model_version
+                    model_source = "api_response"
+                elif hasattr(response, '_response') and hasattr(response._response, 'model_version'):
+                    model_name = response._response.model_version
+                    model_source = "api_response"
+                log_debug(f"Gemini OCR model used: {model_name} (source: {model_source})")
             except (AttributeError, KeyError):
-                log_debug("Could not find usage_metadata in Gemini OCR response. Tokens will be logged as 0.")
+                log_debug("Could not find usage_metadata or model info in Gemini OCR response. Using requested model name as fallback.")
             
             # Log complete OCR call with request, response, and stats
             self._log_complete_gemini_ocr_call(
                 prompt, len(webp_image_data), ocr_result, parsed_text, 
-                call_duration, input_tokens, output_tokens, source_lang
+                call_duration, input_tokens, output_tokens, source_lang, model_name, model_source
             )
             
             batch_info = f", Batch {batch_number}" if batch_number is not None else ""
@@ -1404,7 +1460,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Always decrement pending call counter
             self._decrement_pending_ocr_calls()
     
-    def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang):
+    def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang, model_name, model_source):
         """Log complete Gemini OCR API call with atomic writing and cumulative totals."""
         # Check if API logging is enabled
         if not self.app.gemini_api_log_enabled_var.get():
@@ -1446,7 +1502,9 @@ REQUEST PROMPT:
 ---END PROMPT---
 
 RESPONSE RECEIVED:
+Model: {model_name} ({model_source})
 Timestamp: {call_end_time}
+Call Duration: {call_duration:.3f} seconds
 
 ---BEGIN RESPONSE---
 {raw_response}
@@ -1475,7 +1533,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 # Write to short OCR log
                 self._write_short_ocr_log(call_start_time, call_end_time, call_duration, 
                                         input_tokens, output_tokens, total_call_cost,
-                                        new_total_input, new_total_output, new_total_cost, parsed_response)
+                                        new_total_input, new_total_output, new_total_cost, parsed_response, model_name, model_source)
                 
                 log_debug(f"Complete Gemini OCR call logged: {input_tokens}+{output_tokens} tokens, {call_duration:.3f}s")
                 
