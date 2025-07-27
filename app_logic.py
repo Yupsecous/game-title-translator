@@ -45,6 +45,7 @@ from handlers import (
     TranslationHandler, 
     UIInteractionHandler
 )
+from handlers.gemini_models_manager import GeminiModelsManager
 
 KEYBOARD_AVAILABLE = False
 try:
@@ -260,6 +261,10 @@ class GameChangingTranslator:
             'deepl_api': 'DeepL API',
             'marianmt': 'MarianMT (offline and free)'
         }
+        
+        # Initialize Gemini Models Manager before updating model names
+        self.gemini_models_manager = GeminiModelsManager()
+        
         # Update with localized names after UI language is loaded
         self.update_translation_model_names()
         self.translation_model_values = {v: k for k, v in self.translation_model_names.items()}
@@ -273,6 +278,10 @@ class GameChangingTranslator:
         self.gemini_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_file_cache', fallback=True))
         self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
         self.gemini_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_api_log_enabled', fallback=True))
+        
+        # Separate Gemini model selection for OCR and Translation
+        self.gemini_translation_model_var = tk.StringVar(value=self.config['Settings'].get('gemini_translation_model', 'Gemini 2.5 Flash-Lite'))
+        self.gemini_ocr_model_var = tk.StringVar(value=self.config['Settings'].get('gemini_ocr_model', 'Gemini 2.5 Flash-Lite'))
         
         # Gemini statistics variables (initialized by GUI builder)
         self.gemini_total_words_var = None
@@ -2149,15 +2158,77 @@ For more information, see the user manual."""
 
     def update_translation_model_names(self):
         """Update translation model names with localized strings from CSV files."""
-        self.translation_model_names = {
-            'gemini_api': 'Gemini 2.5 Flash-Lite',  # Keep English as these are API names
-            'google_api': 'Google Translate API',  # Keep English as these are API names
-            'deepl_api': 'DeepL API',  # Keep English as these are API names
+        # Get Gemini model names from CSV file
+        gemini_translation_models = self.gemini_models_manager.get_translation_model_names()
+        
+        # Base translation model names (non-Gemini models)
+        base_translation_models = {
+            'google_api': 'Google Translate API',
+            'deepl_api': 'DeepL API', 
             'marianmt': self.ui_lang.get_label('translation_model_marianmt_offline', 'MarianMT (offline and free)')
         }
+        
+        # Build complete translation model names dict
+        self.translation_model_names = {}
+        
+        # Add Gemini models first (they should appear first in dropdowns)
+        for model_name in gemini_translation_models:
+            # Use a special key format for Gemini models
+            key = f'gemini_translation_{model_name}'
+            self.translation_model_names[key] = model_name
+        
+        # Add non-Gemini models
+        self.translation_model_names.update(base_translation_models)
+        
+        # For backward compatibility, also add the legacy gemini_api key pointing to the first available model
+        if gemini_translation_models:
+            self.translation_model_names['gemini_api'] = gemini_translation_models[0]
+        
         # Update the reverse mapping as well
         self.translation_model_values = {v: k for k, v in self.translation_model_names.items()}
         log_debug(f"Updated translation model names: {self.translation_model_names}")
+
+    def update_gemini_costs_from_models(self):
+        """Update input/output token costs based on currently selected models."""
+        try:
+            # Determine which model to use for cost calculation
+            # Priority: translation model first, then OCR model if no translation model
+            translation_model_name = self.gemini_translation_model_var.get()
+            ocr_model_name = self.gemini_ocr_model_var.get()
+            
+            # Get API names for the selected models
+            translation_api_name = self.gemini_models_manager.get_api_name_by_display_name(translation_model_name)
+            ocr_api_name = self.gemini_models_manager.get_api_name_by_display_name(ocr_model_name)
+            
+            # Use translation model costs if available, otherwise OCR model costs
+            costs = None
+            if translation_api_name:
+                costs = self.gemini_models_manager.get_model_costs(translation_api_name)
+                log_debug(f"Using costs from translation model: {translation_model_name} ({translation_api_name})")
+            elif ocr_api_name:
+                costs = self.gemini_models_manager.get_model_costs(ocr_api_name)
+                log_debug(f"Using costs from OCR model: {ocr_model_name} ({ocr_api_name})")
+            
+            if costs:
+                # Update config with new costs
+                self.config['Settings']['input_token_cost'] = str(costs['input_cost'])
+                self.config['Settings']['output_token_cost'] = str(costs['output_cost'])
+                log_debug(f"Updated token costs: input=${costs['input_cost']}/1M, output=${costs['output_cost']}/1M")
+            else:
+                log_debug("No valid Gemini model selected for cost calculation")
+                
+        except Exception as e:
+            log_debug(f"Error updating Gemini costs: {e}")
+
+    def get_current_gemini_model_for_translation(self):
+        """Get the API name of currently selected Gemini translation model."""
+        display_name = self.gemini_translation_model_var.get()
+        return self.gemini_models_manager.get_api_name_by_display_name(display_name)
+    
+    def get_current_gemini_model_for_ocr(self):
+        """Get the API name of currently selected Gemini OCR model."""
+        display_name = self.gemini_ocr_model_var.get()
+        return self.gemini_models_manager.get_api_name_by_display_name(display_name)
 
     def update_ui_language(self):
         """Update all UI elements to reflect the selected language"""

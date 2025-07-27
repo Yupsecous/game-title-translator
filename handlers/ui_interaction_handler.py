@@ -767,7 +767,22 @@ class UIInteractionHandler:
 
             if event is not None: 
                 selected_display_name_from_ui = self.app.translation_model_display_var.get()
-                newly_selected_model_code = self.app.translation_model_values.get(selected_display_name_from_ui, 'google_api')
+                
+                # Determine the model type based on the selected display name
+                newly_selected_model_code = None
+                
+                # Check if it's a Gemini model
+                if (self.app.GEMINI_API_AVAILABLE and 
+                    selected_display_name_from_ui in self.app.gemini_models_manager.get_translation_model_names()):
+                    newly_selected_model_code = 'gemini_api'
+                    # Store the specific Gemini model selection
+                    self.app.gemini_translation_model_var.set(selected_display_name_from_ui)
+                    # Update costs based on selected model
+                    self.app.update_gemini_costs_from_models()
+                    log_debug(f"Selected Gemini translation model: {selected_display_name_from_ui}")
+                else:
+                    # Use the existing lookup for non-Gemini models
+                    newly_selected_model_code = self.app.translation_model_values.get(selected_display_name_from_ui, 'google_api')
                 
                 # Track model change
                 previous_model = self.app.translation_model_var.get()
@@ -784,7 +799,13 @@ class UIInteractionHandler:
             
             model_to_configure_for = self.app.translation_model_var.get()
             
-            expected_display_name = self.app.translation_model_names.get(model_to_configure_for)
+            # Update display name if needed
+            if model_to_configure_for == 'gemini_api':
+                # For Gemini, use the specific model name
+                expected_display_name = self.app.gemini_translation_model_var.get()
+            else:
+                expected_display_name = self.app.translation_model_names.get(model_to_configure_for)
+                
             if expected_display_name and self.app.translation_model_display_var.get() != expected_display_name:
                 self.app.translation_model_display_var.set(expected_display_name)
 
@@ -1048,6 +1069,8 @@ class UIInteractionHandler:
             cfg['deepl_file_cache'] = str(self.app.deepl_file_cache_var.get())
             cfg['gemini_file_cache'] = str(self.app.gemini_file_cache_var.get())
             cfg['gemini_api_log_enabled'] = str(self.app.gemini_api_log_enabled_var.get())
+            cfg['gemini_translation_model'] = self.app.gemini_translation_model_var.get()
+            cfg['gemini_ocr_model'] = self.app.gemini_ocr_model_var.get()
             cfg['marian_models_file'] = self.app.models_file_var.get()
             try: 
                 beam_val = int(self.app.num_beams_var.get())
