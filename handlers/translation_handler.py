@@ -725,9 +725,16 @@ Result:
                 # --- 2. Get cumulative totals BEFORE this call ---
                 prev_total_translated_words, prev_total_input, prev_total_output = self._get_cumulative_totals()
 
-                # --- 3. Define costs and calculate for current call ---
-                INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
-                OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
+                # --- 3. Get model-specific costs and calculate for current call ---
+                translation_model_api_name = self.app.get_current_gemini_model_for_translation()
+                if translation_model_api_name:
+                    model_costs = self.app.gemini_models_manager.get_model_costs(translation_model_api_name)
+                    INPUT_COST_PER_MILLION = model_costs['input_cost']
+                    OUTPUT_COST_PER_MILLION = model_costs['output_cost']
+                else:
+                    # Fallback to default Gemini 2.5 Flash-Lite costs
+                    INPUT_COST_PER_MILLION = 0.1
+                    OUTPUT_COST_PER_MILLION = 0.4
                 
                 call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
                 call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
@@ -1472,9 +1479,16 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 call_end_time = self._get_precise_timestamp()
                 call_start_time = self._calculate_start_time(call_end_time, call_duration)
                 
-                # Calculate costs
-                INPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('input_token_cost', '0.1'))
-                OUTPUT_COST_PER_MILLION = float(self.app.config['Settings'].get('output_token_cost', '0.4'))
+                # Get model-specific costs for OCR operations
+                ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
+                if ocr_model_api_name:
+                    model_costs = self.app.gemini_models_manager.get_model_costs(ocr_model_api_name)
+                    INPUT_COST_PER_MILLION = model_costs['input_cost']
+                    OUTPUT_COST_PER_MILLION = model_costs['output_cost']
+                else:
+                    # Fallback to default Gemini 2.5 Flash-Lite costs
+                    INPUT_COST_PER_MILLION = 0.1
+                    OUTPUT_COST_PER_MILLION = 0.4
                 
                 call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
                 call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
