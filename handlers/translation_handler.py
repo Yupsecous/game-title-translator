@@ -598,6 +598,37 @@ Purpose: Concise translation call results and statistics
             
         return total_translated_words, total_input, total_output
 
+    def _get_cumulative_costs(self):
+        """Reads the log file and extracts cumulative cost totals for translation operations."""
+        total_input_cost = 0.0
+        total_output_cost = 0.0
+        
+        if not os.path.exists(self.gemini_log_file):
+            log_debug(f"Gemini log file does not exist: {self.gemini_log_file}")
+            return 0.0, 0.0
+        
+        # Define regex to find cumulative cost totals
+        input_cost_regex = re.compile(r"^\s*-\s*Total Input Cost \(so far\):\s*\$([0-9]*\.?[0-9]+)")
+        output_cost_regex = re.compile(r"^\s*-\s*Total Output Cost \(so far\):\s*\$([0-9]*\.?[0-9]+)")
+        
+        try:
+            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    input_cost_match = input_cost_regex.match(line)
+                    if input_cost_match:
+                        total_input_cost = float(input_cost_match.group(1))
+                        continue
+                    
+                    output_cost_match = output_cost_regex.match(line)
+                    if output_cost_match:
+                        total_output_cost = float(output_cost_match.group(1))
+                        
+        except (IOError, ValueError) as e:
+            log_debug(f"Error reading cumulative costs from log file: {e}")
+            return 0.0, 0.0
+            
+        return total_input_cost, total_output_cost
+
     def _get_precise_timestamp(self):
         """Get timestamp with millisecond precision."""
         now = datetime.now()
@@ -740,13 +771,15 @@ Result:
                 call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
                 total_call_cost = call_input_cost + call_output_cost
                 
-                # --- 4. Calculate new cumulative totals AND costs ---
+                # --- 4. Calculate new cumulative totals using simple addition (preserves historical accuracy) ---
                 new_total_translated_words = prev_total_translated_words + current_translated_words
                 new_total_input = prev_total_input + input_tokens
                 new_total_output = prev_total_output + output_tokens
                 
-                total_input_cost = (new_total_input / 1_000_000) * INPUT_COST_PER_MILLION
-                total_output_cost = (new_total_output / 1_000_000) * OUTPUT_COST_PER_MILLION
+                # Get previous cumulative costs and use simple addition (NOT recalculation)
+                prev_total_input_cost, prev_total_output_cost = self._get_cumulative_costs()
+                total_input_cost = prev_total_input_cost + call_input_cost
+                total_output_cost = prev_total_output_cost + call_output_cost
                 
                 # --- 5. Calculate detailed message stats ---
                 words_in_message = len(message_content.split())
