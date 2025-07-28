@@ -691,9 +691,26 @@ Purpose: Concise translation call results and statistics
             return
             
         try:
+            # Get model costs from CSV for display
+            cost_line = ""
+            try:
+                ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
+                if ocr_model_api_name:
+                    model_costs = self.app.gemini_models_manager.get_model_costs(ocr_model_api_name)
+                    input_cost = model_costs['input_cost']
+                    output_cost = model_costs['output_cost']
+                    
+                    # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals
+                    input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
+                    output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
+                    
+                    cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
+            except Exception:
+                pass
+            
             log_entry = f"""========= OCR CALL ===========
 Model: {model_name} ({model_source})
-Start: {call_start_time}
+{cost_line}Start: {call_start_time}
 End: {call_end_time}
 Duration: {call_duration:.3f}s
 Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
@@ -719,9 +736,26 @@ Result:
             source_lang_name = self._get_language_display_name(source_lang, 'gemini').upper()
             target_lang_name = self._get_language_display_name(target_lang, 'gemini').upper()
             
+            # Get model costs from CSV for display
+            cost_line = ""
+            try:
+                translation_model_api_name = self.app.get_current_gemini_model_for_translation()
+                if translation_model_api_name:
+                    model_costs = self.app.gemini_models_manager.get_model_costs(translation_model_api_name)
+                    input_cost = model_costs['input_cost']
+                    output_cost = model_costs['output_cost']
+                    
+                    # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals
+                    input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
+                    output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
+                    
+                    cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
+            except Exception:
+                pass
+            
             log_entry = f"""===== TRANSLATION CALL =======
 Model: {model_name} ({model_source})
-Start: {call_start_time}
+{cost_line}Start: {call_start_time}
 End: {call_end_time}
 Duration: {call_duration:.3f}s
 Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
@@ -786,6 +820,10 @@ Result:
                 chars_in_message = len(message_content)
                 lines_in_message = len(message_content.split('\n'))
                 
+                # Format cost display with smart decimal precision
+                input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
+                output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
+                
                 # --- 6. Format the complete log entry with fixed header ---
                 log_entry = f"""
 === GEMINI TRANSLATION API CALL ===
@@ -806,6 +844,7 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
 
 RESPONSE RECEIVED:
 Model: {model_name} ({model_source})
+Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
 Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
 
@@ -1535,6 +1574,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 new_total_output = prev_total_output + output_tokens
                 new_total_cost = prev_total_cost + total_call_cost
                 
+                # Format cost display with smart decimal precision
+                input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
+                output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
+                
                 # Main log entry with fixed header
                 log_entry = f"""
 === GEMINI OCR API CALL ===
@@ -1550,6 +1593,7 @@ REQUEST PROMPT:
 
 RESPONSE RECEIVED:
 Model: {model_name} ({model_source})
+Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
 Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
 
