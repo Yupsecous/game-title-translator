@@ -280,23 +280,29 @@ def create_settings_tab(app):
         selected_display = app.ocr_model_display_var.get()
         log_debug(f"OCR model display changed to: {selected_display}")
         
-        # Determine if this is a Gemini model or Tesseract
-        if selected_display == app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"):
-            app.ocr_model_var.set('tesseract')
-            log_debug("OCR model set to tesseract")
-        elif app.GEMINI_API_AVAILABLE and selected_display in app.gemini_models_manager.get_ocr_model_names():
-            app.ocr_model_var.set('gemini')
-            # Store the specific Gemini model selection
-            app.gemini_ocr_model_var.set(selected_display)
-            # Update costs based on selected model
-            app.update_gemini_costs_from_models()
-            log_debug(f"OCR model set to gemini, specific model: {selected_display}")
-        else:
-            log_debug(f"Unknown OCR model selection: {selected_display}")
+        # Suppress traces during OCR model update to prevent premature saves
+        app.suppress_traces()
+        try:
+            # Determine if this is a Gemini model or Tesseract
+            if selected_display == app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"):
+                app.ocr_model_var.set('tesseract')
+                log_debug("OCR model set to tesseract")
+            elif app.GEMINI_API_AVAILABLE and selected_display in app.gemini_models_manager.get_ocr_model_names():
+                app.ocr_model_var.set('gemini')
+                # Store the specific Gemini model selection
+                app.gemini_ocr_model_var.set(selected_display)
+                log_debug(f"OCR model set to gemini, specific model: {selected_display}")
+            else:
+                log_debug(f"Unknown OCR model selection: {selected_display}")
+        finally:
+            # Always restore traces
+            app.restore_traces()
         
         # Update UI immediately for responsive feedback
         if hasattr(app, 'ui_interaction_handler'):
             app.ui_interaction_handler.update_ocr_model_ui()
+        
+        # Save settings after all variables are properly updated
         if app._fully_initialized:
             app.save_settings()
     

@@ -62,8 +62,6 @@ DEFAULT_CONFIG_SETTINGS = {
     # Gemini API settings
     'gemini_model_name': 'gemini-2.5-flash-lite',
     'gemini_model_temp': '0.0',
-    'input_token_cost': '0.1',
-    'output_token_cost': '0.4',
     # Separate Gemini model selection for OCR and Translation
     'gemini_translation_model': 'Gemini 2.5 Flash-Lite',
     'gemini_ocr_model': 'Gemini 2.5 Flash-Lite'
@@ -100,7 +98,8 @@ def load_app_config():
     # Obsolete keys check (add 'source_lang', 'target_lang', 'ocr_lang' if you are sure to remove them)
     obsolete_keys = ['api_key', 'gpu_enabled', 'spell_check_enabled', 'word_segmentation_enabled',
                     'spell_check_language', 'subtitle_mode', 'parallel_processing', 'target_text_bg_color',
-                    'nllb_beam_size', 'source_lang', 'target_lang', 'ocr_lang', 'gemini_fuzzy_detection'] 
+                    'nllb_beam_size', 'source_lang', 'target_lang', 'ocr_lang', 'gemini_fuzzy_detection',
+                    'input_token_cost', 'output_token_cost']  # Removed obsolete cost settings 
     for key in obsolete_keys:
         if key in config_settings:
             del config_settings[key]

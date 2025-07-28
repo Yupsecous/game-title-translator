@@ -1187,14 +1187,9 @@ For more information, see the user manual."""
                 
             total_words, total_input, total_output = self.translation_handler._get_cumulative_totals()
             
-            # Calculate total cost using the same logic as the translation handler
-            # Get token costs from config
-            input_cost_per_million = float(self.config['Settings'].get('input_token_cost', '0.1'))
-            output_cost_per_million = float(self.config['Settings'].get('output_token_cost', '0.4'))
-            
-            total_input_cost = (total_input / 1_000_000) * input_cost_per_million
-            total_output_cost = (total_output / 1_000_000) * output_cost_per_million
-            total_cost = total_input_cost + total_output_cost
+            # Read the already-calculated cumulative cost from the log file
+            # (costs are calculated per-operation using the correct model costs)
+            total_cost = self._get_cumulative_cost_from_log()
             
             # Update GUI fields
             self.gemini_total_words_var.set(self.format_number_with_separators(total_words))
@@ -1208,6 +1203,36 @@ For more information, see the user manual."""
                 self.gemini_total_words_var.set(self.format_number_with_separators(0))
             if hasattr(self, 'gemini_total_cost_var') and self.gemini_total_cost_var is not None:
                 self.gemini_total_cost_var.set(self.format_cost_for_display(0.0))
+
+    def _get_cumulative_cost_from_log(self):
+        """Read the cumulative cost from the Gemini API log file."""
+        try:
+            # Get the log file path
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                base_dir = os.path.dirname(sys.executable)
+            else:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            gemini_log_file = os.path.join(base_dir, "Gemini_API_call_logs.txt")
+            
+            if not os.path.exists(gemini_log_file):
+                log_debug(f"Gemini log file does not exist: {gemini_log_file}")
+                return 0.0
+            
+            # Read the most recent cumulative cost from the log
+            cumulative_cost = 0.0
+            cumulative_cost_regex = re.compile(r"^\s*-\s*Cumulative Log Cost:\s*\$([0-9]*\.?[0-9]+)")
+            
+            with open(gemini_log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    cost_match = cumulative_cost_regex.match(line)
+                    if cost_match:
+                        cumulative_cost = float(cost_match.group(1))
+            
+            return cumulative_cost
+        except Exception as e:
+            log_debug(f"Error reading cumulative cost from log: {e}")
+            return 0.0
 
     def _delayed_gemini_stats_update(self):
         """Delayed stats update to ensure GUI is fully ready."""
@@ -2187,38 +2212,6 @@ For more information, see the user manual."""
         # Update the reverse mapping as well
         self.translation_model_values = {v: k for k, v in self.translation_model_names.items()}
         log_debug(f"Updated translation model names: {self.translation_model_names}")
-
-    def update_gemini_costs_from_models(self):
-        """Update input/output token costs based on currently selected models."""
-        try:
-            # Determine which model to use for cost calculation
-            # Priority: translation model first, then OCR model if no translation model
-            translation_model_name = self.gemini_translation_model_var.get()
-            ocr_model_name = self.gemini_ocr_model_var.get()
-            
-            # Get API names for the selected models
-            translation_api_name = self.gemini_models_manager.get_api_name_by_display_name(translation_model_name)
-            ocr_api_name = self.gemini_models_manager.get_api_name_by_display_name(ocr_model_name)
-            
-            # Use translation model costs if available, otherwise OCR model costs
-            costs = None
-            if translation_api_name:
-                costs = self.gemini_models_manager.get_model_costs(translation_api_name)
-                log_debug(f"Using costs from translation model: {translation_model_name} ({translation_api_name})")
-            elif ocr_api_name:
-                costs = self.gemini_models_manager.get_model_costs(ocr_api_name)
-                log_debug(f"Using costs from OCR model: {ocr_model_name} ({ocr_api_name})")
-            
-            if costs:
-                # Update config with new costs
-                self.config['Settings']['input_token_cost'] = str(costs['input_cost'])
-                self.config['Settings']['output_token_cost'] = str(costs['output_cost'])
-                log_debug(f"Updated token costs: input=${costs['input_cost']}/1M, output=${costs['output_cost']}/1M")
-            else:
-                log_debug("No valid Gemini model selected for cost calculation")
-                
-        except Exception as e:
-            log_debug(f"Error updating Gemini costs: {e}")
 
     def get_current_gemini_model_for_translation(self):
         """Get the API name of currently selected Gemini translation model."""

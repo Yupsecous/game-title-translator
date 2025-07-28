@@ -777,8 +777,6 @@ class UIInteractionHandler:
                     newly_selected_model_code = 'gemini_api'
                     # Store the specific Gemini model selection
                     self.app.gemini_translation_model_var.set(selected_display_name_from_ui)
-                    # Update costs based on selected model
-                    self.app.update_gemini_costs_from_models()
                     log_debug(f"Selected Gemini translation model: {selected_display_name_from_ui}")
                 else:
                     # Use the existing lookup for non-Gemini models
