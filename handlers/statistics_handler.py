@@ -428,12 +428,12 @@ class StatisticsHandler:
                 
                 # Combined statistics - match GUI order with proper cost per hour calculation
                 combined = stats['combined']
-                f.write(f"Combined,Total API Cost,{self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
                 f.write(f"Combined,Combined Cost per Minute,{self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}\n")
                 # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                 cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
                 cost_per_hour = cost_per_minute_rounded * 60
                 f.write(f"Combined,Combined Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
+                f.write(f"Combined,Total API Cost,{self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
                 
                 # DeepL section with actual value
                 deepl_value = deepl_usage if deepl_usage else "N/A"
@@ -497,12 +497,12 @@ class StatisticsHandler:
                     f.write("💰 Łączne statystyki API\n")
                     f.write("-" * 25 + "\n")
                     combined = stats['combined']
-                    f.write(f"Łączny koszt API: {self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
                     f.write(f"Łączny koszt na minutę: {self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}/min\n")
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
                     cost_per_hour = cost_per_minute_rounded * 60
-                    f.write(f"Łączny koszt na godzinę: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/godz.\n\n")
+                    f.write(f"Łączny koszt na godzinę: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/godz.\n")
+                    f.write(f"Łączny koszt API: {self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n\n")
                     
                     # DeepL section with actual value
                     f.write("📈 Monitor użycia DeepL\n")
@@ -549,12 +549,12 @@ class StatisticsHandler:
                     f.write("💰 Combined API Statistics\n")
                     f.write("-" * 25 + "\n")
                     combined = stats['combined']
-                    f.write(f"Total API Cost: {self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
                     f.write(f"Combined Cost per Minute: {self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}/min\n")
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
                     cost_per_hour = cost_per_minute_rounded * 60
-                    f.write(f"Combined Cost per Hour: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/hr\n\n")
+                    f.write(f"Combined Cost per Hour: {self._format_currency_for_export(cost_per_hour, use_polish_format)}/hr\n")
+                    f.write(f"Total API Cost: {self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n\n")
                     
                     # DeepL section with actual value
                     f.write("📈 DeepL Usage Monitor\n")

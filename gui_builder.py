@@ -1133,9 +1133,9 @@ def create_api_usage_tab(app):
     
     # Combined statistics labels and values
     combined_stats = [
-        ("api_usage_total_api_cost", "Total API Cost:"),
         ("api_usage_combined_cost_per_minute", "Combined Cost per Minute:"),
-        ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:")
+        ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:"),
+        ("api_usage_total_api_cost", "Total API Cost:")
     ]
     
     app.combined_stat_labels = {}

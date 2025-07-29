@@ -668,9 +668,9 @@ For more information, see the user manual."""
             
             if hasattr(self, 'combined_stat_labels'):
                 combined_labels = [
-                    ("api_usage_total_api_cost", "Total API Cost:"),
                     ("api_usage_combined_cost_per_minute", "Combined Cost per Minute:"),
-                    ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:")
+                    ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:"),
+                    ("api_usage_total_api_cost", "Total API Cost:")
                 ]
                 for label_key, fallback_text in combined_labels:
                     if label_key in self.combined_stat_labels and self.combined_stat_labels[label_key].winfo_exists():
@@ -1466,12 +1466,12 @@ For more information, see the user manual."""
                     clipboard_text += "💰 Combined API Statistics\n"
                     clipboard_text += "-" * 25 + "\n"
                     combined = stats['combined']
-                    clipboard_text += f"Total API Cost: {self.format_currency_for_display(combined['total_cost'])}\n"
                     clipboard_text += f"Combined Cost per Minute: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
                     # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                     cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
                     cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n\n"
+                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
+                    clipboard_text += f"Total API Cost: {self.format_currency_for_display(combined['total_cost'])}\n\n"
                     
                     # DeepL Usage Monitor
                     clipboard_text += "📈 DeepL Usage Monitor\n"
