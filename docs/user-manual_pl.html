@@ -620,7 +620,19 @@
     </ol>
     <h2 id="gemini-ocr-premium-text-recognition">Gemini OCR – zaawansowane rozpoznawanie tekstu</h2>
     
-    <p>Gemini OCR to zaawansowanie rozpoznawaniu tekstu z wykorzystaniem sztucznej inteligencji. Doskonale rozpoznaje mało czytelny tekst, z którym tradycyjne programy OCR, takie jak Tesseract, sobie nie radzą. Ta zaawansowana funkcja wykorzystuje model Gemini 2.5 Flash-Lite firmy Google, gwarantując doskonałe rozpoznawanie tekstu przy bardzo dobrym stosunku jakości do ceny.</p>
+    <p>Gemini OCR to zaawansowanie rozpoznawaniu tekstu z wykorzystaniem sztucznej inteligencji. Doskonale rozpoznaje mało czytelny tekst, z którym tradycyjne programy OCR, takie jak Tesseract, sobie nie radzą. Ta zaawansowana funkcja wykorzystuje modele Gemini firmy Google, gwarantując doskonałe rozpoznawanie tekstu z elastycznym wyborem modeli dla optymalnej wydajności i efektywności kosztowej.</p>
+    
+    <h3 id="intelligent-model-selection">Inteligentny wybór modelu</h3>
+    
+    <p>Aplikacja oferuje elastyczny wybór modeli do operacji OCR i tłumaczenia, co pozwala zoptymalizować wydajność w zależności od konkretnego zastosowania:</p>
+    
+    <p><strong>Zalecany wybór modelu:</strong></p>
+    <ul>
+      <li><strong>Szybko zmieniające się napisy (< 1 sekunda wyświetlania):</strong> Gemini 2.5 Flash-Lite do OCR i tłumaczenia – zoptymalizowany pod kątem szybkości przy zachowaniu doskonałej jakości.</li>
+      <li><strong>Dłuższe napisy (gry, 1+ sekunda wyświetlania):</strong> Gemini 2.0 Flash do OCR i tłumaczenia – doskonała dokładność OCR przy takich samych kosztach jak 2.5 Flash-Lite.</li>
+    </ul>
+    
+    <p><strong>Zaawansowana konfiguracja:</strong> dostępność modeli i koszty można dostosować, edytując plik <code>gemini_models.csv</code> w katalogu resources. Pozwala to dodawać nowe modele, aktualizować ceny czy określać, które modele są dostępne do operacji OCR i tłumaczenia w miarę jak Google wydaje nowe modele Gemini.</p>
     
     <h3 id="challenging-subtitles-scenarios">Mało czytelne napisy</h3>
     
@@ -648,13 +660,23 @@
     <p><strong>Wynik Tesseract OCR:</strong> <code>' Paulie: Driv: show, Tom. Next stop's Bi the motel. 7 jj ie</code><br>
     <strong>Wynik Gemini OCR:</strong> <code>Paulie: Drive before the cops show, Tom. Next stop's Bill at the motel.</code></p>
     
-    <h3 id="superior-premium-feature">Doskonała jakość</h3>
+    <h3 id="superior-premium-feature">Doskonała jakość z wieloma modelami</h3>
     
-    <p>Gemini OCR to zaawansowana funkcja, która znacznie przewyższa tradycyjne metody rozpoznawania tekstu. Szczególnie zalecamy jej użycie, gdy:</p>
+    <p>Gemini OCR to zaawansowana funkcja, która znacznie przewyższa tradycyjne metody rozpoznawania tekstu dzięki inteligentnemu wyborowi modeli. Aplikacja zapewnia dostęp do wielu modeli Gemini, każdy zoptymalizowany pod kątem różnych scenariuszy:</p>
+    
+    <p><strong>Modele Gemini 2.0 – doskonała dokładność OCR:</strong></p>
     <ul>
-      <li>napisy są trudne do rozpoznania za pomocą standardowego OCR,</li>
-      <li>napisy są wyświetlane średnio przez 1 sekundę lub dłużej,</li>
-      <li>jakość ma priorytet nad szybkością w przypadku ważnych treści.</li>
+      <li>Wykazana doskonała dokładność OCR w kompleksowych testach w wielu językach.</li>
+      <li>Szczególnie zalecane, gdy napisy są wyświetlane średnio przez 1 sekundę lub dłużej.</li>
+      <li>Takie same koszty jak Gemini 2.5 Flash-Lite, ale z ulepszonymi możliwościami rozpoznawania tekstu.</li>
+      <li>Idealne do gier, gdzie dokładność napisów ma priorytet nad szybkością przetwarzania.</li>
+    </ul>
+    
+    <p><strong>Modele Gemini 2.5 – zoptymalizowane pod kątem szybkości:</strong></p>
+    <ul>
+      <li>Zoptymalizowane do szybko zmieniających się treści, gdzie szybkość jest kluczowa.</li>
+      <li>Zalecane do napisów, które zmieniają się szybko (mniej niż 1 sekunda wyświetlania).</li>
+      <li>Doskonały stosunek kosztów do wydajności w szybkich operacjach OCR.</li>
     </ul>
     
     <p><strong>Wydajność i koszty:</strong></p>
@@ -667,18 +689,19 @@
     
     <h3 id="cost-quality-ratio">Doskonały stosunek jakości do ceny</h3>
     
-    <p>Gemini 2.5 Flash-Lite zapewnia wyjątkowo szybkie i dokładne rozpoznawanie tekstu, które znacznie przewyższa Tesseract czy Paddle OCR. Chociaż wyniki mogą czasami być mniej spójne niż w przypadku dedykowanego rozwiązania Google Cloud Vision API, stosunek jakości do ceny jest niezrównany wśród bezpłatnych i płatnych narzędzi do rozpoznawania tekstu.</p>
+    <p>Dostępne modele Gemini zapewniają wyjątkowo szybkie i dokładne rozpoznawanie tekstu, które znacznie przewyższa Tesseract czy Paddle OCR. Dzięki inteligentnemu wyborowi modeli można zoptymalizować stosunek jakości do ceny dla konkretnego zastosowania przy zachowaniu doskonałej wydajności w porównaniu z bezpłatnymi i płatnymi rozwiązaniami OCR.</p>
     
-    <p><strong>Porównanie kosztów:</strong></p>
+    <p><strong>Porównanie kosztów (na podstawie cen Gemini 2.5 Flash-Lite):</strong></p>
     <ul>
-      <li><strong>Gemini 2.5 Flash-Lite:</strong> ok. 0,00004 USD za zrzut ekranu napisów.</li>
+      <li><strong>Gemini 2.5 Flash-Lite / 2.0 Flash:</strong> ok. 0,00004 USD za zrzut ekranu napisów.</li>
       <li><strong>Google Cloud Vision API:</strong> 0,0015 USD za zrzut ekranu napisów.</li>
-      <li><strong>Różnica:</strong> Gemini jest ok. 37,5 razy tańszy (0,04 USD wobec 1,5 USD za 1000 wywołań API).</li>
+      <li><strong>Różnica:</strong> modele Gemini są ok. 37,5 razy tańsze (0,04 USD wobec 1,5 USD za 1000 wywołań API).</li>
     </ul>
     
     <h3 id="best-practices-gemini-ocr">Najlepsze praktyki z Gemini OCR</h3>
     
     <ul>
+      <li><strong>Wybór modelu:</strong> wybierz Gemini 2.0 Flash do dłuższych napisów (1+ sekunda), aby skorzystać z doskonałej dokładności OCR przy takich samych kosztach, lub Gemini 2.5 Flash-Lite do szybko zmieniających się treści.</li>
       <li><strong>Minimalny interwał skanowania:</strong> minimalny interwał skanowania w przypadku Gemini wynosi 500 ms i wystarcza w większości przypadków.</li>
       <li><strong>Dłuższe interwały dla dłuższych treści:</strong> w grach z długimi napisami (np. seria Wiedźmin) rozważ zwiększenie interwału skanowania, aby zminimalizować koszty przy zachowaniu jakości.</li>
       <li><strong>Szersze obszary przechwytywania:</strong> w przeciwieństwie do tradycyjnych programów OCR duże modele językowe (LLM) zapewniają lepsze wyniki przy szerszym kontekście. Wybierz szeroki obszar wokół napisów zamiast ciasnego kadrowania, aby uzyskać spójne, dokładne rozpoznawanie identycznego tekstu wyświetlanego przez kilka sekund.</li>
@@ -747,7 +770,7 @@
     
     <h2 id="translation-methods">Metody tłumaczenia</h2>
     <h3 id="gemini-api">Gemini API (zalecane)</h3>
-    <p>Gemini 2.5 Flash-Lite to najnowszy ekonomiczny model sztucznej inteligencji firmy Google, który zapewnia wyjątkową jakość tłumaczeń z inteligentnym uwzględnianiem kontekstu. Ta przełomowa technologia łączy wysokiej klasy tłumaczenia z wyjątkowo niską ceną, dzięki czemu umożliwia tłumaczenie dużych ilości tekstu, na przykład wszystkich napisów w grze, za zaledwie kilka dolarów.</p>
+    <p>Najnowsze modele Gemini firmy Google zapewniają wyjątkową jakość tłumaczeń z inteligentnym uwzględnianiem kontekstu. Ta przełomowa technologia łączy wysokiej klasy tłumaczenia z wyjątkowo niską ceną, dzięki czemu umożliwia tłumaczenie dużych ilości tekstu, na przykład wszystkich napisów w grze, za zaledwie kilka dolarów.</p>
     
     <p><strong>Kluczowe zalety</strong>:</p>
     <ul>
@@ -840,7 +863,7 @@
     
     <h2 id="gemini-api-cost-effective-and-context-aware-translation">Gemini API – tanie tłumaczenie kontekstowe</h2>
     
-    <p>Gemini 2.5 Flash-Lite reprezentuje przełom w technologii tłumaczenia za pomocą sztucznej inteligencji, zapewniając wysokiej jakości tłumaczenia w niespotykanie niskiej cenie. Ten zaawansowany model inteligentnie uwzględnia kontekst poprzednich zdań, umożliwiając tanie tłumaczenie napisów w rozbudowanych grach za ułamek tradycyjnych kosztów.</p>
+    <p>Zaawansowane modele Gemini firmy Google reprezentują przełom w technologii tłumaczenia za pomocą sztucznej inteligencji, zapewniając wysokiej jakości tłumaczenia w niespotykanie niskiej cenie. Te zaawansowane modele inteligentnie uwzględniają kontekst poprzednich zdań, umożliwiając tanie tłumaczenie napisów w rozbudowanych grach za ułamek tradycyjnych kosztów.</p>
     
     <h3 id="superior-translation-quality">Doskonała jakość tłumaczeń</h3>
     
@@ -900,6 +923,9 @@
     
     <p><strong>Inteligentna korekta błędów OCR</strong></p>
     <p>Jedną z najbardziej imponujących cech Gemini jest zdolność interpretowania i automatycznego korygowania niedoskonałości OCR. Gdy rozpoznawanie tekstu generuje zniekształcone lub niepełne wyniki, zaawansowane rozumienie języka przez Gemini często pozwala odgadnąć zamierzone znaczenie i zapewnić poprawne, dokładne tłumaczenia bez powielania błędów OCR w zwracanym tłumaczeniu.</p>
+    
+    <p><strong>Elastyczna konfiguracja modeli</strong></p>
+    <p>Aplikacja obsługuje wiele modeli Gemini do operacji OCR i tłumaczenia. Można wybrać różne modele w zależności od konkretnych potrzeb: modele Gemini 2.0 oferują doskonałą dokładność OCR do dłuższych napisów, natomiast modele Gemini 2.5 zapewniają wydajność zoptymalizowaną pod kątem szybkości do szybko zmieniających się treści. Wybór modeli i ceny można dostosować, edytując plik <code>gemini_models.csv</code> w katalogu resources.</p>
     
     <p><strong>Przykład: korekta błędów OCR</strong></p>
     <p>Oto rzeczywisty przykład pokazujący, jak Gemini radzi sobie z błędami OCR w porównaniu z DeepL przy tłumaczeniu z francuskiego na angielski:</p>
