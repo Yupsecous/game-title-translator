@@ -621,7 +621,19 @@
     </ol>
     <h2 id="gemini-ocr-premium-text-recognition">Gemini OCR - Premium Text Recognition</h2>
     
-    <p>Gemini OCR represents a revolutionary advancement in text recognition technology, providing superior accuracy for challenging subtitle scenarios where traditional OCR engines like Tesseract struggle. This premium feature leverages Google's Gemini 2.5 Flash-Lite model to deliver exceptional OCR results at an outstanding cost-to-quality ratio.</p>
+    <p>Gemini OCR represents a revolutionary advancement in text recognition technology, providing superior accuracy for challenging subtitle scenarios where traditional OCR engines like Tesseract struggle. This premium feature leverages Google's advanced Gemini models to deliver exceptional OCR results with flexible model selection for optimal performance and cost efficiency.</p>
+    
+    <h3 id="intelligent-model-selection">Intelligent Model Selection</h3>
+    
+    <p>The application features flexible model selection for both OCR and translation operations, allowing you to optimise performance based on your specific use case:</p>
+    
+    <p><strong>Recommended Model Selection:</strong></p>
+    <ul>
+      <li><strong>Fast-changing subtitles (< 1 second display time):</strong> Gemini 2.5 Flash-Lite for both OCR and translation – optimised for speed whilst maintaining excellent quality.</li>
+      <li><strong>Longer subtitles (games, 1+ seconds display time):</strong> Gemini 2.0 Flash for both OCR and translation – superior OCR accuracy with the same cost as 2.5 Flash-Lite.</li>
+    </ul>
+    
+    <p><strong>Advanced Configuration:</strong> Model availability and costs can be customised by editing the <code>gemini_models.csv</code> file in the resources directory. This allows you to add new models, update pricing, or modify which models are available for OCR versus translation operations as Google releases new Gemini models.</p>
     
     <h3 id="challenging-subtitles-scenarios">Challenging Subtitles Scenarios</h3>
     
@@ -649,13 +661,23 @@
     <p><strong>Tesseract OCR Result:</strong> <code>' Paulie: Driv: show, Tom. Next stop's Bi the motel. 7 jj ie</code><br>
     <strong>Gemini OCR Result:</strong> <code>Paulie: Drive before the cops show, Tom. Next stop's Bill at the motel.</code></p>
     
-    <h3 id="superior-premium-feature">Superior Premium Feature</h3>
+    <h3 id="superior-premium-feature">Superior Premium Feature with Multiple Models</h3>
     
-    <p>Gemini OCR is a premium feature that significantly outperforms traditional OCR methods. It is particularly recommended for scenarios where:</p>
+    <p>Gemini OCR is a premium feature that significantly outperforms traditional OCR methods through intelligent model selection. The application provides access to multiple Gemini models, each optimised for different scenarios:</p>
+    
+    <p><strong>Gemini 2.0 Models - Superior OCR Accuracy:</strong></p>
     <ul>
-      <li>Subtitles are challenging to recognise with standard OCR.</li>
-      <li>Subtitles are displayed for 1 second or more on average.</li>
-      <li>Quality is prioritised over speed for critical content.</li>
+      <li>Demonstrated superior OCR accuracy in comprehensive testing across multiple languages.</li>
+      <li>Particularly recommended when subtitles are displayed for 1 second or more on average.</li>
+      <li>Same cost as Gemini 2.5 Flash-Lite but with enhanced text recognition capabilities.</li>
+      <li>Ideal for games where subtitle accuracy is prioritised over processing speed.</li>
+    </ul>
+    
+    <p><strong>Gemini 2.5 Models - Speed Optimised:</strong></p>
+    <ul>
+      <li>Optimised for fast-changing content where speed is essential.</li>
+      <li>Recommended for subtitles that change rapidly (less than 1 second display time).</li>
+      <li>Excellent cost-to-performance ratio for high-speed OCR operations.</li>
     </ul>
     
     <p><strong>Performance and Cost:</strong></p>
@@ -668,18 +690,19 @@
     
     <h3 id="cost-quality-ratio">Outstanding Cost-to-Quality Ratio</h3>
     
-    <p>Gemini 2.5 Flash-Lite delivers exceptionally fast and accurate OCR results that significantly surpass Tesseract or Paddle OCR. While results may occasionally be less consistent than Google Cloud Vision API, the cost-to-quality ratio is unmatched among both free and paid OCR solutions.</p>
+    <p>The available Gemini models deliver exceptionally fast and accurate OCR results that significantly surpass Tesseract or Paddle OCR. With intelligent model selection, you can optimise the cost-to-quality ratio for your specific use case whilst maintaining superior performance compared to both free and paid OCR solutions.</p>
     
-    <p><strong>Cost Comparison:</strong></p>
+    <p><strong>Cost Comparison (using Gemini 2.5 Flash-Lite pricing):</strong></p>
     <ul>
-      <li><strong>Gemini 2.5 Flash-Lite:</strong> ~$0.00004 per subtitle screenshot.</li>
+      <li><strong>Gemini 2.5 Flash-Lite / 2.0 Flash:</strong> ~$0.00004 per subtitle screenshot.</li>
       <li><strong>Google Cloud Vision API:</strong> ~$0.0015 per subtitle screenshot.</li>
-      <li><strong>Cost difference:</strong> Gemini is 37.5 times cheaper ($0.04 vs $1.5 per 1000 API calls).</li>
+      <li><strong>Cost difference:</strong> Gemini models are 37.5 times cheaper ($0.04 vs $1.5 per 1000 API calls).</li>
     </ul>
     
     <h3 id="best-practices-gemini-ocr">Best Practices with Gemini OCR</h3>
     
     <ul>
+      <li><strong>Model selection:</strong> Choose Gemini 2.0 Flash for longer subtitles (1+ seconds) to benefit from superior OCR accuracy at the same cost, or Gemini 2.5 Flash-Lite for fast-changing content.</li>
       <li><strong>Minimum scan interval:</strong> Use at least 500ms scan interval, which is sufficient for most scenarios.</li>
       <li><strong>Extended intervals for long content:</strong> In games with lengthy subtitles (e.g., The Witcher series), consider increasing the scan interval to minimise costs while maintaining quality.</li>
       <li><strong>Wider capture areas:</strong> Unlike traditional OCR engines, LLMs provide better results with broader context. Select a wide area around subtitles rather than tight cropping for consistent, accurate recognition of identical text displayed over several seconds.</li>
@@ -748,7 +771,7 @@
     
     <h2 id="translation-methods">Translation Methods</h2>
     <h3 id="gemini-api">Gemini API (Recommended)</h3>
-    <p>Gemini 2.5 Flash-Lite is Google's latest cost-efficient AI model that delivers exceptional translation quality with intelligent context awareness. This breakthrough technology combines premium translation quality with unprecedented affordability, making it ideal for translating massive projects like entire games for just a few dollars.</p>
+    <p>Google's latest Gemini models provide exceptional translation quality with intelligent context awareness. This breakthrough technology combines premium translation quality with unprecedented affordability, making it ideal for translating massive projects like entire games for just a few dollars.</p>
     
     <p><strong>Key Advantages</strong>:</p>
     <ul>
@@ -841,7 +864,7 @@
     
     <h2 id="gemini-api-cost-effective-and-context-aware-translation">Gemini API - Cost-Effective and Context-Aware Translation</h2>
     
-    <p>Gemini 2.5 Flash-Lite represents a breakthrough in AI translation technology, offering premium-quality translations with unprecedented cost-effectiveness. This advanced model combines intelligent context awareness with remarkable affordability, making it possible to translate massive gaming projects for a fraction of traditional costs.</p>
+    <p>Google's advanced Gemini models represent a breakthrough in AI translation technology, offering premium-quality translations with unprecedented cost-effectiveness. These advanced models combine intelligent context awareness with remarkable affordability, making it possible to translate massive gaming projects for a fraction of traditional costs.</p>
     
     <h3 id="superior-translation-quality">Superior Translation Quality</h3>
     
@@ -906,6 +929,9 @@
     
     <p><strong>OCR Error Intelligence</strong></p>
     <p>One of Gemini's most impressive capabilities is its ability to interpret and correct OCR imperfections automatically. When text recognition produces garbled or incomplete results, Gemini's advanced language understanding can often deduce the intended meaning and provide clean, accurate translations without replicating OCR errors in the output.</p>
+    
+    <p><strong>Flexible Model Configuration</strong></p>
+    <p>The application supports multiple Gemini models for both OCR and translation operations. You can select different models based on your specific needs: Gemini 2.0 models offer superior OCR accuracy for longer subtitles, whilst Gemini 2.5 models provide speed-optimised performance for rapidly changing content. Model selection and pricing can be customised by editing the <code>gemini_models.csv</code> file in the resources directory.</p>
     
     <p><strong>Example: OCR Error Correction</strong></p>
     <p>Here's a real-world example showing how Gemini handles OCR errors compared to DeepL when translating French to English:</p>
