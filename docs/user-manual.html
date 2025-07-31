@@ -442,7 +442,10 @@
       <li>
         <p>
           <strong>Translation Model</strong>:</p>
+        <p>Multiple Gemini models appear at the top of the dropdown, followed by traditional translation services:</p>
         <ul>
+          <li>
+            <strong>Gemini models (various)</strong> – Multiple Gemini AI models available (e.g., Gemini 2.5 Flash, Gemini 2.0 Flash, etc.). Requires API key, cost-effective AI translation with context awareness. Available models are controlled by the <code>resources/gemini_models.csv</code> file.</li>
           <li>
             <strong>MarianMT (offline and free)</strong> – No API key needed, downloads models on first use, works offline.</li>
           <li>
@@ -474,12 +477,13 @@
       <li>
         <p>
           <strong>OCR Model</strong>:</p>
+        <p>Multiple Gemini models appear at the top of the dropdown, followed by traditional OCR options:</p>
         <ul>
           <li>
-            <strong>Tesseract (offline)</strong> – Traditional OCR engine, free and works offline. Recommended for clear subtitles with good contrast (e.g., white text on dark backgrounds).</li>
+            <strong>Gemini models (various)</strong> – Multiple Gemini AI models available (e.g., Gemini 2.5 Flash, Gemini 2.0 Flash, etc.). Premium AI-powered OCR with superior accuracy for challenging subtitles. Available models are controlled by the <code>resources/gemini_models.csv</code> file. Requires API key and internet connection.</li>
           <li>
-            <strong>Gemini API (online)</strong> – Premium AI-powered OCR with superior accuracy for challenging subtitles. Requires API key and internet connection.</li>
-          <li>When using Gemini OCR, only the <strong>Scan Interval</strong> setting applies to OCR operations.</li>
+            <strong>Tesseract (offline)</strong> – Traditional OCR engine, free and works offline. Recommended for clear subtitles with good contrast (e.g., white text on dark backgrounds).</li>
+          <li>When using Gemini OCR, you can select different models for OCR and translation operations. Only the <strong>Scan Interval</strong> setting applies to OCR operations.</li>
         </ul>
       </li>
       <li>
@@ -1056,7 +1060,7 @@
     <pre><code>=== GEMINI API CALL LOG ===
 Timestamp: 2025-07-06 17:19:03
 Language Pair: fr -> en
-Original Text: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+Original Text: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite.<br>Vous allez me dire pourquoi.
 
 CALL DETAILS:
 - Message Length: 695 characters
@@ -1069,7 +1073,7 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
 
 FRENCH: C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à mes fins.
 FRENCH: Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici. Que voulez-vous ?
-FRENCH: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+FRENCH: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite.<br>Vous allez me dire pourquoi.
 
 ENGLISH: That was my goal. The rest... was merely a means to an end.
 ENGLISH: You say you came all this way to find me. Here I am. What do you want?

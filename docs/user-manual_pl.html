@@ -441,7 +441,10 @@
       <li>
         <p>
           <strong>Model tłumaczenia</strong>:</p>
+        <p>W górnej części listy rozwijanej znajdują się modele Gemini, a poniżej tradycyjne usługi tłumaczenia:</p>
         <ul>
+          <li>
+            <strong>Modele Gemini (różne)</strong> – dostępne są różne modele Gemini AI (np. Gemini 2.5 Flash, Gemini 2.0 Flash itp.). Wymaga klucza API, ekonomiczne tłumaczenie AI z uwzględnianiem kontekstu. Dostępne modele są kontrolowane przez plik <code>resources/gemini_models.csv</code>.</li>
           <li>
             <strong>MarianMT (lokalny i bezpłatny)</strong> – nie wymaga klucza API, pobiera modele przy pierwszym użyciu, działa bez połączenia z Internetem.</li>
           <li>
@@ -473,12 +476,13 @@
       <li>
         <p>
           <strong>Model OCR</strong>:</p>
+        <p>W górnej części listy rozwijanej znajdują się modele Gemini, a poniżej tradycyjne opcje OCR:</p>
         <ul>
           <li>
-            <strong>Tesseract (lokalny)</strong> – tradycyjne narzędzie OCR, bezpłatne i działa offline. Zalecane dla wyraźnych napisów o dobrym kontraście (np. biały tekst na ciemnym tle).</li>
+            <strong>Modele Gemini (różne)</strong> – dostępne są różne modele Gemini AI (np. Gemini 2.5 Flash, Gemini 2.0 Flash itp.). Zaawansowane OCR z wykorzystaniem sztucznej inteligencji o doskonałej jakości w przypadku słabo widocznych napisów. Dostępne modele są kontrolowane przez plik <code>resources/gemini_models.csv</code>. Wymaga klucza API i połączenia z Internetem.</li>
           <li>
-            <strong>Gemini API (online)</strong> – zaawansowane OCR z wykorzystaniem sztucznej inteligencji o doskonałej jakości w przypadku słabo widocznych napisów. Wymaga klucza API i połączenia z Internetem.</li>
-          <li>Podczas korzystania z Gemini OCR jedynym ustawieniem OCR jest <strong>Interwał skanowania</strong>.</li>
+            <strong>Tesseract (lokalny)</strong> – tradycyjne narzędzie OCR, bezpłatne i działa offline. Zalecane dla wyraźnych napisów o dobrym kontraście (np. biały tekst na ciemnym tle).</li>
+          <li>Podczas korzystania z Gemini OCR można wybrać różne modele do operacji OCR i tłumaczenia. Jedynym ustawieniem OCR jest <strong>Interwał skanowania</strong>.</li>
         </ul>
       </li>
       <li>
@@ -1050,7 +1054,7 @@
     <pre><code>=== GEMINI API CALL LOG ===
 Timestamp: 2025-07-06 17:19:03
 Language Pair: fr -> en
-Original Text: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+Original Text: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite.<br>Vous allez me dire pourquoi.
 
 CALL DETAILS:
 - Message Length: 695 characters
@@ -1063,7 +1067,7 @@ COMPLETE MESSAGE CONTENT SENT TO GEMINI:
 
 FRENCH: C'était mon objectif. Le reste... n'était qu'un moyen de parvenir à mes fins.
 FRENCH: Vous dites que vous avez fait tout ce chemin pour me trouver. Me voici. Que voulez-vous ?
-FRENCH: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite. Vous allez me dire pourquoi.
+FRENCH: Vous avez manipulé des civilisations entières, provoqué des décennies de guerre, détruit Ziost... et pris la fuite.<br>Vous allez me dire pourquoi.
 
 ENGLISH: That was my goal. The rest... was merely a means to an end.
 ENGLISH: You say you came all this way to find me. Here I am. What do you want?
