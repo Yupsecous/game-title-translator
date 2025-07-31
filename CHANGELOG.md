@@ -5,6 +5,33 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2025-08-01
+
+### Added
+- **Multiple Gemini Models Support**: Dynamic configuration system for flexible Gemini model selection
+  - CSV-based model configuration (`resources/gemini_models.csv`) for easy customization
+  - Separate model selection for OCR and translation operations
+  - Support for Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 2.5 Flash, and Gemini 2.5 Flash-Lite
+  - Dynamic cost management that automatically updates based on selected models
+- **Enhanced Model Recommendations**: Performance-optimized model selection guidance
+  - Gemini 2.5 Flash-Lite recommended for speed (fast-changing subtitles < 1 second)
+  - Gemini 2.0 Flash recommended for superior OCR accuracy and idiomatic translations (longer subtitles)
+- **Comprehensive OCR Testing Results**: Detailed model comparison data showing Gemini 2.0 models' superior performance
+  - Test results demonstrate significantly better OCR accuracy across multilingual content
+  - Evidence-based recommendations for optimal model selection
+
+### Changed
+- **API Library Migration**: Upgraded from `google.generativeai` to `google.genai` library for improved performance and stability
+- **Optimized Threading**: Enhanced OCR and translation thread performance for faster processing and reduced latency
+- **Improved Model Management**: Centralized Gemini model configuration through GeminiModelsManager class
+- **Dynamic Model Selection**: Models available in UI dropdowns are now dynamically loaded from CSV configuration
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## [3.0.1] - 2025-07-24
 
 ### Added
