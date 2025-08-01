@@ -3,8 +3,8 @@ Copyright © 2025 Tomasz Kamiński
 
 ![Game-Changing Translator Logo](docs/screenshots/readme_screen.jpg)
 
-## 🌟 **[✨ Experience the Revolutionary Front Page ✨](https://tomkam1702.github.io/OCR-Translator/)**
-**Discover why this is the world's first AI-OCR game translator with our beautifully designed showcase featuring live demos, competitive comparisons, and everything that makes this application revolutionary!** 🚀
+## 🌟 **[✨ Experience the Complete Front Page ✨](https://tomkam1702.github.io/OCR-Translator/)**
+**Discover why this is the world's first AI-OCR game translator with our comprehensive showcase featuring screenshots, competitive comparisons, and everything that makes this application unique!** 🚀
 
 ## Overview
 
