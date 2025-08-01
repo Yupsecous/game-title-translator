@@ -22,9 +22,13 @@ This application was developed or rather vibe-coded with the support of the foll
 - **Multiple Gemini Models Available**: Flexible model selection for OCR and translation operations with dynamic configuration
   - **Gemini 2.5 Flash-Lite**: Recommended for speed - optimal for fast-changing subtitles (< 1 second display time)
   - **Gemini 2.0 Flash**: Recommended for quality - superior OCR accuracy and most idiomatic translations for longer subtitles (1+ seconds)
+  - **Comprehensive OCR Testing**: Curious which models handle challenging subtitles most effectively and consistently?
+
+    ![Spanish OCR Test Sample](docs/OCR%20Test/original_20250709_225151.png)
+    
+    [View detailed test results](https://tomkam1702.github.io/OCR-Translator/docs/OCR%20Test/OCR_Gemini_Test.html) showing Gemini 2.0 models' superior accuracy across multilingual content
   - **Dynamic Model Configuration**: Models available for selection are controlled by `resources/gemini_models.csv` for easy customization
   - **Performance-Optimized Selection**: Choose different models for OCR vs translation based on your specific needs
-  - **Comprehensive OCR Testing**: [View detailed test results](https://github.com/tomkam1702/OCR-Translator/blob/main/docs/OCR%20Test/OCR_Gemini_Test.html) showing Gemini 2.0 models' superior accuracy across multilingual content
 - **Enhanced API Integration**: Migration from `google.generativeai` to `google.genai` library for improved performance and stability
 - **Optimized Threading**: Enhanced OCR and translation thread performance for faster processing and reduced latency
 
