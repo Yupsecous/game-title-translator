@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game-Changing Translator - Revolutionary AI-Powered Real-Time Screen Translation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+        
+        .hero-badge {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+            display: inline-block;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        
+        .card h2 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card .icon {
+            font-size: 1.8rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin: 1rem 0;
+        }
+        
+        .feature-list li {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .feature-list li::before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 0.2rem 0.5rem;
+            border-radius: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .cta-section {
+            text-align: center;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.8);
+            color: #2c3e50;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .winner {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%) !important;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 2rem 0;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="hero-badge">🚀 World's First AI-OCR Game Translator</div>
+            <h1>Game-Changing Translator</h1>
+            <p class="subtitle">Revolutionary AI-powered real-time screen translation with premium OCR at budget prices</p>
+        </header>
+
+        <div class="content-grid">
+            <div class="card">
+                <h2><span class="icon">🤖</span>Revolutionary AI OCR</h2>
+                <p><strong>Industry First:</strong> While competitors use traditional OCR engines, we integrate <span class="highlight">Gemini AI OCR technology</span> for dramatically superior text recognition.</p>
+                <ul class="feature-list">
+                    <li>Handles <strong>stylized fonts</strong> and <strong>low-contrast text</strong> that breaks traditional OCR</li>
+                    <li><span class="highlight">37.5x cheaper</span> than Google Cloud Vision API (~$0.00004 per screenshot)</li>
+                    <li>Multiple Gemini models: speed-optimized vs quality-optimized</li>
+                    <li>Automatic OCR error correction using AI intelligence</li>
+                </ul>
+                <div style="background: #f0f8ff; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <strong>Example:</strong><br>
+                    <em>Traditional OCR:</em> "~ Trust me, OD tite WE loca mS"<br>
+                    <em>Our AI OCR:</em> "Trust me, Oakmonters know a newcomer when they see one."
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">🧠</span>Context-Aware Intelligence</h2>
+                <p>Advanced <span class="highlight">sliding context window</span> (0-5 previous subtitles) ensures narrative coherence and superior translation quality.</p>
+                <ul class="feature-list">
+                    <li>Character name consistency across dialogue</li>
+                    <li>Improved grammar flow and narrative understanding</li>
+                    <li>Especially powerful for Asian languages</li>
+                    <li>Configurable context depth for different content types</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">📊</span>Comprehensive Cost Monitoring</h2>
+                <p>Industry-leading <span class="highlight">API usage analytics</span> with real-time cost tracking and detailed logging.</p>
+                <ul class="feature-list">
+                    <li>Token-level cost analysis and cumulative tracking</li>
+                    <li>Export statistics in CSV/TXT formats</li>
+                    <li>Per-word, per-minute, per-hour cost breakdowns</li>
+                    <li>DeepL free quota monitoring (500K chars/month)</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">⚡</span>Performance Excellence</h2>
+                <p>Sophisticated <span class="highlight">unified caching system</span> and optimization features unmatched by competitors.</p>
+                <ul class="feature-list">
+                    <li><strong>40-60% memory reduction</strong> from unified cache architecture</li>
+                    <li>Thread-safe two-tier caching (memory + file)</li>
+                    <li>Adaptive OCR preprocessing with configurable parameters</li>
+                    <li>Real-time OCR preview window for fine-tuning</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">🎯</span>User-Friendly Excellence</h2>
+                <p>Ready-to-use with <span class="highlight">simple installation</span> - no complex Conda environments or CUDA requirements.</p>
+                <ul class="feature-list">
+                    <li>One-click installer with compiled executable</li>
+                    <li>Multi-language UI (English/Polish) with full localization</li>
+                    <li>Comprehensive user manual and gallery</li>
+                    <li>Extensive troubleshooting and support documentation</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">🌍</span>Versatile Translation Options</h2>
+                <p>Supporting both <span class="highlight">premium API services</span> and <span class="highlight">offline neural translation</span>.</p>
+                <ul class="feature-list">
+                    <li><strong>Gemini API:</strong> AI-powered with context awareness</li>
+                    <li><strong>DeepL API:</strong> Premium quality with usage tracking</li>
+                    <li><strong>Google Translate:</strong> Broad language support</li>
+                    <li><strong>MarianMT:</strong> Free offline neural translation with intelligent sentence splitting</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>🎮 Perfect for Gamers & Language Learners</h2>
+            <p>Whether you're playing games with foreign subtitles, learning languages through entertainment, or translating any screen content - our revolutionary AI OCR delivers accuracy that traditional tools can't match.</p>
+            
+            <div class="cta-buttons">
+                <a href="https://github.com/tomkam1702/OCR-Translator/releases" class="btn btn-primary">
+                    📥 Download Now (Free)
+                </a>
+                <a href="https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html" class="btn btn-secondary">
+                    📖 User Manual
+                </a>
+                <a href="https://tomkam1702.github.io/OCR-Translator/docs/gallery.html" class="btn btn-secondary">
+                    🖼️ Gallery
+                </a>
+                <a href="https://github.com/tomkam1702/OCR-Translator" class="btn btn-secondary">
+                    ⭐ Star on GitHub
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span class="icon">🏆</span>Competitive Advantage</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Game-Changing Translator</th>
+                        <th>Competitors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>OCR Technology</strong></td>
+                        <td class="winner">Revolutionary Gemini AI OCR</td>
+                        <td>Traditional OCR (Tesseract, EasyOCR, WindowsOCR)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Setup Complexity</strong></td>
+                        <td class="winner">One-click installer</td>
+                        <td>Complex Conda/CUDA setup required</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cost Monitoring</strong></td>
+                        <td class="winner">Real-time token-level tracking</td>
+                        <td>Basic or no cost tracking</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Context Awareness</strong></td>
+                        <td class="winner">Advanced 0-5 subtitle sliding window</td>
+                        <td>Limited or no context support</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OCR Error Correction</strong></td>
+                        <td class="winner">AI-powered automatic correction</td>
+                        <td>Manual correction or none</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Offline Translation</strong></td>
+                        <td class="winner">MarianMT with intelligent splitting</td>
+                        <td>Basic or no offline support</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2><span class="icon">⚙️</span>System Requirements</h2>
+            <p><strong>Minimal Requirements:</strong></p>
+            <ul class="feature-list">
+                <li>Windows 10/11 (any edition)</li>
+                <li>Tesseract OCR (free download)</li>
+                <li>No CUDA/GPU requirements</li>
+                <li>No complex Python environments needed</li>
+            </ul>
+            <p style="margin-top: 1rem;"><strong>Quick Start:</strong> Download → Install → Select areas → Start translating!</p>
+        </div>
+
+        <footer class="footer">
+            <p>© 2025 Tomasz Kamiński | Licensed under GNU GPL v3 | Made with ❤️ for gamers and language learners worldwide</p>
+            <p style="margin-top: 0.5rem; opacity: 0.7;">🌟 If this tool helps you, please star it on GitHub to support development!</p>
+        </footer>
+    </div>
+</body>
+</html>
