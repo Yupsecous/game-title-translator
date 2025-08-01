@@ -3,6 +3,9 @@ Copyright © 2025 Tomasz Kamiński
 
 ![Game-Changing Translator Logo](docs/screenshots/readme_screen.jpg)
 
+## 🌟 **[✨ Experience the Revolutionary Front Page ✨](https://tomkam1702.github.io/OCR-Translator/)**
+**Discover why this is the world's first AI-OCR game translator with our beautifully designed showcase featuring live demos, competitive comparisons, and everything that makes this application revolutionary!** 🚀
+
 ## Overview
 
 Game-Changing Translator is a powerful desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. It creates floating overlay windows that can be positioned anywhere on your screen, making it perfect for translating games, videos, PDFs, or any application with text that you can't easily copy and paste.
