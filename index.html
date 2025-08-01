@@ -14,8 +14,8 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #e1e4e8;
+            background: #0d1117;
             min-height: 100vh;
         }
         
@@ -27,16 +27,15 @@
         
         .header {
             text-align: center;
-            color: white;
+            color: #f0f6fc;
             padding: 2rem 0;
             margin-bottom: 2rem;
-        }
-        
+        }        
         .header h1 {
             font-size: 3rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
         
         .header .subtitle {
@@ -46,8 +45,8 @@
         }
         
         .hero-badge {
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
+            background: #21262d;
+            border: 1px solid #30363d;
             border-radius: 25px;
             padding: 0.5rem 1.5rem;
             display: inline-block;
@@ -63,22 +62,20 @@
         }
         
         .card {
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 15px;            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
         }
         
         .card h2 {
-            color: #2c3e50;
+            color: #f0f6fc;
             font-size: 1.5rem;
             margin-bottom: 1rem;
             display: flex;
@@ -99,8 +96,7 @@
             margin: 0.5rem 0;
             padding-left: 1.5rem;
             position: relative;
-        }
-        
+        }        
         .feature-list li::before {
             content: "✨";
             position: absolute;
@@ -109,21 +105,21 @@
         }
         
         .highlight {
-            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            background: #2ea043;
             padding: 0.2rem 0.5rem;
             border-radius: 5px;
             font-weight: 600;
-            color: #2c3e50;
+            color: white;
         }
         
         .cta-section {
             text-align: center;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
+            background: #161b22;
+            border: 1px solid #30363d;
             border-radius: 15px;
             padding: 2rem;
             margin: 2rem 0;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
         
         .cta-buttons {
@@ -135,8 +131,7 @@
         }
         
         .btn {
-            padding: 0.8rem 2rem;
-            border: none;
+            padding: 0.8rem 2rem;            border: none;
             border-radius: 25px;
             font-size: 1rem;
             font-weight: 600;
@@ -147,40 +142,41 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #238636;
             color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(35, 134, 54, 0.4);
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 6px 20px rgba(35, 134, 54, 0.6);
+            background: #2ea043;
         }
         
         .btn-secondary {
-            background: rgba(255,255,255,0.8);
-            color: #2c3e50;
-            border: 2px solid #667eea;
+            background: #21262d;
+            color: #e1e4e8;
+            border: 2px solid #2ea043;
         }
         
         .btn-secondary:hover {
-            background: #667eea;
+            background: #2ea043;
             color: white;
             transform: translateY(-2px);
         }
         
         .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
+            width: 100%;            border-collapse: collapse;
             margin: 1rem 0;
-            background: white;
+            background: #161b22;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid #30363d;
         }
         
         .comparison-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #238636;
             color: white;
             padding: 1rem;
             text-align: left;
@@ -189,23 +185,22 @@
         
         .comparison-table td {
             padding: 0.8rem 1rem;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #30363d;
         }
         
         .comparison-table tr:nth-child(even) {
-            background: #f8f9fa;
+            background: #0d1117;
         }
         
         .winner {
-            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%) !important;
+            background: #2ea043 !important;
             font-weight: 600;
-            color: #2c3e50;
+            color: white;
         }
         
         .footer {
             text-align: center;
-            color: white;
-            padding: 2rem 0;
+            color: #e1e4e8;            padding: 2rem 0;
             opacity: 0.8;
         }
         
@@ -237,8 +232,7 @@
             <div class="card">
                 <h2><span class="icon">🌍</span>Versatile Translation Options</h2>
                 <p>Supporting both <span class="highlight">premium API services</span> and <span class="highlight">offline neural translation</span>.</p>
-                <ul class="feature-list">
-                    <li><strong>Gemini API:</strong> Multiple AI models with context awareness - <span class="highlight">Gemini 2.0 Flash recommended</span> for most idiomatic and natural translations <span class="highlight">at incredibly low cost</span> (translate entire games for pennies!)</li>
+                <ul class="feature-list">                    <li><strong>Gemini API:</strong> Multiple AI models with context awareness - <span class="highlight">Gemini 2.0 Flash recommended</span> for most idiomatic and natural translations <span class="highlight">at incredibly low cost</span> (translate entire games for pennies!)</li>
                     <li><strong>DeepL API:</strong> Premium quality with usage tracking</li>
                     <li><strong>Google Translate:</strong> Broad language support</li>
                     <li><strong>MarianMT:</strong> Free offline neural translation with intelligent sentence splitting</li>
@@ -254,7 +248,7 @@
                     <li>Multiple Gemini models: speed-optimized vs quality-optimized</li>
                     <li>Automatic OCR error correction using AI intelligence</li>
                 </ul>
-                <div style="background: #f0f8ff; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <div style="background: #21262d; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #30363d;">
                     <strong>Example:</strong><br>
                     <em>Traditional OCR:</em> "~ Trust me, OD tite WE loca mS"<br>
                     <em>Our AI OCR:</em> "Trust me, Oakmonters know a newcomer when they see one."
@@ -271,7 +265,6 @@
                     <li>Configurable context depth for different content types</li>
                 </ul>
             </div>
-
             <div class="card">
                 <h2><span class="icon">📊</span>Comprehensive Cost Monitoring</h2>
                 <p>Industry-leading <span class="highlight">API usage analytics</span> with real-time cost tracking and detailed logging.</p>
@@ -305,13 +298,12 @@
                 </ul>
             </div>
         </div>
-
         <div class="card">
             <h2><span class="icon">📸</span>See It In Action</h2>
             <div style="text-align: center; margin: 1.5rem 0;">
-                <img src="docs/screenshots/readme_screen.jpg" alt="Game-Changing Translator Interface" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                <img src="docs/screenshots/readme_screen.jpg" alt="Game-Changing Translator Interface" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
             </div>
-            <p style="text-align: center; font-style: italic; color: #666; margin-top: 1rem;">Real-time translation in action - floating overlays work seamlessly with any application</p>
+            <p style="text-align: center; font-style: italic; color: #8b949e; margin-top: 1rem;">Real-time translation in action - floating overlays work seamlessly with any application</p>
         </div>
 
         <div class="cta-section">
@@ -333,7 +325,6 @@
                 </a>
             </div>
         </div>
-
         <div class="card">
             <h2><span class="icon">🏆</span>Competitive Advantage</h2>
             <table class="comparison-table">
@@ -364,8 +355,7 @@
                         <td><strong>Cost Monitoring</strong></td>
                         <td class="winner">Real-time token-level tracking</td>
                         <td>Basic or no cost tracking</td>
-                    </tr>
-                    <tr>
+                    </tr>                    <tr>
                         <td><strong>Context Awareness</strong></td>
                         <td class="winner">Advanced 0-5 subtitle sliding window</td>
                         <td>Limited or no context support</td>
