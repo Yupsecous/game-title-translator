@@ -5,6 +5,28 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.1] - 2025-08-03
+
+### Fixed
+- **Gemini OCR Performance Issue**: Fixed client initialization overhead causing OCR timeout and translation failures
+  - Resolved issue where successful OCR results were discarded due to timeout limits
+  - Implemented automatic Gemini client initialization for OCR operations using the same proven pattern as translation
+  - Ensures reliable OCR-to-translation pipeline for all Gemini OCR operations
+- **Tesseract Path Validation Error with Gemini OCR**: Fixed application startup and translation errors when Gemini OCR is selected
+  - Resolved "Tesseract path invalid!" error that occurred even when Tesseract was not needed
+  - Implemented conditional Tesseract path validation only when Tesseract OCR is actually selected
+  - Eliminates unnecessary Tesseract dependency checks during Gemini OCR operations
+  - Improves application performance by avoiding redundant Tesseract operations when using Gemini OCR
+
+### Changed
+- N/A
+
+### Added
+- **About Tab Enhancement**: Added current version number and release date display to the About tab for better version tracking
+
+### Removed
+- N/A
+
 ## [3.5.0] - 2025-08-01
 
 ### Added
