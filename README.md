@@ -20,7 +20,7 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
-### 🚀 NEW in Version 3.5.0
+### 🚀 NEW in Version 3.5.1
 
 - **Multiple Gemini Models Available**: Flexible model selection for OCR and translation operations with dynamic configuration
   - **Gemini 2.5 Flash-Lite**: Recommended for speed - optimal for fast-changing subtitles (< 1 second display time)
