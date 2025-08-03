@@ -441,7 +441,12 @@ class GameChangingTranslator:
         
         self.cache_manager = CacheManager(self)
 
-        pytesseract.pytesseract.tesseract_cmd = self.tesseract_path_var.get()
+        # Only set Tesseract path when actually using Tesseract OCR
+        if self.ocr_model_var.get() == 'tesseract':
+            pytesseract.pytesseract.tesseract_cmd = self.tesseract_path_var.get()
+            log_debug(f"Tesseract path set to: {self.tesseract_path_var.get()}")
+        else:
+            log_debug(f"Skipping Tesseract path initialization - using OCR model: {self.ocr_model_var.get()}")
 
         self.stable_threshold = self.stability_var.get()
         self.confidence_threshold = self.confidence_var.get()
@@ -2079,13 +2084,17 @@ For more information, see the user manual."""
                  messagebox.showerror("Start Error", "Target text display widget missing. Reselect target area.", parent=self.root)
                  valid_start_flag = False
             
-            tesseract_exe_path = self.tesseract_path_var.get()
-            if valid_start_flag and (not tesseract_exe_path or not os.path.isfile(tesseract_exe_path)):
-                messagebox.showerror("Start Error", f"Tesseract path invalid:\n{tesseract_exe_path}\nCheck Settings.", parent=self.root)
-                valid_start_flag = False
-            elif valid_start_flag and pytesseract.pytesseract.tesseract_cmd != tesseract_exe_path:
-                 pytesseract.pytesseract.tesseract_cmd = tesseract_exe_path
-                 log_debug(f"Runtime Tesseract path updated to: {tesseract_exe_path}")
+            # Only validate Tesseract path when using Tesseract OCR
+            if self.get_ocr_model_setting() == 'tesseract':
+                tesseract_exe_path = self.tesseract_path_var.get()
+                if valid_start_flag and (not tesseract_exe_path or not os.path.isfile(tesseract_exe_path)):
+                    messagebox.showerror("Start Error", f"Tesseract path invalid:\n{tesseract_exe_path}\nCheck Settings.", parent=self.root)
+                    valid_start_flag = False
+                elif valid_start_flag and pytesseract.pytesseract.tesseract_cmd != tesseract_exe_path:
+                     pytesseract.pytesseract.tesseract_cmd = tesseract_exe_path
+                     log_debug(f"Runtime Tesseract path updated to: {tesseract_exe_path}")
+            else:
+                log_debug(f"Skipping Tesseract path validation - using OCR model: {self.get_ocr_model_setting()}")
             
             if valid_start_flag:
                  try:

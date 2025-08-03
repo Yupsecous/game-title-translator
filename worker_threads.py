@@ -164,7 +164,15 @@ def run_capture_thread(app):
 
 def run_ocr_thread(app):
     log_debug("WT: OCR thread started.")
-    tess_langs = app.get_tesseract_lang_code()
+    
+    # Only get Tesseract language code when using Tesseract OCR
+    if app.get_ocr_model_setting() == 'tesseract':
+        tess_langs = app.get_tesseract_lang_code()
+        log_debug(f"WT: OCR using Tesseract with language: {tess_langs}")
+    else:
+        tess_langs = None  # Not needed for Gemini OCR
+        log_debug(f"WT: OCR using {app.get_ocr_model_setting()}, skipping Tesseract language initialization")
+    
     last_lang_check = time.monotonic()
     last_ocr_proc_time = 0
     min_ocr_interval = 0.1
@@ -180,10 +188,12 @@ def run_ocr_thread(app):
         now = time.monotonic()
         try:
             if now - last_lang_check > 5.0:
-                new_langs = app.get_tesseract_lang_code()
-                if new_langs != tess_langs:
-                    tess_langs = new_langs
-                    log_debug(f"WT: OCR lang changed to {tess_langs}")
+                # Only check Tesseract language when using Tesseract OCR
+                if app.get_ocr_model_setting() == 'tesseract':
+                    new_langs = app.get_tesseract_lang_code()
+                    if new_langs != tess_langs:
+                        tess_langs = new_langs
+                        log_debug(f"WT: OCR lang changed to {tess_langs}")
                 
                 # Check confidence threshold directly from app's Tkinter var
                 new_conf = app.confidence_var.get() 

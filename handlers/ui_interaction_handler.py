@@ -1093,10 +1093,15 @@ class UIInteractionHandler:
                 messagebox.showerror("Error", "Failed to write settings to config file.", parent=self.app.root)
                 return False
             
-            new_tess_path = self.app.tesseract_path_var.get()
-            import pytesseract 
-            if pytesseract.pytesseract.tesseract_cmd != new_tess_path:
-                 pytesseract.pytesseract.tesseract_cmd = new_tess_path
+            # Only update Tesseract path when using Tesseract OCR
+            if self.app.get_ocr_model_setting() == 'tesseract':
+                new_tess_path = self.app.tesseract_path_var.get()
+                import pytesseract 
+                if pytesseract.pytesseract.tesseract_cmd != new_tess_path:
+                     pytesseract.pytesseract.tesseract_cmd = new_tess_path
+                     log_debug(f"Tesseract path updated in settings save: {new_tess_path}")
+            else:
+                log_debug(f"Skipping Tesseract path update in settings save - using OCR model: {self.app.get_ocr_model_setting()}")
             
             self.app.stable_threshold = int(cfg['stability_threshold'])
             self.app.confidence_threshold = int(cfg['confidence_threshold'])
