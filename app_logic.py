@@ -549,6 +549,7 @@ class GameChangingTranslator:
         # Hard-coded About content based on language
         if self.ui_lang.current_lang == 'pol':
             about_text = """Game-Changing Translator 3.5.1 (wersja z 3 sierpnia 2025 r.)
+
 Copyright © 2025 Tomasz Kamiński
 
 Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
@@ -558,6 +559,7 @@ Program został napisany w\u00a0języku Python przy użyciu następujących mode
 Więcej informacji zawiera instrukcja obsługi."""
         else:
             about_text = """Game-Changing Translator v3.5.1 (Released 3 August 2025)
+
 Copyright © 2025 Tomasz Kamiński
 
 Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
@@ -2278,7 +2280,8 @@ For more information, see the user manual."""
             
             # Hard-coded About content based on language
             if self.ui_lang.current_lang == 'pol':
-                about_text = """Game-Changing Translator v3.5.1 (Wydano 3 sierpnia 2025)
+                about_text = """Game-Changing Translator 3.5.1 (wersja z 3 sierpnia 2025)
+
 Copyright © 2025 Tomasz Kamiński
 
 Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
@@ -2287,7 +2290,8 @@ Program został napisany w\u00a0języku Python przy użyciu następujących mode
 
 Więcej informacji zawiera instrukcja obsługi."""
             else:
-                about_text = """Game-Changing Translator v3.5.1 (Released August 3, 2025)
+                about_text = """Game-Changing Translator v3.5.1 (Released 3 August 2025)
+
 Copyright © 2025 Tomasz Kamiński
 
 Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
