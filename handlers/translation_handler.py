@@ -1423,8 +1423,24 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if not GENAI_AVAILABLE:
                 return "<e>: Google Generative AI libraries not available"
             
-            # Configure Gemini API with new client approach
-            client = genai.Client(api_key=api_key_gemini)
+            # Initialize Gemini client if needed (same pattern as translation)
+            needs_new_session = (
+                not hasattr(self, 'gemini_client') or 
+                self.gemini_client is None or
+                self.should_reset_session(api_key_gemini)  # API key changed
+            )
+            
+            if needs_new_session:
+                if hasattr(self, 'gemini_session_api_key') and self.gemini_session_api_key != api_key_gemini:
+                    log_debug("Creating new Gemini client for OCR (API key changed)")
+                else:
+                    log_debug("Creating new Gemini client for OCR (no existing client)")
+                self._initialize_gemini_session(source_lang, 'en')  # Use English as dummy target for OCR
+            
+            if self.gemini_client is None:
+                return "<e>: Gemini client initialization failed"
+            
+            client = self.gemini_client
             
             # Get model configuration for OCR calls
             ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
