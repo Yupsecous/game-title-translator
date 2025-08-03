@@ -18,6 +18,29 @@ This application was developed or rather vibe-coded with the support of the foll
   - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
   - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
 
+## 🎬 **See the Magic in Action!**
+
+<div align="center">
+  <a href="https://youtu.be/Nj7yKynxRmo">
+    <img src="https://img.youtube.com/vi/Nj7yKynxRmo/maxresdefault.jpg" alt="Game-Changing Translator Demo Video" style="width: 80%; max-width: 600px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+  </a>
+  <br>
+  <strong>🎮 <a href="https://youtu.be/Nj7yKynxRmo">► Watch Live Demo: The Witcher Real-Time Translation</a></strong>
+  <br>
+  <em>Click the thumbnail above or the link to watch on YouTube</em>
+</div>
+
+Experience our revolutionary AI OCR technology translating The Witcher's challenging subtitles in real-time! This demo showcases:
+
+- **✨ Gemini AI OCR** handling complex backgrounds and stylised fonts that break traditional OCR engines
+- **🧠 Context-aware translation** maintaining narrative coherence across dialogue
+- **⚡ Real-time performance** with floating overlays that work seamlessly over any game
+- **🎯 Superior accuracy** where competitors fail on challenging subtitle scenarios
+
+*See why this is the world's first AI-OCR game translator that actually works with difficult gaming content!*
+
+---
+
 ## Key Features
 
 ### 🚀 NEW in Version 3.5.1
