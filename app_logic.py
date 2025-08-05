@@ -160,7 +160,7 @@ class GameChangingTranslator:
         self.batch_sequence_counter = 0  # Track batch sequence numbers
         self.clear_timeout_timer_start = None  # Timer for clear translation timeout
         self.active_ocr_calls = set()  # Track active async OCR calls
-        self.max_concurrent_ocr_calls = 10  # Limit concurrent OCR API calls (10 for Gemini)
+        self.max_concurrent_ocr_calls = 8  # Limit concurrent OCR API calls (8 for Gemini)
         
         # Gemini OCR Simple Management (No Queue for Gemini)
         self.last_displayed_batch_sequence = 0  # Track chronological order
@@ -169,15 +169,15 @@ class GameChangingTranslator:
         self.translation_sequence_counter = 0  # Track translation sequence numbers
         self.last_displayed_translation_sequence = 0  # Track chronological order for translations
         self.active_translation_calls = set()  # Track active async translation calls
-        self.max_concurrent_translation_calls = 8  # Limit concurrent translation API calls
+        self.max_concurrent_translation_calls = 6  # Limit concurrent translation API calls
         
         # Initialize thread pools for optimized performance (especially for compiled version)
         self.ocr_thread_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=10, 
+            max_workers=8, 
             thread_name_prefix="GeminiOCR"
         )
         self.translation_thread_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=5, 
+            max_workers=6, 
             thread_name_prefix="Translation"
         )
         log_debug("Initialized thread pools for OCR and translation processing")
@@ -915,9 +915,9 @@ For more information, see the user manual."""
         self.base_scan_interval = base_interval
         
         # Apply the user's specific requirements:
-        # If active OCR API calls > 7, increase scan interval to 150% of current value
+        # If active OCR API calls > 5, increase scan interval to 150% of current value
         # If active OCR API calls fall below 5, restore original scan interval
-        if active_ocr_count > 7:
+        if active_ocr_count > 5:
             if not self.overload_detected:
                 # First detection of overload
                 self.current_scan_interval = int(base_interval * 1.5)  # 150%
@@ -938,7 +938,7 @@ For more information, see the user manual."""
                 # Normal state, no change needed
                 log_debug(f"ADAPTIVE: OCR load normal ({active_ocr_count} active calls), scan interval remains at {self.current_scan_interval}ms")
         else:
-            # In between 5-7 calls, maintain current state
+            # At exactly 5 calls, maintain current state
             log_debug(f"ADAPTIVE: OCR load moderate ({active_ocr_count} active calls), scan interval unchanged at {self.current_scan_interval}ms")
     
     def handle_empty_ocr_result(self):
@@ -997,7 +997,7 @@ For more information, see the user manual."""
             log_debug("Initialized active_translation_calls")
         
         if not hasattr(self, 'max_concurrent_translation_calls'):
-            self.max_concurrent_translation_calls = 8
+            self.max_concurrent_translation_calls = 6
             log_debug("Initialized max_concurrent_translation_calls")
     
     def check_clear_timeout(self):
