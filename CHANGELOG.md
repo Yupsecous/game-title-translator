@@ -5,6 +5,37 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2025-08-05
+
+### Fixed
+- **OCR Thread Artificial Delay Elimination**: Important fix for minor bug causing compound translation delays
+  - Eliminated unnecessary artificial sleep intervals in Gemini OCR thread processing
+  - Fixed issue where OCR thread was artificially pausing between processing queued images, even when work was available
+  - Resolved compound delay problem where adaptive scan interval increases were being applied twice (once in capture thread, once in OCR thread)
+  - Restores consistent ~2-second translation performance, eliminating scenarios where delays could extend to 3+ seconds
+  - Maintains proper natural rate limiting through API response times and thread pool capacity limits
+- **Concurrent Call Limits Optimization**: Improved system stability and performance under load
+  - Reduced maximum concurrent OCR calls from 10 to 8 for better resource management
+  - Reduced maximum concurrent translation calls from 8 to 6 to prevent API saturation
+  - Lowered OCR overload detection threshold from >7 to >5 active calls for more responsive load balancing
+  - Updated thread pool sizes to match new concurrent call limits for optimal performance
+- **503 Error Suppression**: Enhanced user experience during API overload scenarios
+  - Added intelligent suppression of "503 UNAVAILABLE" errors from translation window display
+  - Errors are still logged for debugging purposes but hidden from end users
+  - Application continues working normally when Gemini API recovers from temporary overload
+
+### Changed
+- **Adaptive Load Balancing**: More responsive system load detection and management
+  - OCR overload detection now triggers at >5 active calls instead of >7 for earlier intervention
+  - Improved load recovery threshold remains at <5 active calls for stable operation
+  - Enhanced system responsiveness during high API usage periods
+
+### Added
+- N/A
+
+### Removed
+- **Redundant OCR Thread Delays**: Removed unnecessary artificial sleep intervals that were compounding translation delays
+
 ## [3.5.1] - 2025-08-03
 
 ### Fixed

@@ -1062,8 +1062,15 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             return translation_result
             
         except Exception as e_gm:
-            log_debug(f"Gemini API error: {type(e_gm).__name__} - {str(e_gm)}")
-            return f"Gemini API error: {str(e_gm)}"
+            error_str = str(e_gm)
+            log_debug(f"Gemini API error: {type(e_gm).__name__} - {error_str}")
+            
+            # Suppress 503 errors from being displayed in translation window
+            if "503 UNAVAILABLE" in error_str:
+                log_debug("503 error suppressed from translation display")
+                return None  # Don't display 503 errors
+            else:
+                return f"Gemini API error: {error_str}"
         finally:
             # Always decrement pending call counter
             self._decrement_pending_translation_calls()
