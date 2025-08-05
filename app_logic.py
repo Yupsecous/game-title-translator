@@ -548,7 +548,7 @@ class GameChangingTranslator:
         
         # Hard-coded About content based on language
         if self.ui_lang.current_lang == 'pol':
-            about_text = """Game-Changing Translator 3.5.1 (wersja z 3 sierpnia 2025 r.)
+            about_text = """Game-Changing Translator 3.5.2 (wersja z 5 sierpnia 2025 r.)
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -558,7 +558,7 @@ Program został napisany w\u00a0języku Python przy użyciu następujących mode
 
 Więcej informacji zawiera instrukcja obsługi."""
         else:
-            about_text = """Game-Changing Translator v3.5.1 (Released 3 August 2025)
+            about_text = """Game-Changing Translator v3.5.2 (Released 5 August 2025)
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -2280,7 +2280,7 @@ For more information, see the user manual."""
             
             # Hard-coded About content based on language
             if self.ui_lang.current_lang == 'pol':
-                about_text = """Game-Changing Translator 3.5.1 (wersja z 3 sierpnia 2025)
+                about_text = """Game-Changing Translator 3.5.2 (wersja z 5 sierpnia 2025)
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -2290,7 +2290,7 @@ Program został napisany w\u00a0języku Python przy użyciu następujących mode
 
 Więcej informacji zawiera instrukcja obsługi."""
             else:
-                about_text = """Game-Changing Translator v3.5.1 (Released 3 August 2025)
+                about_text = """Game-Changing Translator v3.5.2 (Released 5 August 2025)
 
 Copyright © 2025 Tomasz Kamiński
 
