@@ -43,7 +43,7 @@ Experience our revolutionary AI OCR technology translating The Witcher's challen
 
 ## Key Features
 
-### 🚀 NEW in Version 3.5.1
+### 🚀 NEW in Version 3.5.2
 
 - **Multiple Gemini Models Available**: Flexible model selection for OCR and translation operations with dynamic configuration
   - **Gemini 2.5 Flash-Lite**: Recommended for speed - optimal for fast-changing subtitles (< 1 second display time)
