@@ -210,19 +210,12 @@ def run_ocr_thread(app):
             ocr_model = app.get_ocr_model_setting()
             
             if ocr_model == 'gemini':
-                # For Gemini: Simple interval matching scan interval (no adaptive logic)
-                scan_interval_ms = app.scan_interval_var.get()
-                required_ocr_interval = max(0.1, scan_interval_ms / 1000.0)
-                
-                if now - last_ocr_proc_time < required_ocr_interval:
-                    sleep_duration = required_ocr_interval - (now - last_ocr_proc_time)
-                    slept_time = 0
-                    while slept_time < sleep_duration and app.is_running:
-                        chunk = min(0.05, sleep_duration - slept_time)
-                        time.sleep(chunk)
-                        slept_time += chunk
-                    if not app.is_running: break
-                    continue
+                # No artificial delay - process queue as fast as possible
+                # Natural rate limiting comes from:
+                # 1. API response time (~1.5s per call)
+                # 2. Thread pool limits (10 concurrent calls max)
+                # 3. Queue availability (wait only if empty)
+                pass  # Remove the artificial sleep entirely
             else:
                 # For Tesseract: Use adaptive processing (existing logic)
                 adaptive_ocr_interval = min_ocr_interval * (0.8 if q_sz <=1 else (1.0 + (q_sz / ocr_q_max)))
