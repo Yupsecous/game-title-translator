@@ -20,24 +20,51 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## 🎬 **See the Magic in Action!**
 
+### 🎮 Featured Game Demonstrations
+
 <div align="center">
-  <a href="https://youtu.be/0bMoL1pR7tM">
-    <img src="https://img.youtube.com/vi/0bMoL1pR7tM/maxresdefault.jpg" alt="Game-Changing Translator Demo Video" style="width: 80%; max-width: 600px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-  </a>
-  <br>
-  <strong>🎮 <a href="https://youtu.be/0bMoL1pR7tM">► Watch Live Demo: The Witcher Real-Time Translation</a></strong>
-  <br>
-  <em>Click the thumbnail above or the link to watch on YouTube</em>
+  <table>
+    <tr>
+      <td align="center" width="33%">
+        <a href="https://youtu.be/0bMoL1pR7tM">
+          <img src="https://img.youtube.com/vi/0bMoL1pR7tM/maxresdefault.jpg" alt="The Witcher 3 Real-Time Translation Demo" style="width: 100%; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+        </a>
+        <br>
+        <strong>🧙‍♂️ <a href="https://youtu.be/0bMoL1pR7tM">The Witcher 3</a></strong>
+        <br>
+        <em>Revolutionary AI OCR & natural Polish-to-English translation</em>
+      </td>
+      <td align="center" width="33%">
+        <a href="https://youtu.be/Iy4bIr06Ae4">
+          <img src="https://img.youtube.com/vi/Iy4bIr06Ae4/maxresdefault.jpg" alt="Kingdom Come: Deliverance II Real-Time Translation Demo" style="width: 100%; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+        </a>
+        <br>
+        <strong>⚔️ <a href="https://youtu.be/Iy4bIr06Ae4">Kingdom Come: Deliverance II</a></strong>
+        <br>
+        <em>Czech-to-English Translation</em>
+      </td>
+      <td align="center" width="33%">
+        <a href="https://youtu.be/rCsfY6Zsmps">
+          <img src="https://img.youtube.com/vi/rCsfY6Zsmps/maxresdefault.jpg" alt="Star Wars: The Old Republic Real-Time Translation Demo" style="width: 100%; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+        </a>
+        <br>
+        <strong>🌌 <a href="https://youtu.be/rCsfY6Zsmps">Star Wars: The Old Republic</a></strong>
+        <br>
+        <em>French-to-English Translation</em>
+      </td>
+    </tr>
+  </table>
 </div>
 
-Experience our revolutionary AI OCR technology translating The Witcher's challenging subtitles in real-time! This demo showcases:
+### 🚀 What These Demos Showcase:
 
-- **✨ Gemini AI OCR** handling complex backgrounds and stylised fonts that break traditional OCR engines
-- **🧠 Context-aware translation** maintaining narrative coherence across dialogue
-- **⚡ Real-time performance** with floating overlays that work seamlessly over any game
+- **✨ Gemini AI OCR Technology** handling complex backgrounds and stylised fonts that break traditional OCR engines
+- **🧠 Context-aware translation** maintaining narrative coherence across different game dialogues  
+- **⚡ Real-time performance** with floating overlays that work seamlessly over any game interface
 - **🎯 Superior accuracy** where competitors fail on challenging subtitle scenarios
+- **🌍 Multi-language support** demonstrating various language pairs in gaming contexts
 
-*See why this is the world's first AI-OCR game translator that actually works with difficult gaming content!*
+*Experience the world's first AI-OCR game translator that actually works with difficult gaming content across multiple game genres!*
 
 ---
 
