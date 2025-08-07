@@ -21,11 +21,11 @@ This application was developed or rather vibe-coded with the support of the foll
 ## 🎬 **See the Magic in Action!**
 
 <div align="center">
-  <a href="https://youtu.be/Nj7yKynxRmo">
-    <img src="https://img.youtube.com/vi/Nj7yKynxRmo/maxresdefault.jpg" alt="Game-Changing Translator Demo Video" style="width: 80%; max-width: 600px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+  <a href="https://youtu.be/0bMoL1pR7tM">
+    <img src="https://img.youtube.com/vi/0bMoL1pR7tM/maxresdefault.jpg" alt="Game-Changing Translator Demo Video" style="width: 80%; max-width: 600px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
   </a>
   <br>
-  <strong>🎮 <a href="https://youtu.be/Nj7yKynxRmo">► Watch Live Demo: The Witcher Real-Time Translation</a></strong>
+  <strong>🎮 <a href="https://youtu.be/0bMoL1pR7tM">► Watch Live Demo: The Witcher Real-Time Translation</a></strong>
   <br>
   <em>Click the thumbnail above or the link to watch on YouTube</em>
 </div>
