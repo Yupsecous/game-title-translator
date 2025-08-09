@@ -1503,7 +1503,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             ocr_result = response.text.strip() if response.text else "<EMPTY>"
             
             # Parse the response according to the expected format
-            if ocr_result == "<EMPTY>":
+            if "<EMPTY>" in ocr_result:
                 parsed_text = "<EMPTY>"
             elif ocr_result.startswith(f"{source_lang_name.upper()}: "):
                 # Extract text after "LANGUAGE: " prefix (with space)
