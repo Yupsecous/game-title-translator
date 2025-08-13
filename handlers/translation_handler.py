@@ -43,6 +43,53 @@ except ImportError:
     REQUESTS_AVAILABLE = False
     log_debug("Requests library not available")
 
+class NetworkCircuitBreaker:
+    """Circuit breaker to detect and handle network degradation."""
+    
+    def __init__(self):
+        self.failure_count = 0
+        self.slow_call_count = 0
+        self.last_reset = time.time()
+        self.is_open = False
+        self.total_calls = 0
+    
+    def record_call(self, duration, success):
+        """Record API call result and determine if circuit should open."""
+        self.total_calls += 1
+        
+        # Reset counters every 5 minutes
+        current_time = time.time()
+        if current_time - self.last_reset > 300:  # 5 minutes
+            log_debug(f"Circuit breaker stats reset. Previous period: {self.failure_count} failures, {self.slow_call_count} slow calls, {self.total_calls} total")
+            self.failure_count = 0
+            self.slow_call_count = 0
+            self.total_calls = 0
+            self.is_open = False
+            self.last_reset = current_time
+        
+        if not success:
+            self.failure_count += 1
+            log_debug(f"Circuit breaker: API failure recorded ({self.failure_count}/5)")
+        elif duration > 3.0:  # Slow call threshold
+            self.slow_call_count += 1
+            log_debug(f"Circuit breaker: Slow call recorded ({duration:.2f}s, {self.slow_call_count}/10)")
+        
+        # Open circuit if too many failures or slow calls
+        if self.failure_count >= 5:
+            self.is_open = True
+            log_debug("Circuit breaker OPEN due to failure threshold - forcing client refresh")
+            return True
+        elif self.slow_call_count >= 10:
+            self.is_open = True
+            log_debug("Circuit breaker OPEN due to slow call threshold - forcing client refresh")
+            return True
+        
+        return False
+    
+    def should_force_refresh(self):
+        """Check if circuit is open and client should be refreshed."""
+        return self.is_open
+
 class TranslationHandler:
     def __init__(self, app):
         self.app = app
@@ -81,6 +128,36 @@ class TranslationHandler:
         self._initialize_session_counters()
         
         log_debug("Translation handler initialized with unified cache")
+    
+    def _should_refresh_client(self):
+        """Check if client should be refreshed to prevent stale connections."""
+        if not hasattr(self, 'client_created_time'):
+            self.client_created_time = time.time()
+            return False
+        
+        current_time = time.time()
+        
+        # Refresh client every 30 minutes to prevent stale connections
+        if current_time - self.client_created_time > 1800:  # 30 minutes
+            log_debug("Refreshing Gemini client due to age (30 minutes)")
+            return True
+        
+        # Refresh after every 100 API calls to prevent connection accumulation
+        if not hasattr(self, 'api_call_count'):
+            self.api_call_count = 0
+        
+        if self.api_call_count > 100:
+            log_debug("Refreshing Gemini client after 100 API calls")
+            return True
+        
+        return False
+
+    def _force_client_refresh(self):
+        """Force refresh of Gemini client and reset counters."""
+        self.gemini_client = None
+        self.client_created_time = time.time()
+        self.api_call_count = 0
+        log_debug("Gemini client forcefully refreshed")
     
     def _google_translate(self, text_to_translate_gt, source_lang_gt, target_lang_gt):
         """Google Translate API call using REST API with API key."""
@@ -897,6 +974,16 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         """Gemini API call with simplified message format (no system instructions)."""
         log_debug(f"Gemini translate request for: {text_to_translate_gm}")
         
+        # Initialize circuit breaker if needed
+        if not hasattr(self, 'circuit_breaker'):
+            self.circuit_breaker = NetworkCircuitBreaker()
+        
+        # Check circuit breaker and force refresh if needed
+        if self.circuit_breaker.should_force_refresh():
+            log_debug("Circuit breaker forcing client refresh due to network issues")
+            self._force_client_refresh()
+            self.circuit_breaker = NetworkCircuitBreaker()  # Reset circuit breaker
+        
         # Track pending call
         self._increment_pending_translation_calls()
         
@@ -1005,6 +1092,16 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             )
             call_duration = time.time() - api_call_start_time
             log_debug(f"Gemini API call took {call_duration:.3f}s")
+            
+            # Record successful call with circuit breaker
+            needs_refresh = self.circuit_breaker.record_call(call_duration, True)
+            if needs_refresh:
+                # Schedule client refresh for next call
+                self.gemini_client = None
+            
+            # Increment API call counter for periodic refresh
+            if hasattr(self, 'api_call_count'):
+                self.api_call_count += 1
 
             # Extract exact token counts from API response metadata
             input_tokens, output_tokens = 0, 0
@@ -1062,6 +1159,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             return translation_result
             
         except Exception as e_gm:
+            # Record failed call with circuit breaker
+            self.circuit_breaker.record_call(0, False)
             error_str = str(e_gm)
             log_debug(f"Gemini API error: {type(e_gm).__name__} - {error_str}")
             
@@ -1082,11 +1181,19 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             self.gemini_client = None
             return
             
+        # Force refresh if needed
+        if hasattr(self, 'gemini_client') and self._should_refresh_client():
+            self._force_client_refresh()
+            
         try:
             # NEW: Client-based approach
             self.gemini_client = genai.Client(
                 api_key=self.app.gemini_api_key_var.get().strip()
             )
+            
+            # Store session creation time for tracking
+            self.client_created_time = time.time()
+            self.api_call_count = 0
             
             # Get configuration values
             model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
@@ -1417,8 +1524,18 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     # ==================== GEMINI OCR METHODS (Phase 2) ====================
     
     def _gemini_ocr_only(self, webp_image_data, source_lang, batch_number=None):
-        """Simple OCR-only call to Gemini API for extracting text from images."""
+        """Simple OCR-only call to Gemini API with circuit breaker protection."""
         log_debug(f"Gemini OCR request for source language: {source_lang}")
+        
+        # Initialize circuit breaker if needed
+        if not hasattr(self, 'circuit_breaker'):
+            self.circuit_breaker = NetworkCircuitBreaker()
+        
+        # Check circuit breaker and force refresh if needed
+        if self.circuit_breaker.should_force_refresh():
+            log_debug("Circuit breaker forcing client refresh due to network issues")
+            self._force_client_refresh()
+            self.circuit_breaker = NetworkCircuitBreaker()  # Reset circuit breaker
         
         # Track pending call
         self._increment_pending_ocr_calls()
@@ -1499,6 +1616,16 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             )
             call_duration = time.time() - api_call_start_time
             
+            # Record successful call with circuit breaker
+            needs_refresh = self.circuit_breaker.record_call(call_duration, True)
+            if needs_refresh:
+                # Schedule client refresh for next call
+                self.gemini_client = None
+            
+            # Increment API call counter for periodic refresh
+            if hasattr(self, 'api_call_count'):
+                self.api_call_count += 1
+            
             # Extract the response text
             ocr_result = response.text.strip() if response.text else "<EMPTY>"
             
@@ -1556,6 +1683,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             return parsed_text
             
         except Exception as e:
+            # Record failed call with circuit breaker
+            self.circuit_breaker.record_call(0, False)
             log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
             return "<EMPTY>"
         finally:

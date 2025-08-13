@@ -5,6 +5,25 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.3] - 2025-08-13
+
+### Added
+- **Network Resilience System**: Comprehensive solution to prevent Windows network stack corruption that caused API delays to increase from ~2s to 4-7s after extended use
+  - Circuit Breaker Pattern: Automatically detects network degradation (>3s calls or failures) and forces client refresh when issues are detected
+  - Periodic Client Refresh: Proactively refreshes Gemini client every 30 minutes or after 100 API calls to prevent connection staleness
+  - Connection Cleanup: Scheduled maintenance every 20 minutes to clear connection pools and prevent accumulation of stale connections
+  - DNS Cache Management: Hourly system-level DNS cache flushing (`ipconfig /flushdns`) to address Windows network stack issues
+  - Self-healing behavior eliminates the need for PC restarts to restore performance
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## [3.5.2] - 2025-08-05
 
 ### Fixed
