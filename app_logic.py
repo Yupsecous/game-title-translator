@@ -597,6 +597,9 @@ For more information, see the user manual."""
         self.root.after(200, self.ensure_window_visible)
         self.hotkey_handler.setup_hotkeys()
         
+        # Add periodic network cleanup
+        self.setup_network_cleanup()
+        
         log_debug(f"Application initialized. Stability: {self.stable_threshold}, Confidence: {self.confidence_threshold}")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
@@ -2418,6 +2421,66 @@ For more information, see the user manual."""
         finally:
             # Always end UI update operation to restore saves and traces
             self.end_ui_update()
+
+    def setup_network_cleanup(self):
+        """Setup periodic network connection cleanup to prevent stack corruption."""
+        def cleanup_network_connections():
+            try:
+                # Force client recreation to clear connection pools
+                if hasattr(self, 'translation_handler') and hasattr(self.translation_handler, 'gemini_client'):
+                    if self.translation_handler.gemini_client is not None:
+                        old_client = self.translation_handler.gemini_client
+                        
+                        # Force client refresh
+                        self.translation_handler._force_client_refresh()
+                        
+                        # Try to close old client connections if possible
+                        try:
+                            if hasattr(old_client, 'close'):
+                                old_client.close()
+                            elif hasattr(old_client, '_transport') and hasattr(old_client._transport, 'close'):
+                                old_client._transport.close()
+                        except Exception as close_error:
+                            log_debug(f"Error closing old client: {close_error}")
+                        
+                        log_debug("Performed periodic network connection cleanup")
+                    
+                # Also flush DNS cache
+                self.flush_dns_cache_if_needed()
+                    
+            except Exception as e:
+                log_debug(f"Error during periodic network cleanup: {e}")
+            
+            # Schedule next cleanup in 20 minutes
+            if self.is_running:  # Only schedule if application is still running
+                self.root.after(1200000, cleanup_network_connections)  # 20 minutes = 1200000ms
+        
+        # Start cleanup cycle after 20 minutes of operation
+        self.root.after(1200000, cleanup_network_connections)
+        log_debug("Scheduled periodic network cleanup every 20 minutes")
+
+    def flush_dns_cache_if_needed(self):
+        """Flush system DNS cache if network performance degrades."""
+        if not hasattr(self, 'last_dns_flush'):
+            self.last_dns_flush = time.time()
+            return
+        
+        current_time = time.time()
+        # Flush DNS every hour during active use
+        if current_time - self.last_dns_flush > 3600:  # 1 hour
+            try:
+                import subprocess
+                result = subprocess.run(['ipconfig', '/flushdns'], 
+                                      capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    self.last_dns_flush = current_time
+                    log_debug("Successfully flushed DNS cache for network maintenance")
+                else:
+                    log_debug(f"DNS flush command failed: {result.stderr}")
+            except subprocess.TimeoutExpired:
+                log_debug("DNS flush command timed out")
+            except Exception as e:
+                log_debug(f"Could not flush DNS cache: {e}")
 
     def on_closing(self):
         log_debug("Main window close requested. Initiating shutdown...")
