@@ -127,6 +127,23 @@ class TranslationHandler:
         # Initialize session counters by reading existing logs
         self._initialize_session_counters()
         
+        # Initialize OCR cumulative totals cache for performance
+        self._ocr_cache_initialized = False
+        self._cached_ocr_input_tokens = 0
+        self._cached_ocr_output_tokens = 0
+        self._cached_ocr_cost = 0.0
+        
+        # Initialize translation cumulative totals cache for performance
+        self._translation_cache_initialized = False
+        self._cached_translation_words = 0
+        self._cached_translation_input_tokens = 0
+        self._cached_translation_output_tokens = 0
+        
+        # Initialize translation cumulative costs cache for performance
+        self._costs_cache_initialized = False
+        self._cached_input_cost = 0.0
+        self._cached_output_cost = 0.0
+        
         log_debug("Translation handler initialized with unified cache")
     
     def _should_refresh_client(self):
@@ -638,12 +655,23 @@ Purpose: Concise translation call results and statistics
         pass
 
     def _get_cumulative_totals(self):
-        """Reads the log file and calculates cumulative translated words and token totals."""
+        """Get cumulative translation totals using efficient memory cache."""
+        # Use cache if initialized
+        if self._translation_cache_initialized:
+            return self._cached_translation_words, self._cached_translation_input_tokens, self._cached_translation_output_tokens
+        
+        # Initialize cache by reading log file once
         total_translated_words = 0
         total_input = 0
         total_output = 0
+        
         if not os.path.exists(self.gemini_log_file):
-            log_debug(f"Gemini log file does not exist: {self.gemini_log_file}")
+            # Initialize cache with zeros
+            self._cached_translation_words = 0
+            self._cached_translation_input_tokens = 0
+            self._cached_translation_output_tokens = 0
+            self._translation_cache_initialized = True
+            log_debug("Translation cache initialized with zeros (no log file)")
             return 0, 0, 0
         
         # Define regex to find the exact counts (accounting for "- " prefix and "(so far)" format)
@@ -667,21 +695,42 @@ Purpose: Concise translation call results and statistics
                     output_match = output_token_regex.match(line)
                     if output_match:
                         total_output = int(output_match.group(1))
+            
+            # Initialize cache with values from file
+            self._cached_translation_words = total_translated_words
+            self._cached_translation_input_tokens = total_input
+            self._cached_translation_output_tokens = total_output
+            self._translation_cache_initialized = True
+            
+            log_debug(f"Translation cache initialized: {total_translated_words} words, {total_input} input, {total_output} output")
                         
         except (IOError, ValueError) as e:
             log_debug(f"Error reading or parsing cumulative totals from log file: {e}")
-            # Return 0, 0, 0 as a fallback
+            # Initialize cache with zeros on error
+            self._cached_translation_words = 0
+            self._cached_translation_input_tokens = 0
+            self._cached_translation_output_tokens = 0
+            self._translation_cache_initialized = True
             return 0, 0, 0
             
         return total_translated_words, total_input, total_output
 
     def _get_cumulative_costs(self):
-        """Reads the log file and extracts cumulative cost totals for translation operations."""
+        """Get cumulative translation costs using efficient memory cache."""
+        # Use cache if initialized
+        if self._costs_cache_initialized:
+            return self._cached_input_cost, self._cached_output_cost
+        
+        # Initialize cache by reading log file once
         total_input_cost = 0.0
         total_output_cost = 0.0
         
         if not os.path.exists(self.gemini_log_file):
-            log_debug(f"Gemini log file does not exist: {self.gemini_log_file}")
+            # Initialize cache with zeros
+            self._cached_input_cost = 0.0
+            self._cached_output_cost = 0.0
+            self._costs_cache_initialized = True
+            log_debug("Costs cache initialized with zeros (no log file)")
             return 0.0, 0.0
         
         # Define regex to find cumulative cost totals
@@ -699,9 +748,20 @@ Purpose: Concise translation call results and statistics
                     output_cost_match = output_cost_regex.match(line)
                     if output_cost_match:
                         total_output_cost = float(output_cost_match.group(1))
+            
+            # Initialize cache with values from file
+            self._cached_input_cost = total_input_cost
+            self._cached_output_cost = total_output_cost
+            self._costs_cache_initialized = True
+            
+            log_debug(f"Costs cache initialized: ${total_input_cost:.8f} input, ${total_output_cost:.8f} output")
                         
         except (IOError, ValueError) as e:
             log_debug(f"Error reading cumulative costs from log file: {e}")
+            # Initialize cache with zeros on error
+            self._cached_input_cost = 0.0
+            self._cached_output_cost = 0.0
+            self._costs_cache_initialized = True
             return 0.0, 0.0
             
         return total_input_cost, total_output_cost
@@ -726,12 +786,22 @@ Purpose: Concise translation call results and statistics
             return end_time_str
 
     def _get_cumulative_totals_ocr(self):
-        """Get cumulative totals for OCR calls from the log file."""
+        """Get cumulative totals for OCR calls using efficient memory cache."""
+        # Use cache if initialized
+        if self._ocr_cache_initialized:
+            return self._cached_ocr_input_tokens, self._cached_ocr_output_tokens, self._cached_ocr_cost
+        
+        # Initialize cache by reading log file once
         total_input = 0
         total_output = 0
         total_cost = 0.0
         
         if not os.path.exists(self.gemini_log_file):
+            # Initialize cache with zeros
+            self._cached_ocr_input_tokens = 0
+            self._cached_ocr_output_tokens = 0
+            self._cached_ocr_cost = 0.0
+            self._ocr_cache_initialized = True
             return 0, 0, 0.0
         
         # Regex to find OCR cumulative totals
@@ -755,12 +825,57 @@ Purpose: Concise translation call results and statistics
                     cost_match = cost_regex.match(line)
                     if cost_match:
                         total_cost = float(cost_match.group(1))
+            
+            # Initialize cache with values from file
+            self._cached_ocr_input_tokens = total_input
+            self._cached_ocr_output_tokens = total_output
+            self._cached_ocr_cost = total_cost
+            self._ocr_cache_initialized = True
+            
+            log_debug(f"OCR cache initialized: {total_input} input, {total_output} output, ${total_cost:.8f}")
                         
         except (IOError, ValueError) as e:
             log_debug(f"Error reading OCR cumulative totals: {e}")
+            # Initialize cache with zeros on error
+            self._cached_ocr_input_tokens = 0
+            self._cached_ocr_output_tokens = 0
+            self._cached_ocr_cost = 0.0
+            self._ocr_cache_initialized = True
             return 0, 0, 0.0
             
         return total_input, total_output, total_cost
+
+    def _update_ocr_cache(self, input_tokens, output_tokens, cost):
+        """Update OCR cache with new values for performance."""
+        if not self._ocr_cache_initialized:
+            # If cache not initialized, initialize it first
+            self._get_cumulative_totals_ocr()
+        
+        # Increment cached values
+        self._cached_ocr_input_tokens += input_tokens
+        self._cached_ocr_output_tokens += output_tokens
+        self._cached_ocr_cost += cost
+
+    def _update_translation_cache(self, words, input_tokens, output_tokens):
+        """Update translation cache with new values for performance."""
+        if not self._translation_cache_initialized:
+            # If cache not initialized, initialize it first
+            self._get_cumulative_totals()
+        
+        # Increment cached values
+        self._cached_translation_words += words
+        self._cached_translation_input_tokens += input_tokens
+        self._cached_translation_output_tokens += output_tokens
+
+    def _update_costs_cache(self, input_cost, output_cost):
+        """Update costs cache with new values for performance."""
+        if not self._costs_cache_initialized:
+            # If cache not initialized, initialize it first
+            self._get_cumulative_costs()
+        
+        # Increment cached values
+        self._cached_input_cost += input_cost
+        self._cached_output_cost += output_cost
 
     def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result, model_name, model_source):
         """Write concise OCR call log entry."""
@@ -887,10 +1002,16 @@ Result:
                 new_total_input = prev_total_input + input_tokens
                 new_total_output = prev_total_output + output_tokens
                 
+                # Update translation cache with new values for performance
+                self._update_translation_cache(current_translated_words, input_tokens, output_tokens)
+                
                 # Get previous cumulative costs and use simple addition (NOT recalculation)
                 prev_total_input_cost, prev_total_output_cost = self._get_cumulative_costs()
                 total_input_cost = prev_total_input_cost + call_input_cost
                 total_output_cost = prev_total_output_cost + call_output_cost
+                
+                # Update costs cache with new values for performance
+                self._update_costs_cache(call_input_cost, call_output_cost)
                 
                 # --- 5. Calculate detailed message stats ---
                 words_in_message = len(message_content.split())
@@ -1725,6 +1846,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 new_total_input = prev_total_input + input_tokens
                 new_total_output = prev_total_output + output_tokens
                 new_total_cost = prev_total_cost + total_call_cost
+                
+                # Update cache with new values for performance
+                self._update_ocr_cache(input_tokens, output_tokens, total_call_cost)
                 
                 # Format cost display with smart decimal precision
                 input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
