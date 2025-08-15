@@ -8,18 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.3] - 2025-08-13
 
 ### Added
-- **Network Resilience System**: Comprehensive solution to prevent Windows network stack corruption that caused API delays to increase from ~2s to 4-7s after extended use
-  - Circuit Breaker Pattern: Automatically detects network degradation (>3s calls or failures) and forces client refresh when issues are detected
-  - Periodic Client Refresh: Proactively refreshes Gemini client every 30 minutes or after 100 API calls to prevent connection staleness
-  - Connection Cleanup: Scheduled maintenance every 20 minutes to clear connection pools and prevent accumulation of stale connections
-  - DNS Cache Management: Hourly system-level DNS cache flushing (`ipconfig /flushdns`) to address Windows network stack issues
-  - Self-healing behavior eliminates the need for PC restarts to restore performance
+- **Network Resilience System**: A comprehensive solution to prevent Windows network stack corruption that caused API delays to increase after extended use
+  - Circuit Breaker Pattern: Automatically detects network degradation (>3s calls or failures) and forces a client refresh when issues are detected.
+  - Periodic Client Refresh: Proactively refreshes the Gemini client every 30 minutes or after 100 API calls to prevent connection staleness.
+  - Connection Cleanup: Scheduled maintenance every 20 minutes to clear connection pools and prevent the accumulation of stale connections.
+  - DNS Cache Management: Hourly system-level DNS cache flushing (`ipconfig /flushdns`) to address Windows network stack issues.
+  - This self-healing behavior eliminates the need for PC restarts to restore performance.
 
 ### Changed
-- **API Logging Performance Optimization**: Eliminated O(n) scaling issue in cumulative statistics calculation that caused increasing delays during extended use
-  - Replaced file-based cumulative totals lookup with efficient in-memory cache for OCR and translation operations
-  - Prevents log file reading overhead that grew progressively slower as usage history accumulated
-  - Maintains sub-second logging performance regardless of application runtime duration
+- **API Logging Performance Optimization**: Eliminated an O(n) scaling issue in cumulative statistics calculation that caused increasing delays during extended use
+  - Replaced file-based cumulative totals lookup with an efficient in-memory cache for OCR and translation operations.
+  - Prevents log file reading overhead that grew progressively slower as usage history accumulated.
+  - Maintains sub-second logging performance regardless of the application's runtime duration.
 
 ### Fixed
 - N/A
