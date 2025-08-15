@@ -16,7 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Self-healing behavior eliminates the need for PC restarts to restore performance
 
 ### Changed
-- N/A
+- **API Logging Performance Optimization**: Eliminated O(n) scaling issue in cumulative statistics calculation that caused increasing delays during extended use
+  - Replaced file-based cumulative totals lookup with efficient in-memory cache for OCR and translation operations
+  - Prevents log file reading overhead that grew progressively slower as usage history accumulated
+  - Maintains sub-second logging performance regardless of application runtime duration
 
 ### Fixed
 - N/A
