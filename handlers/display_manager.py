@@ -86,6 +86,13 @@ class DisplayManager:
                 
                 if original_text != new_text_to_display:
                     log_debug(f"DisplayManager: RTL punctuation fixed: '{original_text}' -> '{new_text_to_display}'")
+                
+                # CRITICAL FIX: Reverse RTL text for proper display in tkinter Text widget
+                # Tkinter doesn't handle BiDi (bidirectional) text properly, so we need to reverse RTL text
+                display_text = RTLTextProcessor.prepare_rtl_for_display(new_text_to_display, target_lang_code)
+                if display_text != new_text_to_display:
+                    log_debug(f"DisplayManager: RTL text reversed for display: '{new_text_to_display}' -> '{display_text}'")
+                    new_text_to_display = display_text
 
             if current_displayed_text != new_text_to_display:
                 self.app.translation_text.config(state=tk.NORMAL) 
@@ -94,9 +101,10 @@ class DisplayManager:
                 
                 # Apply RTL formatting if the text widget is configured for RTL
                 if hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl:
-                    # Apply RTL tag to all text for right-to-left display
-                    self.app.translation_text.tag_add("rtl", "1.0", tk.END)
-                    log_debug("DisplayManager: Applied RTL formatting to translation text")
+                    # CRITICAL FIX: Configure the 'rtl' tag to right-justify the text.
+                    # This is the canonical way to handle RTL text in a Tkinter Text widget.
+                    self.app.translation_text.tag_configure("rtl", justify='right')
+                    self.app.translation_text.tag_add("rtl", "1.0", "end-1c")
                 else:
                     # Apply LTR tag to all text for left-to-right display  
                     self.app.translation_text.tag_add("ltr", "1.0", tk.END)
