@@ -210,6 +210,34 @@ def create_target_overlay_om(app):
         app.target_overlay.update_color(target_color)
 
         font_size = app.target_font_size_var.get() # Get from app's Tkinter IntVar
+        
+        # Determine text direction based on target language
+        target_lang_code = None
+        try:
+            # Get the target language code from the current translation model
+            target_lang_name = app.target_lang_var.get()
+            if hasattr(app, 'language_manager') and app.language_manager:
+                # Get the current translation model to determine service type
+                current_model = app.translation_model_var.get()
+                if 'gemini' in current_model.lower():
+                    target_lang_code = app.language_manager.get_code_from_name(target_lang_name, "gemini_api", "target")
+                elif current_model == "Google Translate API":
+                    target_lang_code = app.language_manager.get_code_from_name(target_lang_name, "google_api", "target")
+                elif current_model == "DeepL API":
+                    target_lang_code = app.language_manager.get_code_from_name(target_lang_name, "deepl_api", "target")
+                
+                # Check if the target language is RTL
+                is_rtl = app.language_manager.is_rtl_language(target_lang_code) if target_lang_code else False
+                log_debug(f"OverlayManager: Target language '{target_lang_name}' (code: {target_lang_code}) RTL: {is_rtl}")
+            else:
+                is_rtl = False
+        except Exception as e:
+            log_debug(f"OverlayManager: Error determining RTL status: {e}")
+            is_rtl = False
+        
+        # Configure text widget with appropriate settings for RTL/LTR
+        text_justify = tk.RIGHT if is_rtl else tk.LEFT
+        
         app.translation_text = tk.Text(
             app.target_overlay.content_frame,
             wrap=tk.WORD,
@@ -222,6 +250,17 @@ def create_target_overlay_om(app):
             pady=5,
             state=tk.DISABLED
         )
+        
+        # Configure text widget for RTL if needed
+        if is_rtl:
+            # For RTL languages, configure text alignment and reading order
+            app.translation_text.tag_configure("rtl", justify=tk.RIGHT)
+            # Store RTL status for use in text updates
+            app.translation_text.is_rtl = True
+            log_debug("OverlayManager: Text widget configured for RTL display")
+        else:
+            app.translation_text.tag_configure("ltr", justify=tk.LEFT)
+            app.translation_text.is_rtl = False
         app.translation_text.pack(fill=tk.BOTH, expand=True)
         
         # Set target overlay to hidden by default or based on config

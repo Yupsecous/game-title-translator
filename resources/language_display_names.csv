@@ -75,6 +75,7 @@ lt,google,Lithuanian,litewski
 lb,google,Luxembourgish,luksemburski
 mk,google,Macedonian,macedoński
 no,google,Norwegian,norweski
+fa,google,Persian,perski
 pl,google,Polish,polski
 pt-BR,google,Portuguese (Brazil),portugalski (brazylijski)
 pt-PT,google,Portuguese (Portugal),portugalski (portugalski)
@@ -118,6 +119,7 @@ ko,gemini,Korean,koreański
 lv,gemini,Latvian,łotewski
 lt,gemini,Lithuanian,litewski
 no,gemini,Norwegian,norweski
+fa,gemini,Persian,perski
 pl,gemini,Polish,polski
 pt-BR,gemini,Portuguese (Brazil),portugalski (brazylijski)
 pt-PT,gemini,Portuguese (Portugal),portugalski (portugalski)
@@ -163,6 +165,7 @@ Lithuanian,marianmt,Lithuanian,litewski
 Macedonian,marianmt,Macedonian,macedoński
 Maltese,marianmt,Maltese,maltański
 Norwegian,marianmt,Norwegian,norweski
+Persian,marianmt,Persian,perski
 Polish,marianmt,Polish,polski
 Portuguese,marianmt,Portuguese,portugalski
 Romanian,marianmt,Romanian,rumuński
