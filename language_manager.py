@@ -3,6 +3,7 @@ import os
 import csv
 from logger import log_debug
 from resource_handler import get_resource_path
+from constants import RTL_LANGUAGES
 
 class LanguageManager:
     """
@@ -454,3 +455,48 @@ class LanguageManager:
         except Exception as e:
             log_debug(f"Error getting localized MarianMT display name: {e}")
             return english_display_name
+
+    def is_rtl_language(self, language_code):
+        """
+        Check if a language code represents a right-to-left language.
+        
+        Args:
+            language_code (str): Language code (e.g., 'fa', 'ar', 'he')
+            
+        Returns:
+            bool: True if the language is RTL, False otherwise
+        """
+        if not language_code:
+            return False
+            
+        # Normalize the language code to lowercase
+        normalized_code = language_code.lower().strip()
+        
+        # Handle special cases and variations
+        if normalized_code in ['auto', 'unknown']:
+            return False
+            
+        # Check for common variations
+        if normalized_code.startswith('ar'):  # Arabic variants (ar, ar-SA, etc.)
+            return True
+        elif normalized_code.startswith('fa'):  # Persian variants (fa, fa-IR, etc.)
+            return True
+        elif normalized_code.startswith('he'):  # Hebrew variants (he, he-IL, etc.)
+            return True
+        elif normalized_code in RTL_LANGUAGES:
+            return True
+            
+        log_debug(f"LanguageManager: Language '{language_code}' is not RTL")
+        return False
+
+    def get_text_direction(self, language_code):
+        """
+        Get the text direction for a given language code.
+        
+        Args:
+            language_code (str): Language code
+            
+        Returns:
+            str: 'rtl' for right-to-left languages, 'ltr' for left-to-right languages
+        """
+        return 'rtl' if self.is_rtl_language(language_code) else 'ltr'

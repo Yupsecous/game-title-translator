@@ -5,6 +5,15 @@ import numpy as np
 from PIL import Image, ImageTk
 from logger import log_debug
 
+# Import RTL text processor for proper punctuation handling
+try:
+    from rtl_text_processor import RTLTextProcessor
+    RTL_PROCESSOR_AVAILABLE = True
+    log_debug("RTL text processor imported successfully")
+except ImportError as e:
+    RTL_PROCESSOR_AVAILABLE = False
+    log_debug(f"RTL text processor not available: {e}")
+
 class DisplayManager:
     """Handles display and UI updates for overlays and debug information"""
     
@@ -52,10 +61,46 @@ class DisplayManager:
             current_displayed_text = self.app.translation_text.get("1.0", tk.END).strip()
             new_text_to_display = text_content_main_thread.strip() if text_content_main_thread else ""
 
+            # Apply RTL punctuation fixes if text widget is configured for RTL
+            if (hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl and 
+                RTL_PROCESSOR_AVAILABLE and new_text_to_display):
+                
+                # Get target language code for RTL processing
+                target_lang_code = None
+                try:
+                    target_lang_name = self.app.target_lang_var.get()
+                    if hasattr(self.app, 'language_manager') and self.app.language_manager:
+                        current_model = self.app.translation_model_var.get()
+                        if 'gemini' in current_model.lower():
+                            target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "gemini_api", "target")
+                        elif current_model == "Google Translate API":
+                            target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "google_api", "target")
+                        elif current_model == "DeepL API":
+                            target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "deepl_api", "target")
+                except Exception as e:
+                    log_debug(f"DisplayManager: Error getting target language code for RTL processing: {e}")
+                
+                # Apply RTL punctuation fixes
+                original_text = new_text_to_display
+                new_text_to_display = RTLTextProcessor.fix_rtl_punctuation(new_text_to_display, target_lang_code)
+                
+                if original_text != new_text_to_display:
+                    log_debug(f"DisplayManager: RTL punctuation fixed: '{original_text}' -> '{new_text_to_display}'")
+
             if current_displayed_text != new_text_to_display:
                 self.app.translation_text.config(state=tk.NORMAL) 
                 self.app.translation_text.delete(1.0, tk.END)     
-                self.app.translation_text.insert(tk.END, new_text_to_display) 
+                self.app.translation_text.insert(tk.END, new_text_to_display)
+                
+                # Apply RTL formatting if the text widget is configured for RTL
+                if hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl:
+                    # Apply RTL tag to all text for right-to-left display
+                    self.app.translation_text.tag_add("rtl", "1.0", tk.END)
+                    log_debug("DisplayManager: Applied RTL formatting to translation text")
+                else:
+                    # Apply LTR tag to all text for left-to-right display  
+                    self.app.translation_text.tag_add("ltr", "1.0", tk.END)
+                
                 self.app.translation_text.config(state=tk.DISABLED) 
                 self.app.translation_text.see("1.0") # Scroll to top
         except tk.TclError as e_uttomt: 

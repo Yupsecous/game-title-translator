@@ -22,6 +22,7 @@ LANGUAGES = {
     'lv': 'latvian',
     'lt': 'lithuanian',
     'nb': 'norwegian bokmål',
+    'fa': 'persian',
     'pl': 'polish',
     'pt': 'portuguese',
     'ro': 'romanian',
@@ -32,4 +33,16 @@ LANGUAGES = {
     'sv': 'swedish',
     'tr': 'turkish',
     'uk': 'ukrainian'
+}
+
+# Right-to-Left (RTL) languages that require special text direction handling
+RTL_LANGUAGES = {
+    'ar',     # Arabic
+    'fa',     # Persian/Farsi
+    'he',     # Hebrew
+    'ur',     # Urdu
+    'ku',     # Kurdish
+    'sd',     # Sindhi
+    'ps',     # Pashto
+    'yi'      # Yiddish
 }

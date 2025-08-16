@@ -425,6 +425,21 @@ def create_settings_tab(app):
                 
                 app.target_lang_var.set(api_code)
                 log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
+                
+                # Check if text direction changed and recreate overlay if needed
+                try:
+                    if hasattr(app, 'language_manager') and app.language_manager:
+                        is_rtl = app.language_manager.is_rtl_language(api_code)
+                        current_rtl_status = getattr(app.translation_text, 'is_rtl', False) if app.translation_text else False
+                        
+                        if is_rtl != current_rtl_status:
+                            log_debug(f"Text direction changed (RTL: {is_rtl}), recreating target overlay")
+                            # Import and recreate the target overlay with new RTL settings
+                            from overlay_manager import create_target_overlay_om
+                            create_target_overlay_om(app)
+                except Exception as e:
+                    log_debug(f"Error updating RTL configuration: {e}")
+                
                 app.save_settings() 
             else:
                 log_debug(f"Target lang unchanged for {active_model}: '{api_code}' - not saving")
