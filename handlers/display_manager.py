@@ -61,26 +61,70 @@ class DisplayManager:
             current_displayed_text = self.app.translation_text.get("1.0", tk.END).strip()
             new_text_to_display = text_content_main_thread.strip() if text_content_main_thread else ""
 
-            # Apply RTL punctuation fixes if text widget is configured for RTL
-            if (hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl and 
-                RTL_PROCESSOR_AVAILABLE and new_text_to_display):
-                
-                # Get target language code for RTL processing
-                target_lang_code = None
+            # DEBUG: Check RTL widget configuration
+            is_rtl_widget = hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl
+            log_debug(f"DisplayManager: Widget RTL status: {is_rtl_widget}, RTL processor available: {RTL_PROCESSOR_AVAILABLE}")
+            log_debug(f"DisplayManager: Text to display: '{new_text_to_display}'")
+
+            # ENHANCED: Check if target language is RTL regardless of widget setting
+            should_apply_rtl = False
+            target_lang_code = None
+            
+            if new_text_to_display:
                 try:
                     target_lang_name = self.app.target_lang_var.get()
+                    log_debug(f"DisplayManager: Current target language name: '{target_lang_name}'")
+                    
+                    # Get the language code for RTL detection
                     if hasattr(self.app, 'language_manager') and self.app.language_manager:
                         current_model = self.app.translation_model_var.get()
-                        if 'gemini' in current_model.lower():
-                            target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "gemini_api", "target")
-                        elif current_model == "Google Translate API":
-                            target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "google_api", "target")
-                        elif current_model == "DeepL API":
-                            target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "deepl_api", "target")
-                except Exception as e:
-                    log_debug(f"DisplayManager: Error getting target language code for RTL processing: {e}")
+                        log_debug(f"DisplayManager: Current translation model: '{current_model}'")
+                        
+                    # Get the language code for RTL detection
+                    if hasattr(self.app, 'language_manager') and self.app.language_manager:
+                        current_model = self.app.translation_model_var.get()
+                        log_debug(f"DisplayManager: Current translation model: '{current_model}'")
+                        
+                        # Check if target_lang_name is already a language code (like 'fa', 'ar', 'he')
+                        if len(target_lang_name) <= 3 and target_lang_name.lower() in ['fa', 'ar', 'he', 'ur', 'ps']:
+                            # It's already a language code
+                            target_lang_code = target_lang_name.lower()
+                            log_debug(f"DisplayManager: Target language name appears to be a code: '{target_lang_code}'")
+                        else:
+                            # It's a display name, convert to code
+                            if 'gemini' in current_model.lower():
+                                target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "gemini_api", "target")
+                            elif current_model == "Google Translate API":
+                                target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "google_api", "target")
+                            elif current_model == "DeepL API":
+                                target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "deepl_api", "target")
+                            
+                            log_debug(f"DisplayManager: Converted display name '{target_lang_name}' to code: '{target_lang_code}'")
+                        
+                        log_debug(f"DisplayManager: Target language code: '{target_lang_code}'")
+                        
+                        # Check if this language is RTL
+                        if target_lang_code:
+                            is_target_rtl = self.app.language_manager.is_rtl_language(target_lang_code)
+                            log_debug(f"DisplayManager: Language '{target_lang_code}' is RTL: {is_target_rtl}")
+                            should_apply_rtl = is_target_rtl
                 
-                # Apply RTL punctuation fixes
+                except Exception as e:
+                    log_debug(f"DisplayManager: Error detecting RTL language: {e}")
+
+            # Check widget RTL status
+            widget_is_rtl = hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl
+            log_debug(f"DisplayManager: Widget RTL status: {widget_is_rtl}, Language RTL status: {should_apply_rtl}")
+
+            # Apply RTL processing if either widget is configured for RTL OR language is detected as RTL
+            if (widget_is_rtl or should_apply_rtl) and RTL_PROCESSOR_AVAILABLE and new_text_to_display:
+                
+                if should_apply_rtl and not widget_is_rtl:
+                    log_debug(f"DisplayManager: Widget not configured for RTL but language is RTL - applying RTL processing anyway")
+                else:
+                    log_debug(f"DisplayManager: RTL processing triggered - widget configured for RTL")
+                
+                # Apply RTL punctuation fixes (target_lang_code already determined above)
                 original_text = new_text_to_display
                 new_text_to_display = RTLTextProcessor.fix_rtl_punctuation(new_text_to_display, target_lang_code)
                 
@@ -93,6 +137,8 @@ class DisplayManager:
                 if display_text != new_text_to_display:
                     log_debug(f"DisplayManager: RTL text reversed for display: '{new_text_to_display}' -> '{display_text}'")
                     new_text_to_display = display_text
+            else:
+                log_debug(f"DisplayManager: RTL processing skipped - Widget RTL: {widget_is_rtl}, Language RTL: {should_apply_rtl}, RTL Processor: {RTL_PROCESSOR_AVAILABLE}, Has text: {bool(new_text_to_display)}")
 
             if current_displayed_text != new_text_to_display:
                 self.app.translation_text.config(state=tk.NORMAL) 
