@@ -42,6 +42,7 @@ Game-Changing Translator follows a modular design with the following key compone
    - `unified_translation_cache.py` - Unified LRU cache system for all translation providers
    - `ocr_utils.py` - OCR utility functions with adaptive preprocessing
    - `translation_utils.py` - Translation utility functions
+   - `rtl_text_processor.py` - Right-to-Left text processing for proper RTL language display
    - `language_manager.py` - Language code management and mappings for different translation services
    - `config_manager.py` - Configuration file handling with OCR Preview geometry support
    - `resource_handler.py` - Resource path resolution for packaged applications
@@ -379,6 +380,60 @@ The application supports multiple UI languages through:
 - `language_ui.py` - UILanguageManager class that loads translations
 - CSV files in `resources/` directory containing UI text translations
 - Dynamic UI rebuilding when language changes
+
+### RTL Text Processing System
+
+The application includes comprehensive support for Right-to-Left (RTL) languages through the `rtl_text_processor.py` module, providing proper text display and punctuation handling for Arabic, Hebrew, and Persian languages.
+
+#### RTLTextProcessor Class
+
+The RTLTextProcessor provides several key methods for handling RTL text:
+
+**Core Features:**
+- **Punctuation repositioning** for RTL text display in tkinter widgets
+- **BiDi text preparation** for proper rendering in UI components that lack native RTL support
+- **Language-specific handling** for Persian (fa), Arabic (ar), and Hebrew (he) language codes
+- **Error resilience** with graceful fallback to original text if processing fails
+
+**Key Methods:**
+
+1. **`fix_rtl_punctuation(text, language_code)`**
+   - Corrects punctuation positioning for RTL languages
+   - Handles common punctuation marks (periods, question marks, exclamation marks)
+   - Removes incorrectly positioned punctuation from text beginnings
+   - Ensures proper sentence-ending punctuation placement
+
+2. **`prepare_rtl_for_display(text, language_code)`**
+   - Prepares RTL text for proper display in tkinter Text widgets
+   - Adds Right-to-Left Mark (RLM) character (\u200F) for proper directionality
+   - Works with tkinter's right-alignment to achieve correct RTL rendering
+   - Maintains text readability without complex BiDi algorithms
+
+3. **`is_rtl_text_likely_incorrect(text)`**
+   - Detects potentially incorrectly positioned punctuation in RTL text
+   - Identifies common indicators like periods at text beginnings
+   - Used for validation and debugging RTL text processing
+
+**Implementation Strategy:**
+The RTL processor uses a simplified approach optimized for tkinter limitations:
+- Rather than complex BiDi algorithms, it relies on modern tkinter's right-alignment capabilities
+- Adds directional markers (RLM) to ensure proper text flow
+- Focuses on punctuation correction rather than full text reversal
+- Maintains compatibility with tkinter Text widget constraints
+
+**Integration Points:**
+- Called from translation handlers when RTL target languages are detected
+- Integrated into display managers for proper UI text rendering
+- Used in overlay windows to ensure RTL translations display correctly
+- Applied to both OCR results and final translation output for RTL languages
+
+**Supported Languages:**
+- **Persian (fa)**: Full support with Persian-specific punctuation handling
+- **Arabic (ar)**: Arabic punctuation marks and text flow
+- **Hebrew (he)**: Hebrew text directionality and punctuation
+- **Language detection**: Automatic processing based on language code prefixes
+
+This system ensures that RTL translations appear correctly in the application's UI components, addressing the common challenge of RTL text display in Western UI frameworks.
 
 ### Working with Gemini API Files
 

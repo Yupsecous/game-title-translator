@@ -198,6 +198,9 @@
         .flag-tr { background-image: url('flags/TR.svg'); }
         .flag-ro { background-image: url('flags/RO.svg'); }
         .flag-rs { background-image: url('flags/RS.svg'); }
+        .flag-ir { background-image: url('flags/IR.svg'); }
+        .flag-il { background-image: url('flags/IL.svg'); }
+        .flag-sa { background-image: url('flags/SA.svg'); }
 
         .arrow {
             font-size: 1.5rem;
@@ -237,6 +240,12 @@
 
         .gemini-ocr {
             background: linear-gradient(135deg, #8E44AD, #9B59B6);
+            color: white;
+            text-transform: none !important;
+        }
+
+        .gemini-ocr-flash {
+            background: linear-gradient(135deg, #C2185B, #AD1457);
             color: white;
             text-transform: none !important;
         }
@@ -1514,6 +1523,57 @@
                     <div class="model-badge gemini-ocr">GEMINI 2.5 FLASH-LITE (incl. OCR)</div>
                 </div>
             </div>
+
+            <div class="gallery-item" data-index="60" onclick="openModal(60)">
+                <div class="image-container">
+                    <img src="gallery/61_eng-to-fas_gemini_ocr.jpg" alt="English to Persian translation with Gemini 2.5 Flash-Lite including OCR">
+                    <div class="overlay">
+                        <div class="overlay-text">Click to enlarge</div>
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="translation-path">
+                        <div class="language"><img src="flags/GB.svg" alt="English flag" class="flag"> English</div>
+                        <div class="arrow">→</div>
+                        <div class="language"><img src="flags/IR.svg" alt="Persian flag" class="flag"> Persian</div>
+                    </div>
+                    <div class="model-badge gemini-ocr-flash">GEMINI 2.0 FLASH (incl. OCR)</div>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-index="61" onclick="openModal(61)">
+                <div class="image-container">
+                    <img src="gallery/62_eng-to-heb_gemini_ocr.jpg" alt="English to Hebrew translation with Gemini 2.5 Flash-Lite including OCR">
+                    <div class="overlay">
+                        <div class="overlay-text">Click to enlarge</div>
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="translation-path">
+                        <div class="language"><img src="flags/GB.svg" alt="English flag" class="flag"> English</div>
+                        <div class="arrow">→</div>
+                        <div class="language"><img src="flags/IL.svg" alt="Hebrew flag" class="flag"> Hebrew</div>
+                    </div>
+                    <div class="model-badge gemini-ocr-flash">GEMINI 2.0 FLASH (incl. OCR)</div>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-index="62" onclick="openModal(62)">
+                <div class="image-container">
+                    <img src="gallery/63_eng-to-ara_gemini_ocr.jpg" alt="English to Arabic translation with Gemini 2.5 Flash-Lite including OCR">
+                    <div class="overlay">
+                        <div class="overlay-text">Click to enlarge</div>
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="translation-path">
+                        <div class="language"><img src="flags/GB.svg" alt="English flag" class="flag"> English</div>
+                        <div class="arrow">→</div>
+                        <div class="language"><img src="flags/SA.svg" alt="Arabic flag" class="flag"> Arabic</div>
+                    </div>
+                    <div class="model-badge gemini-ocr-flash">GEMINI 2.0 FLASH (incl. OCR)</div>
+                </div>
+            </div>
         </div>
 
         <div class="cta">
@@ -1596,7 +1656,10 @@
             {src: 'gallery/57_swe-to-eng_gemini_ocr.jpg', model: 'Gemini 2.5 Flash-Lite (incl. OCR)', from: 'SE', to: 'GB'},
             {src: 'gallery/58_ger-to-eng_gemini_ocr.jpg', model: 'Gemini 2.5 Flash-Lite (incl. OCR)', from: 'DE', to: 'GB'},
             {src: 'gallery/59_jpn-to-eng_gemini_ocr.jpg', model: 'Gemini 2.5 Flash-Lite (incl. OCR)', from: 'JP', to: 'GB'},
-            {src: 'gallery/60_dan-to-eng_gemini_ocr.jpg', model: 'Gemini 2.5 Flash-Lite (incl. OCR)', from: 'DK', to: 'GB'}
+            {src: 'gallery/60_dan-to-eng_gemini_ocr.jpg', model: 'Gemini 2.5 Flash-Lite (incl. OCR)', from: 'DK', to: 'GB'},
+            {src: 'gallery/61_eng-to-fas_gemini_ocr.jpg', model: 'Gemini 2.0 Flash (incl. OCR)', from: 'GB', to: 'IR'},
+            {src: 'gallery/62_eng-to-heb_gemini_ocr.jpg', model: 'Gemini 2.0 Flash (incl. OCR)', from: 'GB', to: 'IL'},
+            {src: 'gallery/63_eng-to-ara_gemini_ocr.jpg', model: 'Gemini 2.0 Flash (incl. OCR)', from: 'GB', to: 'SA'}
         ];
 
         let currentModalIndex = 0;
@@ -1620,7 +1683,8 @@
                 'ES': 'es', 'RU': 'ru', 'CZ': 'cz', 'SE': 'se', 'HU': 'hu',
                 'SK': 'sk', 'EE': 'ee', 'DK': 'dk', 'NL': 'nl', 'LV': 'lv',
                 'IT': 'it', 'FI': 'fi', 'IS': 'is', 'KR': 'kr', 'JP': 'jp',
-                'SI': 'si', 'LT': 'lt', 'TR': 'tr', 'RO': 'ro', 'RS': 'rs'
+                'SI': 'si', 'LT': 'lt', 'TR': 'tr', 'RO': 'ro', 'RS': 'rs',
+                'IR': 'ir', 'IL': 'il', 'SA': 'sa'
             };
             
             // Format the model text for two-line display if it contains OCR
@@ -1731,7 +1795,8 @@
                 'ES': 'es', 'RU': 'ru', 'CZ': 'cz', 'SE': 'se', 'HU': 'hu',
                 'SK': 'sk', 'EE': 'ee', 'DK': 'dk', 'NL': 'nl', 'LV': 'lv',
                 'IT': 'it', 'FI': 'fi', 'IS': 'is', 'KR': 'kr', 'JP': 'jp',
-                'SI': 'si', 'LT': 'lt', 'TR': 'tr', 'RO': 'ro', 'RS': 'rs'
+                'SI': 'si', 'LT': 'lt', 'TR': 'tr', 'RO': 'ro', 'RS': 'rs',
+                'IR': 'ir', 'IL': 'il', 'SA': 'sa'
             };
             
             flags.forEach((flag, index) => {
