@@ -80,11 +80,6 @@ class DisplayManager:
                         current_model = self.app.translation_model_var.get()
                         log_debug(f"DisplayManager: Current translation model: '{current_model}'")
                         
-                    # Get the language code for RTL detection
-                    if hasattr(self.app, 'language_manager') and self.app.language_manager:
-                        current_model = self.app.translation_model_var.get()
-                        log_debug(f"DisplayManager: Current translation model: '{current_model}'")
-                        
                         # Check if target_lang_name is already a language code (like 'fa', 'ar', 'he')
                         if len(target_lang_name) <= 3 and target_lang_name.lower() in ['fa', 'ar', 'he', 'ur', 'ps']:
                             # It's already a language code
@@ -145,15 +140,18 @@ class DisplayManager:
                 self.app.translation_text.delete(1.0, tk.END)     
                 self.app.translation_text.insert(tk.END, new_text_to_display)
                 
-                # Apply RTL formatting if the text widget is configured for RTL
-                if hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl:
+                # Apply RTL formatting if widget is configured for RTL OR if language is RTL
+                if (hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl) or should_apply_rtl:
                     # CRITICAL FIX: Configure the 'rtl' tag to right-justify the text.
                     # This is the canonical way to handle RTL text in a Tkinter Text widget.
                     self.app.translation_text.tag_configure("rtl", justify='right')
                     self.app.translation_text.tag_add("rtl", "1.0", "end-1c")
+                    log_debug(f"DisplayManager: Applied RTL right-alignment to text")
                 else:
                     # Apply LTR tag to all text for left-to-right display  
+                    self.app.translation_text.tag_configure("ltr", justify='left')
                     self.app.translation_text.tag_add("ltr", "1.0", tk.END)
+                    log_debug(f"DisplayManager: Applied LTR left-alignment to text")
                 
                 self.app.translation_text.config(state=tk.DISABLED) 
                 self.app.translation_text.see("1.0") # Scroll to top
