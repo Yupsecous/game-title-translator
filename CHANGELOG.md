@@ -5,6 +5,24 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.6] - 2025-08-17
+
+### Added
+- N/A
+
+### Changed
+- N/A
+
+### Fixed
+- **Translation Cache Duplicate Detection Bug**: Fixed incorrect duplicate detection logic in the file cache system that was preventing translations of the same source text to different target languages from being saved
+  - Previously, the cache only checked if the source text was identical, ignoring the language pair
+  - Now correctly checks both the source text AND the language pair (source→target) before treating an entry as a duplicate
+  - Ensures that translating the same source text to different target languages (e.g., English→French and English→Italian) are both properly saved to cache files
+  - Affects all translation providers that use file caching (Gemini, Google Translate, DeepL)
+
+### Removed
+- N/A
+
 ## [3.5.5] - 2025-08-17
 
 ### Added
