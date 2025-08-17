@@ -70,6 +70,17 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
+### 🚀 NEW in Version 3.5.5
+
+- **Persian Language Support**: Added comprehensive Persian language support to both Gemini API and Google Translate translation services
+  - **Right-to-Left (RTL) Text Processing**: Enhanced text display formatting for RTL languages with improved punctuation positioning and proper text flow
+  - **RTL Language Support**: Optimized display for Persian, Arabic, and Hebrew languages with intelligent punctuation handling
+  - **Professional RTL Results**: Proper text directionality and formatting that respects RTL language conventions
+  
+  ![Persian Subtitles Example](docs/screenshots/persian_subtitles.jpg)
+  
+  *Experience seamless Persian subtitle translation with proper RTL text formatting - perfect for Persian media content and language learning*
+
 ### 🚀 NEW in Version 3.5.3
 
 - **Multiple Gemini Models Available**: Flexible model selection for OCR and translation operations with dynamic configuration

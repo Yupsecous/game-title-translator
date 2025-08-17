@@ -5,6 +5,21 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.5] - 2025-08-17
+
+### Added
+- Added Persian language support to the Gemini API and Google Translate translation services.
+- Enhanced text display formatting for right-to-left (RTL) languages with improved punctuation positioning.
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## [3.5.3] - 2025-08-13
 
 ### Added
