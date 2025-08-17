@@ -151,7 +151,7 @@ class CacheManager:
                             if len(parts_check) == 2:
                                 full_cache_key_from_file = parts_check[0]
                                 
-                                # Extract source text from existing entry
+                                # Extract source text and language pair from existing entry
                                 if ')' in full_cache_key_from_file:
                                     try:
                                         # Split on ')' to separate service part and text part
@@ -159,9 +159,20 @@ class CacheManager:
                                         # Clean up the text part (remove leading ':')
                                         existing_source_text = text_part.lstrip(':')
                                         
-                                        # If we find an entry with identical source text, don't save
-                                        if existing_source_text == original_text:
-                                            log_debug(f"Duplicate source text found in {cache_type} file cache, skipping save: {original_text}")
+                                        # Extract language pair from service part
+                                        # Format: ServiceName(LANG-PAIR,timestamp)
+                                        if '(' in service_part:
+                                            lang_and_timestamp = service_part.split('(', 1)[1]
+                                            if ',' in lang_and_timestamp:
+                                                existing_lang_pair = lang_and_timestamp.split(',', 1)[0]
+                                            else:
+                                                existing_lang_pair = lang_and_timestamp
+                                        else:
+                                            existing_lang_pair = ""
+                                        
+                                        # FIXED: Only treat as duplicate if BOTH source text AND language pair match
+                                        if existing_source_text == original_text and existing_lang_pair == lang_pair:
+                                            log_debug(f"Duplicate source text and language pair ({existing_lang_pair}) found in {cache_type} file cache, skipping save: {original_text}")
                                             return False
                                     except (ValueError, IndexError):
                                         # Continue checking other lines if this one is malformed
