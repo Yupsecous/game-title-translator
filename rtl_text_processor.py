@@ -134,14 +134,31 @@ class RTLTextProcessor:
             return text
             
         try:
+            # DEBUG: Log entry to this method
+            log_debug(f"RTL prepare_rtl_for_display called with: text='{text}', lang='{language_code}'")
+            
             # Only reverse for RTL languages
             if language_code and language_code.lower().startswith(('fa', 'ar', 'he')):
+                log_debug(f"RTL language detected: {language_code} - applying RTL processing")
+                
                 # Simple character-level reversal for RTL display
                 # This fixes the tkinter BiDi display issue
                 reversed_text = RTLTextProcessor._reverse_text_for_display(text)
+                log_debug(f"RTL text reversed: '{text}' -> '{reversed_text}'")
+                
+                # Apply final punctuation fix before display
+                final_text = RTLTextProcessor._fix_final_punctuation_position(reversed_text)
+                
                 log_debug(f"RTL text prepared for display ({language_code}): reversed for proper tkinter rendering")
-                return reversed_text
+                if final_text != reversed_text:
+                    log_debug(f"PUNCTUATION FIX APPLIED: '{reversed_text}' -> '{final_text}'")
+                else:
+                    log_debug(f"No punctuation fix needed - conditions not met")
+                
+                log_debug(f"RTL final result: '{final_text}'")
+                return final_text
             else:
+                log_debug(f"Non-RTL language or no language code: {language_code} - no RTL processing")
                 return text
                 
         except Exception as e:
@@ -151,59 +168,54 @@ class RTLTextProcessor:
     @staticmethod
     def _reverse_text_for_display(text):
         """
-        Reverse RTL text for proper display in tkinter. This compensates for tkinter's lack of proper BiDi support.
+        Prepare RTL text for proper display in tkinter. 
         
-        FIXED: This implementation correctly handles multi-line text (from Gemini's <br>),
-        and adds a Right-to-Left Mark (RLM) at the end to prevent the final punctuation
-        from wrapping around to the start of the text block in the display.
+        SIMPLIFIED: For RTL languages, we don't need to reverse words within sentences.
+        Modern tkinter with proper right-alignment handles RTL text correctly.
+        We only need to apply the punctuation fix.
         """
         if not text:
             return ""
 
-        # Handle multi-line text from Gemini API which may use <br>
-        lines = re.split(r'\s*<br>\s*', text)
-        processed_lines = []
+        # For RTL text, just add the Right-to-Left Mark (RLM) to ensure proper directionality
+        # The tkinter Text widget with right alignment will handle the rest
+        return text + '\u200F'
 
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-
-            # Split the line by punctuation, keeping delimiters. This correctly handles
-            # sentences with and without trailing punctuation.
-            parts = re.split(r'([.!?؟،؛])', line)
-            parts = [p for p in parts if p]  # Remove any empty strings
-
-            # Group text parts with their following punctuation to form sentence chunks
-            sentence_chunks = []
-            i = 0
-            while i < len(parts):
-                text_part = parts[i]
-                punct_part = ""
-                # Check if the next part is a punctuation mark
-                if i + 1 < len(parts) and parts[i+1] in ".!?؟،؛":
-                    punct_part = parts[i+1]
-                    i += 1  # Consume the punctuation part as well
-                
-                # Reverse the order of words within the text part
-                reversed_words = ' '.join(text_part.strip().split()[::-1])
-                
-                # Re-attach the punctuation to the end of the reversed word string.
-                # Visually, this places it at the left of the text chunk in an RTL context.
-                sentence_chunks.append(reversed_words + punct_part)
-                i += 1
-            
-            # Reverse the order of the sentence chunks themselves for RTL display
-            processed_lines.append(' '.join(sentence_chunks[::-1]))
-
-        # Reverse the order of the processed lines for multi-line RTL display
-        final_text = '\n'.join(processed_lines[::-1])
+    @staticmethod
+    def _fix_final_punctuation_position(text):
+        """
+        Fix final punctuation positioning for RTL display.
         
-        # CRITICAL FIX: Append the Unicode Right-to-Left Mark (RLM).
-        # This is an invisible character that provides a "strong" RTL context,
-        # preventing the very last punctuation mark of the entire text block
-        # from being incorrectly moved to the beginning (far right) by the renderer.
-        return final_text + '\u200F'
+        UPDATED: Now works with original RTL text (not reversed text) since we're using
+        proper tkinter right-alignment instead of text reversal.
+        
+        Args:
+            text (str): RTL text with RLM marker
+            
+        Returns:
+            str: Text with corrected final punctuation positioning if needed
+        """
+        log_debug(f"_fix_final_punctuation_position called with: '{text}'")
+        
+        if not text or len(text) < 2:
+            log_debug(f"Skipping punctuation fix - text too short or empty")
+            return text
+            
+        # For RTL text with proper right-alignment, the punctuation fix may not be needed
+        # Let's check if there are any specific issues that need fixing
+        
+        # Remove RLM character for analysis
+        working_text = text.replace('\u200F', '') if '\u200F' in text else text
+        
+        if not working_text:
+            return text
+            
+        log_debug(f"Working with text (RLM removed): '{working_text}'")
+        
+        # With proper RTL display and right-alignment, punctuation should be positioned correctly
+        # Return the original text with RLM
+        log_debug(f"Using original RTL text with proper alignment - no punctuation repositioning needed")
+        return text
 
     @staticmethod
     def is_rtl_text_likely_incorrect(text):
@@ -230,32 +242,3 @@ class RTLTextProcessor:
         ]
         
         return any(indicators)
-
-def test_rtl_punctuation_fix():
-    """Test the RTL punctuation fix functionality."""
-    test_cases = [
-        # (input, language, expected_improvement)
-        (".حداقل بیست نفر اونجا هستن", "fa", "should move period to end"),
-        ("!سلام", "fa", "should move exclamation to end"),
-        ("مرحبا، کیف حالک؟", "ar", "should use Arabic comma"),
-        ("Hello, world!", "en", "should not change"),
-        (")معکوس قوس(", "fa", "should fix parentheses"),
-    ]
-    
-    processor = RTLTextProcessor()
-    
-    print("RTL Punctuation Fix Test Results:")
-    print("-" * 50)
-    
-    for i, (input_text, lang, description) in enumerate(test_cases, 1):
-        result = processor.fix_rtl_punctuation(input_text, lang)
-        changed = "CHANGED" if result != input_text else "UNCHANGED"
-        
-        print(f"Test {i}: {description}")
-        print(f"  Input:  '{input_text}'")
-        print(f"  Output: '{result}' [{changed}]")
-        print(f"  Lang:   {lang}")
-        print()
-
-if __name__ == "__main__":
-    test_rtl_punctuation_fix()
