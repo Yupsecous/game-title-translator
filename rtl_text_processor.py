@@ -1,244 +1,241 @@
 #!/usr/bin/env python3
-"""RTL Punctuation Fix Module - Handles proper punctuation positioning for RTL languages."""
+"""Enhanced RTL Text Processor with Python BiDi Integration - Handles proper RTL text display in tkinter."""
 
 import re
 from logger import log_debug
 
+# Import BiDi libraries for proper RTL text processing
+try:
+    from bidi.algorithm import get_display
+    import arabic_reshaper
+    BIDI_AVAILABLE = True
+    log_debug("Python BiDi and Arabic Reshaper libraries imported successfully")
+except ImportError as e:
+    BIDI_AVAILABLE = False
+    log_debug(f"BiDi libraries not available: {e}")
+
 class RTLTextProcessor:
-    """Handles RTL text processing including proper punctuation positioning."""
+    """Enhanced RTL text processing with proper Python BiDi integration for tkinter display."""
     
-    # Common punctuation marks that need repositioning in RTL text
-    PUNCTUATION_MARKS = {
-        '.': '.',
-        ',': '،',  # Persian/Arabic comma
-        '!': '!',
-        '?': '؟',  # Persian/Arabic question mark
-        ':': '：',
-        ';': '؛',  # Persian/Arabic semicolon
-        '"': '"',  # Can use different quote styles
-        "'": "'",
-        '(': ')',  # Parentheses swap in RTL
-        ')': '(',
-        '[': ']',  # Brackets swap in RTL
-        ']': '[',
-        '{': '}',  # Braces swap in RTL
-        '}': '{'
-    }
+    # RTL language codes that need BiDi processing
+    RTL_LANGUAGES = {'ar', 'he', 'fa', 'ur', 'ps', 'ku', 'sd', 'yi'}
     
     @staticmethod
-    def fix_rtl_punctuation(text, language_code=None):
+    def process_bidi_text(text, language_code=None):
         """
-        Fix punctuation positioning for RTL languages by reversing punctuation order.
+        Process text using the Unicode Bidirectional Algorithm for proper RTL display in tkinter.
+        
+        CRITICAL FIX: Process each line separately to avoid incorrect line reordering.
+        The BiDi algorithm should only reorder characters within lines, not reorder lines themselves.
         
         Args:
-            text (str): Input text that may have incorrect punctuation positioning
+            text (str): Input text in logical order (may be multi-line)
             language_code (str): Language code (e.g., 'fa', 'ar', 'he')
             
         Returns:
-            str: Text with corrected RTL punctuation positioning
+            str: Text processed for correct visual display in LTR contexts like tkinter
         """
         if not text or not text.strip():
             return text
             
+        if not BIDI_AVAILABLE:
+            log_debug("BiDi libraries not available, using fallback processing")
+            return RTLTextProcessor._fallback_rtl_processing(text, language_code)
+            
         try:
-            # Apply language-specific fixes
-            if language_code and language_code.lower().startswith(('fa', 'ar', 'he')):
-                # Simple approach: reverse punctuation order for RTL text
-                processed_text = RTLTextProcessor._reverse_punctuation_for_rtl(text)
-                
-                log_debug(f"RTL punctuation fixed for {language_code}: '{text}' -> '{processed_text}'")
-                return processed_text
-            else:
+            # Only process if language is RTL
+            if not RTLTextProcessor._is_rtl_language(language_code):
+                log_debug(f"Language {language_code} is not RTL, returning original text")
                 return text
                 
+            log_debug(f"Processing BiDi text for {language_code}: '{text}'")
+            
+            # CRITICAL FIX: Process each line separately to preserve line order
+            lines = text.split('\n')
+            processed_lines = []
+            
+            for line in lines:
+                if not line.strip():
+                    # Preserve empty lines
+                    processed_lines.append(line)
+                    continue
+                    
+                log_debug(f"Processing line: '{line}'")
+                
+                # Step 1: Reshape Arabic/Persian text (connects letters properly)
+                reshaped_line = arabic_reshaper.reshape(line)
+                log_debug(f"After reshaping: '{reshaped_line}'")
+                
+                # Step 2: Apply the BiDi algorithm to this line only
+                bidi_line = get_display(reshaped_line)
+                log_debug(f"After BiDi processing: '{bidi_line}'")
+                
+                processed_lines.append(bidi_line)
+            
+            # Reassemble lines in their original order
+            result = '\n'.join(processed_lines)
+            log_debug(f"Final BiDi result: '{result}'")
+            
+            return result
+            
         except Exception as e:
-            log_debug(f"Error fixing RTL punctuation: {e}")
-            return text  # Return original text if processing fails
+            log_debug(f"Error in BiDi text processing: {e}")
+            return RTLTextProcessor._fallback_rtl_processing(text, language_code)
     
     @staticmethod
-    def _reverse_punctuation_for_rtl(text):
-        """
-        Simple punctuation reversal for RTL text.
-        Remove punctuation from wrong positions and place at correct RTL positions.
-        """
-        import re
+    def _is_rtl_language(language_code):
+        """Check if the given language code represents an RTL language."""
+        if not language_code:
+            return False
         
-        text = text.strip()
-        if not text:
+        # Extract the primary language code (e.g., 'fa' from 'fa-IR')
+        primary_code = language_code.lower().split('-')[0]
+        return primary_code in RTLTextProcessor.RTL_LANGUAGES
+    
+    @staticmethod
+    def _fallback_rtl_processing(text, language_code):
+        """
+        Fallback RTL processing when BiDi libraries are not available.
+        Uses simplified approach for basic RTL display.
+        """
+        if not RTLTextProcessor._is_rtl_language(language_code):
             return text
+            
+        log_debug(f"Using fallback RTL processing for {language_code}")
         
-        # Step 1: Remove punctuation from the beginning (wrong for RTL)
-        collected_punctuation = []
+        # Simple punctuation fix for RTL languages
+        return RTLTextProcessor._basic_punctuation_fix(text)
+    
+    @staticmethod
+    def _basic_punctuation_fix(text):
+        """Basic punctuation repositioning for RTL text when BiDi is not available."""
+        if not text or not text.strip():
+            return text
+            
+        text = text.strip()
+        
+        # Remove punctuation from wrong positions (beginning)
+        leading_punct = []
         while text and text[0] in '.!?؟،':
-            collected_punctuation.append(text[0])
+            leading_punct.append(text[0])
             text = text[1:].strip()
         
         if not text:
-            return ''.join(collected_punctuation)  # Only punctuation, return as-is
+            return ''.join(leading_punct)
         
-        # Step 2: Split into sentences and process
-        # Split by sentence endings but keep the delimiters
-        sentence_parts = re.split(r'([.!?؟]+)', text)
+        # Add punctuation at the end if we had leading punctuation
+        if leading_punct and not text.endswith(('.', '!', '?', '؟')):
+            text += leading_punct[0]
         
-        # Step 3: Process sentences
-        processed_sentences = []
-        i = 0
-        while i < len(sentence_parts):
-            sentence_text = sentence_parts[i].strip()
+        return text
+    
+    @staticmethod
+    def prepare_for_tkinter_display(text, language_code=None):
+        """
+        Prepare text for display in tkinter widgets with proper RTL handling.
+        
+        This method should be called just before setting text in tkinter widgets
+        to ensure proper display regardless of text direction.
+        
+        Args:
+            text (str): Text to prepare for display
+            language_code (str): Language code for RTL detection
             
-            # Get the punctuation if it exists
-            punctuation = ''
-            if i + 1 < len(sentence_parts) and re.match(r'[.!?؟]+', sentence_parts[i + 1]):
-                punctuation = sentence_parts[i + 1]
-                i += 1  # Skip the punctuation part
+        Returns:
+            tuple: (processed_text, is_rtl) where is_rtl indicates if RTL formatting should be applied
+        """
+        if not text or not text.strip():
+            return text, False
             
-            # Add the sentence with proper punctuation
-            if sentence_text:
-                if punctuation:
-                    processed_sentences.append(sentence_text + punctuation)
-                else:
-                    processed_sentences.append(sentence_text)
-            
-            i += 1
+        is_rtl = RTLTextProcessor._is_rtl_language(language_code)
         
-        # Step 4: Join sentences and ensure final punctuation
-        result = ' '.join(processed_sentences)
+        if is_rtl:
+            log_debug(f"Preparing RTL text for tkinter display: '{text}'")
+            processed_text = RTLTextProcessor.process_bidi_text(text, language_code)
+            log_debug(f"RTL text processed for display: '{processed_text}'")
+            return processed_text, True
+        else:
+            return text, False
+    
+    @staticmethod
+    def configure_tkinter_widget_for_rtl(widget, is_rtl=True):
+        """
+        Configure a tkinter Text widget for proper RTL display.
         
-        # Step 5: If we collected punctuation from the start, add it at the end
-        if collected_punctuation:
-            # Use the most appropriate punctuation mark
-            final_punct = collected_punctuation[0]  # Use first collected punctuation
-            if not result.endswith(('.', '!', '?', '؟')):
-                result += final_punct
-        
-        # Step 6: Ensure text ends with punctuation if it looks like complete sentences
-        elif not result.endswith(('.', '!', '?', '؟')) and len(result.split()) > 2:
-            result += '.'
-        
-        return result.strip()
+        Args:
+            widget: tkinter Text widget to configure
+            is_rtl (bool): Whether to configure for RTL display
+        """
+        try:
+            if is_rtl:
+                # Configure RTL display properties
+                widget.configure(justify='right')
+                
+                # Set RTL tag for all text
+                widget.tag_configure("rtl", justify='right')
+                widget.tag_add("rtl", "1.0", "end")
+                
+                # Mark widget as RTL configured
+                widget.is_rtl = True
+                log_debug("Widget configured for RTL display")
+            else:
+                # Configure LTR display properties
+                widget.configure(justify='left')
+                
+                # Set LTR tag for all text
+                widget.tag_configure("ltr", justify='left')
+                widget.tag_add("ltr", "1.0", "end")
+                
+                # Mark widget as LTR configured
+                widget.is_rtl = False
+                log_debug("Widget configured for LTR display")
+                
+        except Exception as e:
+            log_debug(f"Error configuring widget for RTL/LTR: {e}")
+    
+    # Legacy methods for backward compatibility
+    @staticmethod
+    def fix_rtl_punctuation(text, language_code=None):
+        """Legacy method - redirects to process_bidi_text for consistency."""
+        return RTLTextProcessor.process_bidi_text(text, language_code)
     
     @staticmethod
     def prepare_rtl_for_display(text, language_code=None):
-        """
-        Prepare RTL text for proper display in tkinter Text widget.
-        Tkinter doesn't handle bidirectional text properly, so we need to reverse RTL text.
-        
-        Args:
-            text (str): Text that has been processed for RTL punctuation
-            language_code (str): Language code (e.g., 'fa', 'ar', 'he')
-            
-        Returns:
-            str: Text prepared for display (reversed if RTL)
-        """
-        if not text or not text.strip():
-            return text
-            
-        try:
-            # DEBUG: Log entry to this method
-            log_debug(f"RTL prepare_rtl_for_display called with: text='{text}', lang='{language_code}'")
-            
-            # Only reverse for RTL languages
-            if language_code and language_code.lower().startswith(('fa', 'ar', 'he')):
-                log_debug(f"RTL language detected: {language_code} - applying RTL processing")
-                
-                # Simple character-level reversal for RTL display
-                # This fixes the tkinter BiDi display issue
-                reversed_text = RTLTextProcessor._reverse_text_for_display(text)
-                log_debug(f"RTL text reversed: '{text}' -> '{reversed_text}'")
-                
-                # Apply final punctuation fix before display
-                final_text = RTLTextProcessor._fix_final_punctuation_position(reversed_text)
-                
-                log_debug(f"RTL text prepared for display ({language_code}): reversed for proper tkinter rendering")
-                if final_text != reversed_text:
-                    log_debug(f"PUNCTUATION FIX APPLIED: '{reversed_text}' -> '{final_text}'")
-                else:
-                    log_debug(f"No punctuation fix needed - conditions not met")
-                
-                log_debug(f"RTL final result: '{final_text}'")
-                return final_text
-            else:
-                log_debug(f"Non-RTL language or no language code: {language_code} - no RTL processing")
-                return text
-                
-        except Exception as e:
-            log_debug(f"Error preparing RTL text for display: {e}")
-            return text  # Return original text if processing fails
+        """Legacy method - redirects to prepare_for_tkinter_display."""
+        processed_text, _ = RTLTextProcessor.prepare_for_tkinter_display(text, language_code)
+        return processed_text
     
-    @staticmethod
-    def _reverse_text_for_display(text):
-        """
-        Prepare RTL text for proper display in tkinter. 
-        
-        SIMPLIFIED: For RTL languages, we don't need to reverse words within sentences.
-        Modern tkinter with proper right-alignment handles RTL text correctly.
-        We only need to apply the punctuation fix.
-        """
-        if not text:
-            return ""
-
-        # For RTL text, just add the Right-to-Left Mark (RLM) to ensure proper directionality
-        # The tkinter Text widget with right alignment will handle the rest
-        return text + '\u200F'
-
-    @staticmethod
-    def _fix_final_punctuation_position(text):
-        """
-        Fix final punctuation positioning for RTL display.
-        
-        UPDATED: Now works with original RTL text (not reversed text) since we're using
-        proper tkinter right-alignment instead of text reversal.
-        
-        Args:
-            text (str): RTL text with RLM marker
-            
-        Returns:
-            str: Text with corrected final punctuation positioning if needed
-        """
-        log_debug(f"_fix_final_punctuation_position called with: '{text}'")
-        
-        if not text or len(text) < 2:
-            log_debug(f"Skipping punctuation fix - text too short or empty")
-            return text
-            
-        # For RTL text with proper right-alignment, the punctuation fix may not be needed
-        # Let's check if there are any specific issues that need fixing
-        
-        # Remove RLM character for analysis
-        working_text = text.replace('\u200F', '') if '\u200F' in text else text
-        
-        if not working_text:
-            return text
-            
-        log_debug(f"Working with text (RLM removed): '{working_text}'")
-        
-        # With proper RTL display and right-alignment, punctuation should be positioned correctly
-        # Return the original text with RLM
-        log_debug(f"Using original RTL text with proper alignment - no punctuation repositioning needed")
-        return text
-
     @staticmethod
     def is_rtl_text_likely_incorrect(text):
         """
-        Detect if RTL text likely has punctuation positioning issues.
+        Detect if RTL text likely has positioning issues.
         
         Args:
             text (str): Text to analyze
             
         Returns:
-            bool: True if punctuation positioning looks incorrect for RTL
+            bool: True if text positioning looks incorrect for RTL
         """
         if not text or len(text) < 2:
             return False
             
         text = text.strip()
         
-        # Check for common indicators of incorrect RTL punctuation
+        # Check for indicators of incorrect RTL text positioning
         indicators = [
-            text.startswith('.'),  # Period at beginning (should be at end for RTL)
-            text.startswith('!'),  # Exclamation at beginning
-            text.startswith('?'),  # Question mark at beginning
+            text.startswith('.') and not text.endswith('.'),  # Period at beginning only
+            text.startswith('!') and not text.endswith('!'),  # Exclamation at beginning only
+            text.startswith('?') and not text.endswith('?'),  # Question mark at beginning only
             text.startswith(')') and not text.endswith('('),  # Incorrect parentheses
         ]
         
         return any(indicators)
+    
+    @staticmethod
+    def get_bidi_info():
+        """Get information about BiDi processing capabilities."""
+        return {
+            'bidi_available': BIDI_AVAILABLE,
+            'supported_languages': list(RTLTextProcessor.RTL_LANGUAGES),
+            'processing_method': 'python-bidi' if BIDI_AVAILABLE else 'fallback'
+        }
