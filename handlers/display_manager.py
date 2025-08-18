@@ -41,7 +41,7 @@ class DisplayManager:
         self.app.root.after(0, self._update_translation_text_on_main_thread, text_to_display)
 
     def _update_translation_text_on_main_thread(self, text_content_main_thread):
-        """Updates the translation text widget on the main thread
+        """Updates the translation text widget on the main thread with proper BiDi support
         
         Args:
             text_content_main_thread: Text content to display
@@ -61,97 +61,80 @@ class DisplayManager:
             current_displayed_text = self.app.translation_text.get("1.0", tk.END).strip()
             new_text_to_display = text_content_main_thread.strip() if text_content_main_thread else ""
 
-            # DEBUG: Check RTL widget configuration
-            is_rtl_widget = hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl
-            log_debug(f"DisplayManager: Widget RTL status: {is_rtl_widget}, RTL processor available: {RTL_PROCESSOR_AVAILABLE}")
-            log_debug(f"DisplayManager: Text to display: '{new_text_to_display}'")
+            log_debug(f"DisplayManager: Processing text for display: '{new_text_to_display}'")
+            log_debug(f"DisplayManager: RTL processor available: {RTL_PROCESSOR_AVAILABLE}")
 
-            # ENHANCED: Check if target language is RTL regardless of widget setting
-            should_apply_rtl = False
+            # Get target language code for RTL detection
             target_lang_code = None
             
             if new_text_to_display:
                 try:
                     target_lang_name = self.app.target_lang_var.get()
-                    log_debug(f"DisplayManager: Current target language name: '{target_lang_name}'")
+                    log_debug(f"DisplayManager: Target language name: '{target_lang_name}'")
                     
                     # Get the language code for RTL detection
                     if hasattr(self.app, 'language_manager') and self.app.language_manager:
                         current_model = self.app.translation_model_var.get()
-                        log_debug(f"DisplayManager: Current translation model: '{current_model}'")
                         
                         # Check if target_lang_name is already a language code (like 'fa', 'ar', 'he')
                         if len(target_lang_name) <= 3 and target_lang_name.lower() in ['fa', 'ar', 'he', 'ur', 'ps']:
-                            # It's already a language code
                             target_lang_code = target_lang_name.lower()
-                            log_debug(f"DisplayManager: Target language name appears to be a code: '{target_lang_code}'")
                         else:
-                            # It's a display name, convert to code
+                            # Convert display name to language code
                             if 'gemini' in current_model.lower():
                                 target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "gemini_api", "target")
                             elif current_model == "Google Translate API":
                                 target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "google_api", "target")
                             elif current_model == "DeepL API":
                                 target_lang_code = self.app.language_manager.get_code_from_name(target_lang_name, "deepl_api", "target")
-                            
-                            log_debug(f"DisplayManager: Converted display name '{target_lang_name}' to code: '{target_lang_code}'")
                         
                         log_debug(f"DisplayManager: Target language code: '{target_lang_code}'")
-                        
-                        # Check if this language is RTL
-                        if target_lang_code:
-                            is_target_rtl = self.app.language_manager.is_rtl_language(target_lang_code)
-                            log_debug(f"DisplayManager: Language '{target_lang_code}' is RTL: {is_target_rtl}")
-                            should_apply_rtl = is_target_rtl
                 
                 except Exception as e:
-                    log_debug(f"DisplayManager: Error detecting RTL language: {e}")
+                    log_debug(f"DisplayManager: Error detecting language code: {e}")
 
-            # Check widget RTL status
-            widget_is_rtl = hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl
-            log_debug(f"DisplayManager: Widget RTL status: {widget_is_rtl}, Language RTL status: {should_apply_rtl}")
-
-            # Apply RTL processing if either widget is configured for RTL OR language is detected as RTL
-            if (widget_is_rtl or should_apply_rtl) and RTL_PROCESSOR_AVAILABLE and new_text_to_display:
-                
-                if should_apply_rtl and not widget_is_rtl:
-                    log_debug(f"DisplayManager: Widget not configured for RTL but language is RTL - applying RTL processing anyway")
-                else:
-                    log_debug(f"DisplayManager: RTL processing triggered - widget configured for RTL")
-                
-                # Apply RTL punctuation fixes (target_lang_code already determined above)
-                original_text = new_text_to_display
-                new_text_to_display = RTLTextProcessor.fix_rtl_punctuation(new_text_to_display, target_lang_code)
-                
-                if original_text != new_text_to_display:
-                    log_debug(f"DisplayManager: RTL punctuation fixed: '{original_text}' -> '{new_text_to_display}'")
-                
-                # CRITICAL FIX: Reverse RTL text for proper display in tkinter Text widget
-                # Tkinter doesn't handle BiDi (bidirectional) text properly, so we need to reverse RTL text
-                display_text = RTLTextProcessor.prepare_rtl_for_display(new_text_to_display, target_lang_code)
-                if display_text != new_text_to_display:
-                    log_debug(f"DisplayManager: RTL text reversed for display: '{new_text_to_display}' -> '{display_text}'")
-                    new_text_to_display = display_text
+            # ENHANCED BiDi Processing using python-bidi
+            processed_text = new_text_to_display
+            is_rtl = False
+            
+            if RTL_PROCESSOR_AVAILABLE and new_text_to_display:
+                try:
+                    # Use enhanced BiDi processing
+                    processed_text, is_rtl = RTLTextProcessor.prepare_for_tkinter_display(new_text_to_display, target_lang_code)
+                    
+                    if is_rtl:
+                        log_debug(f"DisplayManager: BiDi processing applied for RTL language {target_lang_code}")
+                        log_debug(f"DisplayManager: Original: '{new_text_to_display}'")
+                        log_debug(f"DisplayManager: Processed: '{processed_text}'")
+                    else:
+                        log_debug(f"DisplayManager: LTR language detected, no BiDi processing needed")
+                        
+                except Exception as e:
+                    log_debug(f"DisplayManager: Error in BiDi processing: {e}, using original text")
+                    processed_text = new_text_to_display
+                    is_rtl = False
             else:
-                log_debug(f"DisplayManager: RTL processing skipped - Widget RTL: {widget_is_rtl}, Language RTL: {should_apply_rtl}, RTL Processor: {RTL_PROCESSOR_AVAILABLE}, Has text: {bool(new_text_to_display)}")
+                log_debug(f"DisplayManager: RTL processor not available or no text to process")
 
-            if current_displayed_text != new_text_to_display:
+            # Update text if changed
+            if current_displayed_text != processed_text:
                 self.app.translation_text.config(state=tk.NORMAL) 
                 self.app.translation_text.delete(1.0, tk.END)     
-                self.app.translation_text.insert(tk.END, new_text_to_display)
+                self.app.translation_text.insert(tk.END, processed_text)
                 
-                # Apply RTL formatting if widget is configured for RTL OR if language is RTL
-                if (hasattr(self.app.translation_text, 'is_rtl') and self.app.translation_text.is_rtl) or should_apply_rtl:
-                    # CRITICAL FIX: Configure the 'rtl' tag to right-justify the text.
-                    # This is the canonical way to handle RTL text in a Tkinter Text widget.
-                    self.app.translation_text.tag_configure("rtl", justify='right')
-                    self.app.translation_text.tag_add("rtl", "1.0", "end-1c")
-                    log_debug(f"DisplayManager: Applied RTL right-alignment to text")
+                # Configure widget for proper RTL/LTR display
+                if RTL_PROCESSOR_AVAILABLE:
+                    RTLTextProcessor.configure_tkinter_widget_for_rtl(self.app.translation_text, is_rtl)
                 else:
-                    # Apply LTR tag to all text for left-to-right display  
-                    self.app.translation_text.tag_configure("ltr", justify='left')
-                    self.app.translation_text.tag_add("ltr", "1.0", tk.END)
-                    log_debug(f"DisplayManager: Applied LTR left-alignment to text")
+                    # Fallback configuration
+                    if is_rtl:
+                        self.app.translation_text.tag_configure("rtl", justify='right')
+                        self.app.translation_text.tag_add("rtl", "1.0", "end")
+                        log_debug(f"DisplayManager: Applied fallback RTL formatting")
+                    else:
+                        self.app.translation_text.tag_configure("ltr", justify='left')
+                        self.app.translation_text.tag_add("ltr", "1.0", "end")
+                        log_debug(f"DisplayManager: Applied LTR formatting")
                 
                 self.app.translation_text.config(state=tk.DISABLED) 
                 self.app.translation_text.see("1.0") # Scroll to top
