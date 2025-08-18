@@ -254,12 +254,16 @@ class DisplayManager:
                     if hasattr(self.app, 'language_manager') and self.app.language_manager:
                         current_model = self.app.translation_model_var.get()
                         
-                        # Check if target_lang_name is already a language code (like 'fa', 'ar', 'he')
-                        # OR if it's a display name for an RTL language
+                        # Enhanced RTL language detection with better coverage
+                        target_lang_lower = target_lang_name.lower()
+                        
+                        # Check if it's already a language code
                         if (len(target_lang_name) <= 3 and 
-                            target_lang_name.lower() in RTLTextProcessor.RTL_LANGUAGES):
-                            target_lang_code = target_lang_name.lower()
-                        elif target_lang_name.lower() in ['hebrew', 'arabic', 'persian', 'farsi', 'urdu', 'pashto', 'kurdish', 'sindhi', 'yiddish']:
+                            target_lang_lower in RTLTextProcessor.RTL_LANGUAGES):
+                            target_lang_code = target_lang_lower
+                            log_debug(f"DisplayManager: Detected RTL language code: {target_lang_code}")
+                        # Check if it's a display name for an RTL language  
+                        elif target_lang_lower in ['hebrew', 'arabic', 'persian', 'farsi', 'urdu', 'pashto', 'kurdish', 'sindhi', 'yiddish']:
                             # Handle RTL display names directly
                             rtl_name_to_code = {
                                 'hebrew': 'he',
@@ -272,7 +276,8 @@ class DisplayManager:
                                 'sindhi': 'sd',
                                 'yiddish': 'yi'
                             }
-                            target_lang_code = rtl_name_to_code[target_lang_name.lower()]
+                            target_lang_code = rtl_name_to_code[target_lang_lower]
+                            log_debug(f"DisplayManager: Mapped RTL display name '{target_lang_name}' to code: {target_lang_code}")
                         else:
                             # Convert display name to language code
                             if 'gemini' in current_model.lower():
@@ -290,6 +295,8 @@ class DisplayManager:
             # Check if language is RTL and we have the RTL processor
             is_rtl = RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(target_lang_code)
             
+            log_debug(f"DisplayManager: RTL detection - Language: '{target_lang_code}', Is RTL: {is_rtl}, RTL Processor Available: {RTL_PROCESSOR_AVAILABLE}")
+            
             # Store current text and language for resize handling
             self.current_logical_text = new_text_to_display
             self.current_language_code = target_lang_code
@@ -298,16 +305,22 @@ class DisplayManager:
             if current_displayed_text != new_text_to_display:
                 if is_rtl and new_text_to_display:
                     # Use manual wrapping approach for RTL text (like in the demo)
-                    log_debug(f"DisplayManager: Using manual wrapping for RTL text")
+                    log_debug(f"DisplayManager: Using manual wrapping for RTL text - Language: {target_lang_code}")
+                    
+                    # Special logging for Hebrew to debug the issue
+                    if target_lang_code and 'he' in target_lang_code.lower():
+                        log_debug(f"DisplayManager: *** HEBREW DETECTED *** - Processing Hebrew text with manual wrapping")
                     
                     # Small delay for initial processing to ensure widget is ready
                     if not hasattr(self.app.translation_text, '_rtl_processed_once'):
                         # First time processing - add delay to ensure widget is fully rendered
                         self.app.translation_text._rtl_processed_once = True
+                        log_debug(f"DisplayManager: First-time RTL processing with delay for language: {target_lang_code}")
                         self.app.root.after(100, lambda: self.manually_wrap_and_process_rtl(
                             self.app.translation_text, new_text_to_display, target_lang_code, retry_count=0))
                     else:
                         # Subsequent processing - no delay needed
+                        log_debug(f"DisplayManager: Subsequent RTL processing for language: {target_lang_code}")
                         self.manually_wrap_and_process_rtl(self.app.translation_text, new_text_to_display, target_lang_code)
                 else:
                     # Standard processing for LTR text

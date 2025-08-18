@@ -99,12 +99,27 @@ class RTLTextProcessor:
 
     @staticmethod
     def _is_rtl_language(language_code):
-        """Check if the given language code represents an RTL language."""
+        """Enhanced check if the given language code or name represents an RTL language."""
         if not language_code:
             return False
+        
+        # Convert to lowercase for consistent checking
+        lang_lower = language_code.lower()
+        
         # Extract the primary language code (e.g., 'fa' from 'fa-IR')
-        primary_code = language_code.lower().split('-')[0]
-        return primary_code in RTLTextProcessor.RTL_LANGUAGES
+        primary_code = lang_lower.split('-')[0]
+        
+        # Check against RTL language codes
+        if primary_code in RTLTextProcessor.RTL_LANGUAGES:
+            return True
+            
+        # Also check against common RTL language display names
+        rtl_display_names = {
+            'hebrew', 'arabic', 'persian', 'farsi', 'urdu', 
+            'pashto', 'kurdish', 'sindhi', 'yiddish'
+        }
+        
+        return lang_lower in rtl_display_names
 
     @staticmethod
     def _fallback_rtl_processing(text, language_code):
