@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import font
 import time
 import cv2
 import numpy as np
@@ -24,6 +25,9 @@ class DisplayManager:
             app: The main GameChangingTranslator application instance
         """
         self.app = app
+        self.last_widget_width = 0
+        self.current_logical_text = ""
+        self.current_language_code = None
     
     def update_translation_text(self, text_to_display):
         """Updates the translation text overlay with new content
@@ -39,6 +43,81 @@ class DisplayManager:
             
         # Schedule the actual update via the main thread's event loop
         self.app.root.after(0, self._update_translation_text_on_main_thread, text_to_display)
+
+    def manually_wrap_and_process_rtl(self, widget, logical_text, language_code):
+        """
+        The definitive solution: Manually wraps logical text based on widget width,
+        then applies BiDi processing to each wrapped line.
+        
+        This prevents tkinter's automatic wrapping from interfering with RTL text display.
+        """
+        # 1. Get widget properties needed for measurement
+        widget_width = widget.winfo_width()
+        padding = 6  # Estimated padding/border width for a Text widget
+        if widget_width <= padding:
+            return  # Widget not yet rendered or too small, can't wrap.
+
+        effective_width = widget_width - padding
+        try:
+            widget_font = font.Font(font=widget.cget("font"))
+        except:
+            # Fallback if font detection fails
+            widget_font = font.Font(family="Arial", size=12)
+
+        # 2. Split the ORIGINAL logical text into words
+        words = logical_text.split()
+
+        # 3. Manually wrap the logical words into lines
+        wrapped_lines = []
+        current_line = ""
+        for word in words:
+            # Check if adding the next word exceeds the widget's width
+            test_line = current_line + " " + word if current_line else word
+            if widget_font.measure(test_line) <= effective_width:
+                current_line = test_line
+            else:
+                # The line is full, add it to our list and start a new one
+                if current_line:  # Only add non-empty lines
+                    wrapped_lines.append(current_line)
+                current_line = word
+        
+        # Add the last remaining line
+        if current_line:
+            wrapped_lines.append(current_line)
+
+        # 4. Apply the full BiDi processing to each manually wrapped logical line
+        processed_lines = [
+            RTLTextProcessor.process_bidi_text(line, language_code) for line in wrapped_lines
+        ]
+
+        # 5. Update the widget with the final, correctly processed text
+        final_text = "\n".join(processed_lines)
+        
+        widget.config(state=tk.NORMAL)
+        widget.delete("1.0", tk.END)
+        widget.insert("1.0", final_text)
+        
+        # 6. Apply final RTL configuration (right-alignment)
+        RTLTextProcessor.configure_tkinter_widget_for_rtl(widget, is_rtl=True)
+        widget.config(state=tk.DISABLED)
+
+    def on_translation_widget_resize(self, event):
+        """Callback to re-process RTL text when the widget is resized."""
+        if (event.widget == self.app.translation_text and 
+            event.widget.winfo_width() != self.last_widget_width and
+            self.current_logical_text and 
+            self.current_language_code):
+            
+            self.last_widget_width = event.widget.winfo_width()
+            log_debug(f"DisplayManager: Widget resized to width {self.last_widget_width}, re-processing RTL text")
+            
+            # Re-run the manual wrapping and processing logic
+            if RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(self.current_language_code):
+                self.manually_wrap_and_process_rtl(
+                    self.app.translation_text, 
+                    self.current_logical_text, 
+                    self.current_language_code
+                )
 
     def _update_translation_text_on_main_thread(self, text_content_main_thread):
         """Updates the translation text widget on the main thread with proper BiDi support
@@ -93,50 +172,35 @@ class DisplayManager:
                 except Exception as e:
                     log_debug(f"DisplayManager: Error detecting language code: {e}")
 
-            # ENHANCED BiDi Processing using python-bidi
-            processed_text = new_text_to_display
-            is_rtl = False
+            # Check if language is RTL and we have the RTL processor
+            is_rtl = RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(target_lang_code)
             
-            if RTL_PROCESSOR_AVAILABLE and new_text_to_display:
-                try:
-                    # Use enhanced BiDi processing
-                    processed_text, is_rtl = RTLTextProcessor.prepare_for_tkinter_display(new_text_to_display, target_lang_code)
-                    
-                    if is_rtl:
-                        log_debug(f"DisplayManager: BiDi processing applied for RTL language {target_lang_code}")
-                        log_debug(f"DisplayManager: Original: '{new_text_to_display}'")
-                        log_debug(f"DisplayManager: Processed: '{processed_text}'")
-                    else:
-                        log_debug(f"DisplayManager: LTR language detected, no BiDi processing needed")
-                        
-                except Exception as e:
-                    log_debug(f"DisplayManager: Error in BiDi processing: {e}, using original text")
-                    processed_text = new_text_to_display
-                    is_rtl = False
-            else:
-                log_debug(f"DisplayManager: RTL processor not available or no text to process")
-
+            # Store current text and language for resize handling
+            self.current_logical_text = new_text_to_display
+            self.current_language_code = target_lang_code
+            
             # Update text if changed
-            if current_displayed_text != processed_text:
-                self.app.translation_text.config(state=tk.NORMAL) 
-                self.app.translation_text.delete(1.0, tk.END)     
-                self.app.translation_text.insert(tk.END, processed_text)
-                
-                # Configure widget for proper RTL/LTR display
-                if RTL_PROCESSOR_AVAILABLE:
-                    RTLTextProcessor.configure_tkinter_widget_for_rtl(self.app.translation_text, is_rtl)
+            if current_displayed_text != new_text_to_display:
+                if is_rtl and new_text_to_display:
+                    # Use manual wrapping approach for RTL text (like in the demo)
+                    log_debug(f"DisplayManager: Using manual wrapping for RTL text")
+                    self.manually_wrap_and_process_rtl(self.app.translation_text, new_text_to_display, target_lang_code)
                 else:
-                    # Fallback configuration
-                    if is_rtl:
-                        self.app.translation_text.tag_configure("rtl", justify='right')
-                        self.app.translation_text.tag_add("rtl", "1.0", "end")
-                        log_debug(f"DisplayManager: Applied fallback RTL formatting")
+                    # Standard processing for LTR text
+                    log_debug(f"DisplayManager: Using standard processing for LTR text")
+                    self.app.translation_text.config(state=tk.NORMAL) 
+                    self.app.translation_text.delete(1.0, tk.END)     
+                    self.app.translation_text.insert(tk.END, new_text_to_display)
+                    
+                    # Configure for LTR display
+                    if RTL_PROCESSOR_AVAILABLE:
+                        RTLTextProcessor.configure_tkinter_widget_for_rtl(self.app.translation_text, False)
                     else:
                         self.app.translation_text.tag_configure("ltr", justify='left')
                         self.app.translation_text.tag_add("ltr", "1.0", "end")
-                        log_debug(f"DisplayManager: Applied LTR formatting")
+                    
+                    self.app.translation_text.config(state=tk.DISABLED)
                 
-                self.app.translation_text.config(state=tk.DISABLED) 
                 self.app.translation_text.see("1.0") # Scroll to top
         except tk.TclError as e_uttomt: 
             log_debug(f"Error updating translation text widget (TclError, likely destroyed): {e_uttomt}")
