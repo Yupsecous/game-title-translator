@@ -261,6 +261,9 @@ def create_target_overlay_om(app):
         else:
             app.translation_text.tag_configure("ltr", justify=tk.LEFT)
             app.translation_text.is_rtl = False
+        
+        # Add resize handler for proper RTL text re-wrapping
+        app.translation_text.bind("<Configure>", app.display_manager.on_translation_widget_resize)
         app.translation_text.pack(fill=tk.BOTH, expand=True)
         
         # Set target overlay to hidden by default or based on config
