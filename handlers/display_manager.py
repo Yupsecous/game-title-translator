@@ -44,79 +44,178 @@ class DisplayManager:
         # Schedule the actual update via the main thread's event loop
         self.app.root.after(0, self._update_translation_text_on_main_thread, text_to_display)
 
-    def manually_wrap_and_process_rtl(self, widget, logical_text, language_code):
+    def manually_wrap_and_process_rtl(self, widget, logical_text, language_code, retry_count=0):
         """
-        The definitive solution: Manually wraps logical text based on widget width,
-        then applies BiDi processing to each wrapped line.
+        Enhanced manual text wrapping with better accuracy and edge case handling.
         
         This prevents tkinter's automatic wrapping from interfering with RTL text display.
         """
-        # 1. Get widget properties needed for measurement
-        widget_width = widget.winfo_width()
-        padding = 6  # Estimated padding/border width for a Text widget
-        if widget_width <= padding:
-            return  # Widget not yet rendered or too small, can't wrap.
-
-        effective_width = widget_width - padding
         try:
-            widget_font = font.Font(font=widget.cget("font"))
-        except:
-            # Fallback if font detection fails
-            widget_font = font.Font(family="Arial", size=12)
+            # 1. Ensure widget is properly rendered and get accurate measurements
+            widget.update_idletasks()  # Force widget to complete any pending layout updates
+            
+            widget_width = widget.winfo_width()
+            widget_height = widget.winfo_height()
+            
+            # Dynamic padding calculation based on widget configuration
+            try:
+                # Get actual padding values from widget
+                padx = widget.cget('padx') or 0
+                pady = widget.cget('pady') or 0
+                relief = widget.cget('relief')
+                bd = widget.cget('bd') or 0
+                
+                # Calculate total horizontal padding
+                horizontal_padding = (padx * 2) + (bd * 2)
+                if relief != 'flat':
+                    horizontal_padding += 4  # Additional space for relief styles
+                    
+                log_debug(f"DisplayManager: Calculated padding: {horizontal_padding} (padx={padx}, bd={bd}, relief={relief})")
+            except:
+                # Fallback to conservative estimate
+                horizontal_padding = 12
+                log_debug(f"DisplayManager: Using fallback padding: {horizontal_padding}")
+            
+            # Check if widget is ready for processing
+            if widget_width <= horizontal_padding or widget_height <= 10:
+                if retry_count < 3:
+                    log_debug(f"DisplayManager: Widget not ready (w={widget_width}, h={widget_height}), retrying in 50ms (attempt {retry_count + 1})")
+                    # Retry after a short delay to allow widget to finish rendering
+                    widget.after(50, lambda: self.manually_wrap_and_process_rtl(widget, logical_text, language_code, retry_count + 1))
+                    return
+                else:
+                    log_debug(f"DisplayManager: Widget still not ready after 3 retries, using fallback processing")
+                    # Fall back to standard processing if widget never becomes ready
+                    self._apply_fallback_rtl_processing(widget, logical_text, language_code)
+                    return
 
-        # 2. Split the ORIGINAL logical text into words
-        words = logical_text.split()
+            effective_width = widget_width - horizontal_padding
+            log_debug(f"DisplayManager: Effective width for wrapping: {effective_width} (widget={widget_width}, padding={horizontal_padding})")
 
-        # 3. Manually wrap the logical words into lines
-        wrapped_lines = []
-        current_line = ""
-        for word in words:
-            # Check if adding the next word exceeds the widget's width
-            test_line = current_line + " " + word if current_line else word
-            if widget_font.measure(test_line) <= effective_width:
-                current_line = test_line
-            else:
-                # The line is full, add it to our list and start a new one
-                if current_line:  # Only add non-empty lines
-                    wrapped_lines.append(current_line)
-                current_line = word
-        
-        # Add the last remaining line
-        if current_line:
-            wrapped_lines.append(current_line)
+            # 2. Get accurate font information
+            try:
+                # Try to get the actual font from the widget
+                widget_font_spec = widget.cget("font")
+                if isinstance(widget_font_spec, tuple):
+                    # Font specified as tuple (family, size, style)
+                    widget_font = font.Font(family=widget_font_spec[0], size=widget_font_spec[1])
+                elif isinstance(widget_font_spec, str):
+                    # Font specified as string
+                    widget_font = font.Font(font=widget_font_spec)
+                else:
+                    # Named font or default
+                    widget_font = font.Font(font=widget_font_spec)
+                    
+                # Test font measurement to ensure it's working
+                test_width = widget_font.measure("Test")
+                if test_width <= 0:
+                    raise Exception("Font measurement returned invalid width")
+                    
+                log_debug(f"DisplayManager: Using widget font: {widget_font['family']} {widget_font['size']}")
+            except Exception as e:
+                log_debug(f"DisplayManager: Font detection failed ({e}), using fallback")
+                # More accurate fallback based on typical Text widget defaults
+                widget_font = font.Font(family="Arial", size=12)
 
-        # 4. Apply the full BiDi processing to each manually wrapped logical line
-        processed_lines = [
-            RTLTextProcessor.process_bidi_text(line, language_code) for line in wrapped_lines
-        ]
+            # 3. Split logical text into words and manually wrap
+            words = logical_text.split()
+            if not words:
+                return
 
-        # 5. Update the widget with the final, correctly processed text
-        final_text = "\n".join(processed_lines)
-        
-        widget.config(state=tk.NORMAL)
-        widget.delete("1.0", tk.END)
-        widget.insert("1.0", final_text)
-        
-        # 6. Apply final RTL configuration (right-alignment)
-        RTLTextProcessor.configure_tkinter_widget_for_rtl(widget, is_rtl=True)
-        widget.config(state=tk.DISABLED)
+            wrapped_lines = []
+            current_line = ""
+            
+            for word in words:
+                # Test if adding this word would exceed the width
+                test_line = current_line + " " + word if current_line else word
+                test_width = widget_font.measure(test_line)
+                
+                if test_width <= effective_width:
+                    current_line = test_line
+                else:
+                    # Line would be too long, start a new line
+                    if current_line:  # Only add non-empty lines
+                        wrapped_lines.append(current_line)
+                    
+                    # Check if single word exceeds width (very long word)
+                    word_width = widget_font.measure(word)
+                    if word_width > effective_width:
+                        # Word is too long for any line, but include it anyway
+                        # This prevents infinite loops with very long words
+                        wrapped_lines.append(word)
+                        current_line = ""
+                    else:
+                        current_line = word
+            
+            # Add the final line
+            if current_line:
+                wrapped_lines.append(current_line)
+
+            log_debug(f"DisplayManager: Wrapped {len(words)} words into {len(wrapped_lines)} lines")
+
+            # 4. Apply BiDi processing to each wrapped line
+            processed_lines = []
+            for line in wrapped_lines:
+                processed_line = RTLTextProcessor.process_bidi_text(line, language_code)
+                processed_lines.append(processed_line)
+
+            # 5. Update widget with processed text
+            final_text = "\n".join(processed_lines)
+            
+            widget.config(state=tk.NORMAL)
+            widget.delete("1.0", tk.END)
+            widget.insert("1.0", final_text)
+            
+            # Configure for RTL display
+            RTLTextProcessor.configure_tkinter_widget_for_rtl(widget, is_rtl=True)
+            widget.config(state=tk.DISABLED)
+            
+            log_debug(f"DisplayManager: Successfully applied manual RTL wrapping")
+
+        except Exception as e:
+            log_debug(f"DisplayManager: Error in manual RTL wrapping: {e}")
+            # Fall back to basic processing
+            self._apply_fallback_rtl_processing(widget, logical_text, language_code)
+
+    def _apply_fallback_rtl_processing(self, widget, logical_text, language_code):
+        """Fallback RTL processing when manual wrapping fails."""
+        try:
+            processed_text = RTLTextProcessor.process_bidi_text(logical_text, language_code)
+            
+            widget.config(state=tk.NORMAL)
+            widget.delete("1.0", tk.END)
+            widget.insert("1.0", processed_text)
+            RTLTextProcessor.configure_tkinter_widget_for_rtl(widget, is_rtl=True)
+            widget.config(state=tk.DISABLED)
+            
+            log_debug(f"DisplayManager: Applied fallback RTL processing")
+        except Exception as e:
+            log_debug(f"DisplayManager: Fallback RTL processing failed: {e}")
 
     def on_translation_widget_resize(self, event):
-        """Callback to re-process RTL text when the widget is resized."""
+        """Enhanced callback to re-process RTL text when the widget is resized."""
         if (event.widget == self.app.translation_text and 
             event.widget.winfo_width() != self.last_widget_width and
             self.current_logical_text and 
             self.current_language_code):
             
-            self.last_widget_width = event.widget.winfo_width()
-            log_debug(f"DisplayManager: Widget resized to width {self.last_widget_width}, re-processing RTL text")
+            # Small delay to ensure resize is complete before re-processing
+            event.widget.after(10, self._delayed_resize_handler)
+
+    def _delayed_resize_handler(self):
+        """Delayed resize handler to ensure widget is stable before processing."""
+        new_width = self.app.translation_text.winfo_width()
+        if new_width != self.last_widget_width:
+            self.last_widget_width = new_width
+            log_debug(f"DisplayManager: Widget resized to width {new_width}, re-processing RTL text")
             
-            # Re-run the manual wrapping and processing logic
+            # Re-run the manual wrapping with improved accuracy
             if RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(self.current_language_code):
                 self.manually_wrap_and_process_rtl(
                     self.app.translation_text, 
                     self.current_logical_text, 
-                    self.current_language_code
+                    self.current_language_code,
+                    retry_count=0  # Reset retry count for resize events
                 )
 
     def _update_translation_text_on_main_thread(self, text_content_main_thread):
@@ -156,8 +255,24 @@ class DisplayManager:
                         current_model = self.app.translation_model_var.get()
                         
                         # Check if target_lang_name is already a language code (like 'fa', 'ar', 'he')
-                        if len(target_lang_name) <= 3 and target_lang_name.lower() in ['fa', 'ar', 'he', 'ur', 'ps']:
+                        # OR if it's a display name for an RTL language
+                        if (len(target_lang_name) <= 3 and 
+                            target_lang_name.lower() in RTLTextProcessor.RTL_LANGUAGES):
                             target_lang_code = target_lang_name.lower()
+                        elif target_lang_name.lower() in ['hebrew', 'arabic', 'persian', 'farsi', 'urdu', 'pashto', 'kurdish', 'sindhi', 'yiddish']:
+                            # Handle RTL display names directly
+                            rtl_name_to_code = {
+                                'hebrew': 'he',
+                                'arabic': 'ar', 
+                                'persian': 'fa',
+                                'farsi': 'fa',
+                                'urdu': 'ur',
+                                'pashto': 'ps',
+                                'kurdish': 'ku',
+                                'sindhi': 'sd',
+                                'yiddish': 'yi'
+                            }
+                            target_lang_code = rtl_name_to_code[target_lang_name.lower()]
                         else:
                             # Convert display name to language code
                             if 'gemini' in current_model.lower():
@@ -184,7 +299,16 @@ class DisplayManager:
                 if is_rtl and new_text_to_display:
                     # Use manual wrapping approach for RTL text (like in the demo)
                     log_debug(f"DisplayManager: Using manual wrapping for RTL text")
-                    self.manually_wrap_and_process_rtl(self.app.translation_text, new_text_to_display, target_lang_code)
+                    
+                    # Small delay for initial processing to ensure widget is ready
+                    if not hasattr(self.app.translation_text, '_rtl_processed_once'):
+                        # First time processing - add delay to ensure widget is fully rendered
+                        self.app.translation_text._rtl_processed_once = True
+                        self.app.root.after(100, lambda: self.manually_wrap_and_process_rtl(
+                            self.app.translation_text, new_text_to_display, target_lang_code, retry_count=0))
+                    else:
+                        # Subsequent processing - no delay needed
+                        self.manually_wrap_and_process_rtl(self.app.translation_text, new_text_to_display, target_lang_code)
                 else:
                     # Standard processing for LTR text
                     log_debug(f"DisplayManager: Using standard processing for LTR text")
