@@ -5,6 +5,28 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.7] - 2025-08-22
+
+### Added
+- N/A
+
+### Changed
+- **Translation Window Migration to PySide6**: Replaced tkinter-based translation window with PySide6 implementation for superior RTL language support
+  - Migrated from tkinter to Qt6-based translation overlays for improved right-to-left text rendering
+  - Implemented hybrid RTL architecture combining native Qt support (primary) with fallback tkinter processing
+  - Enhanced RTL text display for Arabic, Hebrew, and Persian languages with proper character positioning
+  - Improved RTL punctuation handling and bidirectional text flow using Qt's native capabilities
+  - Maintained full backward compatibility with automatic fallback when PySide6 unavailable
+
+### Fixed
+- **RTL Text Display Issues**: Resolved unreliable RTL support in tkinter translation windows
+  - Fixed Hebrew word wrapping issues with native Qt RTL rendering
+  - Corrected punctuation positioning problems in right-to-left languages
+  - Eliminated manual text repositioning requirements through Qt's bidirectional text algorithm
+
+### Removed
+- N/A
+
 ## [3.5.6] - 2025-08-17
 
 ### Added
