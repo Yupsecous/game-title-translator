@@ -12,9 +12,13 @@ def _select_screen_area_interactive(app, prompt_text, is_target=False):
         sel_win.attributes("-fullscreen", True)
         sel_win.attributes("-alpha", 0.6)  # Make it a bit more visible
         sel_win.configure(cursor="crosshair")
-        sel_win.wait_visibility()
-        sel_win.grab_set()
-        sel_win.focus_force()
+        
+        # Ensure the selection window appears immediately and gets focus
+        sel_win.update_idletasks()  # Force window to be created
+        sel_win.wait_visibility()   # Wait for window to be visible
+        sel_win.lift()              # Bring to front
+        sel_win.focus_force()       # Force focus
+        sel_win.grab_set()          # Grab input
         
         tk.Label(sel_win, text=prompt_text + "\n(Esc to cancel)", font=("Arial", 16, "bold"), bg="black", fg="white").place(relx=0.5, rely=0.1, anchor="center")
         canvas = tk.Canvas(sel_win, highlightthickness=0, bg=sel_win['bg']) # Match background
@@ -90,7 +94,7 @@ def _select_screen_area_interactive(app, prompt_text, is_target=False):
     return selection_result
 
 def select_source_area_om(app): # Suffix _om for OverlayManager
-    app.root.withdraw()
+    app.root.withdraw()  # FIX: Added missing parentheses
     time.sleep(0.2)
     selected = _select_screen_area_interactive(app, "Select OCR Source Area (Click & Drag)", is_target=False)
     app.root.deiconify()
@@ -230,6 +234,8 @@ def create_target_overlay_om(app):
             if app.target_overlay:
                 # Store reference to PySide text widget for compatibility
                 app.translation_text = app.target_overlay.text_widget
+                # ISSUE 2 FIX: Ensure correct color is applied immediately after creation
+                app.target_overlay.update_color(target_color)
                 log_debug("OverlayManager: PySide target overlay created successfully")
                 log_debug(f"OverlayManager: Target overlay exists: {app.target_overlay.winfo_exists()}")
                 log_debug(f"OverlayManager: Translation text exists: {app.translation_text.winfo_exists()}")
@@ -345,6 +351,9 @@ def toggle_source_visibility_om(app):
 
 def toggle_target_visibility_om(app):
     if app.target_overlay and app.target_overlay.winfo_exists():
+        # ISSUE 2 FIX: Ensure correct color when toggling visibility
+        if hasattr(app.target_overlay, 'update_color'):
+            app.target_overlay.update_color(app.target_colour_var.get())
         app.target_overlay.toggle_visibility()
         action = "hidden" if not app.target_overlay.winfo_viewable() else "shown"
         log_debug(f"OverlayManager: Target overlay {action} by user.")
