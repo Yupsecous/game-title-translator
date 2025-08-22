@@ -307,18 +307,29 @@ if PYSIDE6_AVAILABLE:
                 }}
             """)
 
-            # Add the purely visual top bar
+            # Add the purely visual top bar with SAME color as main window
             self.top_bar = VisualTopBar(self)
+            # ISSUE 3 FIX: Top bar should have the same color as the main window
             self.top_bar.setStyleSheet(f"""
                 QMainWindow {{
-                    background-color: {self._adjust_color_brightness(bg_color, -30)};
+                    background-color: {bg_color};
                     border: none;
                 }}
             """)
+            # ISSUE 4 FIX: Set cursor for moving window - use SizeAllCursor (four-directional arrow)
+            self.top_bar.setCursor(Qt.SizeAllCursor)
             layout.addWidget(self.top_bar)
 
             # Create RTL text display
             self.text_widget = RTLTextDisplay()
+            # ISSUE 2 FIX: Ensure text widget gets the correct background color
+            self.text_widget.setStyleSheet(f"""
+                QTextEdit {{
+                    background-color: {bg_color};
+                    border: none;
+                    padding: 5px;
+                }}
+            """)
             layout.addWidget(self.text_widget)
 
         def _adjust_color_brightness(self, hex_color, adjustment):
@@ -356,11 +367,21 @@ if PYSIDE6_AVAILABLE:
                     border: 2px solid {self._adjust_color_brightness(new_color, -20)};
                 }}
             """)
+            # ISSUE 2 & 3 FIX: Update top bar to match main window color
             if self.top_bar:
                 self.top_bar.setStyleSheet(f"""
                     QMainWindow {{
-                        background-color: {self._adjust_color_brightness(new_color, -30)};
+                        background-color: {new_color};
                         border: none;
+                    }}
+                """)
+            # ISSUE 2 FIX: Also update text widget background color
+            if self.text_widget:
+                self.text_widget.setStyleSheet(f"""
+                    QTextEdit {{
+                        background-color: {new_color};
+                        border: none;
+                        padding: 5px;
                     }}
                 """)
 
@@ -381,10 +402,12 @@ if PYSIDE6_AVAILABLE:
             super().hide()
 
         def show(self):
-            """Show the window and ensure it's topmost"""
+            """Show the window and ensure it's topmost with correct color"""
             super().show()
             self.raise_()
             self.activateWindow()
+            # ISSUE 2 FIX: Ensure correct color when shown via hotkey
+            self.update_color(self.bg_color)
 
         def toggle_visibility(self):
             """Toggle the window's visibility"""
@@ -415,6 +438,45 @@ if PYSIDE6_AVAILABLE:
             except:
                 pass
 
+        def enterEvent(self, event):
+            """ISSUE 3 FIX: Handle mouse enter event to set cursor in top area"""
+            # Check if mouse is in the top area (movable area)
+            if event.pos().y() <= (self.top_bar.height() + 10):
+                self.setCursor(Qt.SizeAllCursor)
+            else:
+                self.setCursor(Qt.ArrowCursor)
+            super().enterEvent(event)
+
+        def leaveEvent(self, event):
+            """ISSUE 3 FIX: Handle mouse leave event to reset cursor"""
+            self.setCursor(Qt.ArrowCursor)
+            super().leaveEvent(event)
+
+        def mouseMoveEvent(self, event):
+            """ISSUE 3 FIX: Handle mouse move to update cursor based on position"""
+            # Check if mouse is in the top area (movable area)
+            if event.pos().y() <= (self.top_bar.height() + 10):
+                self.setCursor(Qt.SizeAllCursor)
+            else:
+                # Check if we're near the edges for resize cursors
+                margin = 4
+                on_left = event.pos().x() < margin
+                on_right = event.pos().x() > self.width() - margin
+                on_top = event.pos().y() < margin
+                on_bottom = event.pos().y() > self.height() - margin
+                
+                if (on_top and on_left) or (on_bottom and on_right):
+                    self.setCursor(Qt.SizeFDiagCursor)
+                elif (on_top and on_right) or (on_bottom and on_left):
+                    self.setCursor(Qt.SizeBDiagCursor)
+                elif on_left or on_right:
+                    self.setCursor(Qt.SizeHorCursor)
+                elif on_top or on_bottom:
+                    self.setCursor(Qt.SizeVerCursor)
+                else:
+                    self.setCursor(Qt.ArrowCursor)
+            super().mouseMoveEvent(event)
+
         def nativeEvent(self, eventType, message):
             """Handle native Windows messages for resizing and moving"""
             if sys.platform != "win32" or eventType != "windows_generic_MSG":
@@ -429,6 +491,11 @@ if PYSIDE6_AVAILABLE:
                     
                     # Convert global coordinates to local
                     local_pos = self.mapFromGlobal(QPoint(x, y))
+
+                    # ISSUE 5 FIX: Ensure coordinates are within window bounds
+                    if (local_pos.x() < 0 or local_pos.y() < 0 or 
+                        local_pos.x() > self.width() or local_pos.y() > self.height()):
+                        return super().nativeEvent(eventType, message)
 
                     # Define the resize margin
                     margin = 4
@@ -457,11 +524,15 @@ if PYSIDE6_AVAILABLE:
                     if on_bottom:
                         return True, self.HTBOTTOM
                     
-                    # Check if cursor is on the top bar for moving
+                    # ISSUE 4 & 5 FIX: Check if cursor is on the top bar for moving
                     if hasattr(self, 'top_bar'):
-                        top_bar_rect = self.top_bar.geometry()
-                        if top_bar_rect.contains(local_pos):
-                            return True, self.HTCAPTION
+                        # Get the top bar's position within the main window
+                        top_bar_height = self.top_bar.height()
+                        # Consider the top area (including top bar + margin) as movable
+                        if local_pos.y() >= 0 and local_pos.y() <= (top_bar_height + 10):
+                            # Also ensure we're not in a resize corner/edge area
+                            if not (on_left or on_right or on_top or on_bottom):
+                                return True, self.HTCAPTION
             except Exception as e:
                 log_debug(f"Error in nativeEvent: {e}")
 

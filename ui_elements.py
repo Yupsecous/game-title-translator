@@ -115,7 +115,7 @@ class ResizableMovableFrame(tk.Toplevel):
         # Force the background color to be set properly
         self.update_idletasks()
 
-        # Create a minimal title bar for moving
+        # Create a minimal title bar for moving - ISSUE 4 FIX: Set proper cursor
         self.title_bar = tk.Frame(self, bg=bg_color, height=5, cursor="fleur")
         self.title_bar.pack(fill=tk.X, side=tk.TOP)
 

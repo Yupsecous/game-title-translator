@@ -1948,6 +1948,7 @@ For more information, see the user manual."""
 
     def toggle_target_visibility(self):
         toggle_target_visibility_om(self)
+        self.save_settings()
 
     def clear_file_caches(self):
         self.cache_manager.clear_file_caches()
