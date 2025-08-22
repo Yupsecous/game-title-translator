@@ -203,6 +203,46 @@ def create_source_overlay_om(app):
         log_debug(f"OverlayManager: Error creating source overlay: {e_cso}")
         app.source_overlay = None
 
+def _preserve_overlay_position(app):
+    """Extract and save current overlay position before destruction to prevent position loss during recreation"""
+    if not app.target_overlay:
+        return
+        
+    try:
+        current_geometry = None
+        
+        # For PySide overlays - use get_geometry method
+        if hasattr(app.target_overlay, 'get_geometry'):
+            current_geometry = app.target_overlay.get_geometry()
+            log_debug(f"OverlayManager: Extracted PySide overlay geometry: {current_geometry}")
+            
+        # For tkinter overlays - use winfo methods
+        elif hasattr(app.target_overlay, 'winfo_x') and hasattr(app.target_overlay, 'winfo_exists'):
+            if app.target_overlay.winfo_exists():
+                x = app.target_overlay.winfo_x()
+                y = app.target_overlay.winfo_y()
+                w = app.target_overlay.winfo_width()
+                h = app.target_overlay.winfo_height()
+                current_geometry = [x, y, x + w, y + h]
+                log_debug(f"OverlayManager: Extracted tkinter overlay geometry: {current_geometry}")
+        
+        # Update app.target_area and config if we got valid geometry
+        if current_geometry and len(current_geometry) == 4:
+            app.target_area = current_geometry
+            
+            # Save to config immediately to persist across sessions
+            app.config['Settings']['target_area_x1'] = str(current_geometry[0])
+            app.config['Settings']['target_area_y1'] = str(current_geometry[1])
+            app.config['Settings']['target_area_x2'] = str(current_geometry[2])
+            app.config['Settings']['target_area_y2'] = str(current_geometry[3])
+            
+            log_debug(f"OverlayManager: Preserved overlay position: {current_geometry}")
+        else:
+            log_debug("OverlayManager: Could not extract valid overlay geometry")
+            
+    except Exception as e:
+        log_debug(f"OverlayManager: Error preserving overlay position: {e}")
+
 def create_target_overlay_om(app):
     if not app.target_area or len(app.target_area) != 4:
          try:
@@ -215,15 +255,17 @@ def create_target_overlay_om(app):
              log_debug(f"OverlayManager: Could not load target area from config for overlay creation: {e}")
              return
 
-    # Clean up existing overlay (unchanged) ...
+    # Clean up existing overlay - preserve position before destruction
     if app.target_overlay and hasattr(app.target_overlay, 'winfo_exists'):
         try:
             if app.target_overlay.winfo_exists():
+                _preserve_overlay_position(app)  # Save current position before destroying
                 app.target_overlay.destroy()
         except tk.TclError:
             log_debug("OverlayManager: Error destroying existing tkinter target overlay (already gone?).")
     elif app.target_overlay and hasattr(app.target_overlay, 'close'):
         try:
+            _preserve_overlay_position(app)  # Save current position before destroying
             app.target_overlay.close()
         except:
             log_debug("OverlayManager: Error destroying existing PySide target overlay (already gone?).")
