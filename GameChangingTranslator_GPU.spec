@@ -40,8 +40,10 @@ a = Analysis(
         'unified_translation_cache',
         'ocr_utils',
         'overlay_manager',
+        'pyside_overlay',  # PySide6 RTL translation overlays with native Qt support
         'resource_handler',
         'resource_copier',
+        'rtl_text_processor',  # RTL text processing for tkinter widgets (fallback)
         'translation_utils',
         'ui_elements',
         'worker_threads',
@@ -52,6 +54,7 @@ a = Analysis(
         'handlers.cache_manager',
         'handlers.configuration_handler',
         'handlers.display_manager',
+        'handlers.gemini_models_manager',  # Gemini model configuration management
         'handlers.hotkey_handler',
         'handlers.statistics_handler',
         'handlers.translation_handler',
@@ -64,6 +67,14 @@ a = Analysis(
         'tkinter.filedialog',
         'tkinter.colorchooser',
         '_tkinter',
+        # PySide6 for RTL translation overlays with native Qt support
+        'PySide6',
+        'PySide6.QtCore',
+        'PySide6.QtWidgets',
+        'PySide6.QtGui',
+        # RTL text processing dependencies
+        'python-bidi',
+        'arabic-reshaper',
         
         # Image processing
         'PIL',
@@ -212,7 +223,6 @@ a = Analysis(
         'notebook',
         'pytest',
         'PySide2',
-        'PySide6',
         'PyQt5',
         'PyQt6',
         'flask',
