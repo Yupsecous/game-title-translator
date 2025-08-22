@@ -2588,9 +2588,21 @@ For more information, see the user manual."""
         log_debug("Destroying overlay windows if they exist...")
         for overlay_attr_name in ['source_overlay', 'target_overlay']:
             overlay_widget = getattr(self, overlay_attr_name, None)
-            if overlay_widget and hasattr(overlay_widget, 'winfo_exists') and overlay_widget.winfo_exists():
+            if overlay_widget:
                 try:
-                    overlay_widget.destroy()
+                    # Preserve target overlay position before destroying during shutdown
+                    if overlay_attr_name == 'target_overlay':
+                        from overlay_manager import _preserve_overlay_position
+                        _preserve_overlay_position(self)
+                        log_debug("Preserved target overlay position during app shutdown")
+                    
+                    # Handle tkinter overlays
+                    if hasattr(overlay_widget, 'winfo_exists') and overlay_widget.winfo_exists():
+                        overlay_widget.destroy()
+                    # Handle PySide overlays
+                    elif hasattr(overlay_widget, 'close'):
+                        overlay_widget.close()
+                        
                 except Exception as e_dow:
                     log_debug(f"Error destroying {overlay_attr_name}: {e_dow}")
             setattr(self, overlay_attr_name, None)
