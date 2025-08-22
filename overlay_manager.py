@@ -215,69 +215,99 @@ def create_target_overlay_om(app):
              log_debug(f"OverlayManager: Could not load target area from config for overlay creation: {e}")
              return
 
-    # Clean up existing overlay
+    # Clean up existing overlay (unchanged) ...
     if app.target_overlay and hasattr(app.target_overlay, 'winfo_exists'):
-        # Handle tkinter overlay cleanup
         try:
             if app.target_overlay.winfo_exists():
                 app.target_overlay.destroy()
         except tk.TclError:
             log_debug("OverlayManager: Error destroying existing tkinter target overlay (already gone?).")
     elif app.target_overlay and hasattr(app.target_overlay, 'close'):
-        # Handle PySide overlay cleanup
         try:
             app.target_overlay.close()
         except:
             log_debug("OverlayManager: Error destroying existing PySide target overlay (already gone?).")
-    
+
     app.target_overlay = None
     app.translation_text = None  # Reset text widget reference
 
     try:
         target_color = app.target_colour_var.get()
-        
+
+        # --- Read visual settings used by the tkinter fallback so we can mirror them for PySide ---
+        # Font size (tkinter branch used this): default to 14 when var missing
+        try:
+            font_size = int(app.target_font_size_var.get())
+        except Exception:
+            font_size = int(app.config['Settings'].get('default_font_size', '14'))
+
+        # Padding used in tkinter Text widget (padx, pady)
+        pad_x = int(app.config['Settings'].get('target_text_pad_x', '5'))
+        pad_y = int(app.config['Settings'].get('target_text_pad_y', '5'))
+
+        # Top-bar height to match tkinter overlay feel (try to read from config, fallback to 10)
+        top_bar_height = int(app.config['Settings'].get('target_top_bar_height', '10'))
+
+        # Border thickness (tkinter Text used bd=0)
+        border_px = int(app.config['Settings'].get('target_border_px', '0'))
+
+        # Opacity (you previously set 0.85 for tkinter branch)
+        opacity = float(app.config['Settings'].get('target_opacity', '0.85'))
+
         # Try to create PySide overlay for translation window if available
         if is_pyside_available():
             log_debug("OverlayManager: PySide6 available, attempting to create PySide overlay")
             pyside_manager = get_pyside_manager()
+
+            # Pass visual consistency options into the PySide overlay
             app.target_overlay = pyside_manager.create_overlay(
-                app.target_area, 
-                target_color, 
-                title="Translation"
+                app.target_area,
+                target_color,
+                title="Translation",
+                top_bar_height=top_bar_height,
+                text_padding=(pad_x, pad_y),
+                font_size=font_size,
+                font_family="Arial",
+                border_px=border_px,
+                opacity=opacity
             )
-            
+
             if app.target_overlay:
                 # Store reference to PySide text widget for compatibility
                 app.translation_text = app.target_overlay.text_widget
-                # ISSUE 2 FIX: Ensure correct color is applied immediately after creation
+                # Ensure color & opacity applied immediately after creation
                 app.target_overlay.update_color(target_color)
+                try:
+                    app.target_overlay.setWindowOpacity(opacity)
+                except Exception:
+                    pass
                 log_debug("OverlayManager: PySide target overlay created successfully")
                 log_debug(f"OverlayManager: Target overlay exists: {app.target_overlay.winfo_exists()}")
-                log_debug(f"OverlayManager: Translation text exists: {app.translation_text.winfo_exists()}")
+                # translation_text may be None if creation failed internally
+                if hasattr(app, 'translation_text') and app.translation_text:
+                    try:
+                        log_debug(f"OverlayManager: Translation text exists: {app.translation_text.winfo_exists()}")
+                    except Exception:
+                        pass
             else:
                 log_debug("OverlayManager: Failed to create PySide overlay, falling back to tkinter")
                 app.target_overlay = None
         else:
             log_debug("OverlayManager: PySide6 not available, will use tkinter overlay")
-        
-        # Fallback to tkinter overlay if PySide is not available or failed
+
+        # Fallback to tkinter overlay if PySide is not available or failed (unchanged) ...
         if not app.target_overlay:
             log_debug("OverlayManager: Using tkinter target overlay as fallback")
-            
             try:
                 app.target_overlay = ResizableMovableFrame(app.root, app.target_area, bg_color=target_color, title="Translation")
-                app.target_overlay.attributes("-alpha", 0.85) # Less transparent to read text
+                app.target_overlay.attributes("-alpha", opacity) # Less transparent to read text
                 app.target_overlay.update_color(target_color)
 
-                font_size = app.target_font_size_var.get() # Get from app's Tkinter IntVar
-                
-                # Determine text direction based on target language
+                # font_size already read above
                 target_lang_code = None
                 try:
-                    # Get the target language code from the current translation model
                     target_lang_name = app.target_lang_var.get()
                     if hasattr(app, 'language_manager') and app.language_manager:
-                        # Get the current translation model to determine service type
                         current_model = app.translation_model_var.get()
                         if 'gemini' in current_model.lower():
                             target_lang_code = app.language_manager.get_code_from_name(target_lang_name, "gemini_api", "target")
@@ -285,8 +315,6 @@ def create_target_overlay_om(app):
                             target_lang_code = app.language_manager.get_code_from_name(target_lang_name, "google_api", "target")
                         elif current_model == "DeepL API":
                             target_lang_code = app.language_manager.get_code_from_name(target_lang_name, "deepl_api", "target")
-                        
-                        # Check if the target language is RTL
                         is_rtl = app.language_manager.is_rtl_language(target_lang_code) if target_lang_code else False
                         log_debug(f"OverlayManager: Target language '{target_lang_name}' (code: {target_lang_code}) RTL: {is_rtl}")
                     else:
@@ -294,66 +322,60 @@ def create_target_overlay_om(app):
                 except Exception as e:
                     log_debug(f"OverlayManager: Error determining RTL status: {e}")
                     is_rtl = False
-                
-                # Configure text widget with appropriate settings for RTL/LTR
+
                 text_justify = tk.RIGHT if is_rtl else tk.LEFT
-                
+
                 app.translation_text = tk.Text(
                     app.target_overlay.content_frame,
                     wrap=tk.WORD,
                     bg=target_color,
                     fg=app.target_text_colour_var.get(),
                     font=("Arial", font_size),
-                    bd=0,
+                    bd=border_px,
                     relief="flat",
-                    padx=5,
-                    pady=5,
+                    padx=pad_x,
+                    pady=pad_y,
                     state=tk.DISABLED
                 )
-                
-                # Configure text widget for RTL if needed
+
                 if is_rtl:
-                    # For RTL languages, configure text alignment and reading order
                     app.translation_text.tag_configure("rtl", justify=tk.RIGHT)
-                    # Store RTL status for use in text updates
                     app.translation_text.is_rtl = True
-                    log_debug("OverlayManager: Text widget configured for RTL display")
                 else:
                     app.translation_text.tag_configure("ltr", justify=tk.LEFT)
                     app.translation_text.is_rtl = False
-                
-                # Add resize handler for proper RTL text re-wrapping
+
                 app.translation_text.bind("<Configure>", app.display_manager.on_translation_widget_resize)
                 app.translation_text.pack(fill=tk.BOTH, expand=True)
-                
+
                 log_debug("OverlayManager: tkinter target overlay created successfully")
                 log_debug(f"OverlayManager: Target overlay exists: {app.target_overlay.winfo_exists()}")
                 log_debug(f"OverlayManager: Translation text exists: {app.translation_text.winfo_exists()}")
-                
+
             except Exception as e_tkinter:
                 log_debug(f"OverlayManager: Error creating tkinter target overlay: {e_tkinter}")
                 app.target_overlay = None
                 app.translation_text = None
-                # Re-raise the exception since we can't create any overlay
                 raise e_tkinter
-        
-        # Set target overlay to hidden by default or based on config
+
+        # Set target overlay visibility as before (unchanged)...
         should_be_visible = app.config['Settings'].getboolean('target_area_visible', fallback=False)
         if not should_be_visible and app.target_overlay.winfo_viewable():
             app.target_overlay.hide()
         elif should_be_visible and not app.target_overlay.winfo_viewable():
             app.target_overlay.show()
         else:
-            # For new installations, hide by default
             app.target_overlay.hide()
             app.config['Settings']['target_area_visible'] = 'False'
-            
+
         overlay_type = "PySide" if hasattr(app.translation_text, 'set_rtl_text') else "tkinter"
         log_debug(f"OverlayManager: {overlay_type} target overlay created. Visible: {app.target_overlay.winfo_viewable()}")
+
     except Exception as e_cto:
         log_debug(f"OverlayManager: Error creating target overlay: {e_cto}")
         app.target_overlay = None
         app.translation_text = None
+
 
 def toggle_source_visibility_om(app):
     if app.source_overlay and app.source_overlay.winfo_exists():
