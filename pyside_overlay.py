@@ -244,10 +244,40 @@ if PYSIDE6_AVAILABLE:
 
 
     class VisualTopBar(QMainWindow):
-        """A purely visual top bar with no event handling."""
+        """A visual top bar that handles cursor changes for moving the window."""
         def __init__(self, parent=None):
             super().__init__(parent)
             self.setFixedHeight(10)
+            # ISSUE 3 FIX: Set the move cursor for the top bar
+            self.setCursor(Qt.SizeAllCursor)
+        
+        def enterEvent(self, event):
+            """Show move cursor when mouse enters the top bar"""
+            self.setCursor(Qt.SizeAllCursor)
+            super().enterEvent(event)
+        
+        def leaveEvent(self, event):
+            """Keep move cursor when mouse leaves (parent will handle it)"""
+            super().leaveEvent(event)
+        
+        def mousePressEvent(self, event):
+            """Forward mouse press to parent for moving"""
+            if hasattr(self.parent(), 'mousePressEvent'):
+                self.parent().mousePressEvent(event)
+            super().mousePressEvent(event)
+        
+        def mouseMoveEvent(self, event):
+            """Ensure cursor stays as move cursor and forward to parent"""
+            self.setCursor(Qt.SizeAllCursor)
+            if hasattr(self.parent(), 'mouseMoveEvent'):
+                self.parent().mouseMoveEvent(event)
+            super().mouseMoveEvent(event)
+        
+        def mouseReleaseEvent(self, event):
+            """Forward mouse release to parent"""
+            if hasattr(self.parent(), 'mouseReleaseEvent'):
+                self.parent().mouseReleaseEvent(event)
+            super().mouseReleaseEvent(event)
 
 
     class PySideTranslationOverlay(QMainWindow):
@@ -316,8 +346,7 @@ if PYSIDE6_AVAILABLE:
                     border: none;
                 }}
             """)
-            # ISSUE 4 FIX: Set cursor for moving window - use SizeAllCursor (four-directional arrow)
-            self.top_bar.setCursor(Qt.SizeAllCursor)
+            # Top bar now handles its own cursor via its class
             layout.addWidget(self.top_bar)
 
             # Create RTL text display
@@ -438,27 +467,10 @@ if PYSIDE6_AVAILABLE:
             except:
                 pass
 
-        def enterEvent(self, event):
-            """ISSUE 3 FIX: Handle mouse enter event to set cursor in top area"""
-            # Check if mouse is in the top area (movable area)
-            if event.pos().y() <= (self.top_bar.height() + 10):
-                self.setCursor(Qt.SizeAllCursor)
-            else:
-                self.setCursor(Qt.ArrowCursor)
-            super().enterEvent(event)
-
-        def leaveEvent(self, event):
-            """ISSUE 3 FIX: Handle mouse leave event to reset cursor"""
-            self.setCursor(Qt.ArrowCursor)
-            super().leaveEvent(event)
-
         def mouseMoveEvent(self, event):
-            """ISSUE 3 FIX: Handle mouse move to update cursor based on position"""
-            # Check if mouse is in the top area (movable area)
-            if event.pos().y() <= (self.top_bar.height() + 10):
-                self.setCursor(Qt.SizeAllCursor)
-            else:
-                # Check if we're near the edges for resize cursors
+            """Handle mouse move for resize cursors only (top bar handles move cursor)"""
+            # Only set resize cursors if NOT in the top bar area
+            if event.pos().y() > (self.top_bar.height() + 10):
                 margin = 4
                 on_left = event.pos().x() < margin
                 on_right = event.pos().x() > self.width() - margin
@@ -475,6 +487,7 @@ if PYSIDE6_AVAILABLE:
                     self.setCursor(Qt.SizeVerCursor)
                 else:
                     self.setCursor(Qt.ArrowCursor)
+            # Don't override cursor in top bar area - let top bar handle it
             super().mouseMoveEvent(event)
 
         def nativeEvent(self, eventType, message):
