@@ -1086,6 +1086,7 @@ class UIInteractionHandler:
                 area = self.app.target_overlay.get_geometry()
                 if area: cfg['target_area_x1'], cfg['target_area_y1'], \
                          cfg['target_area_x2'], cfg['target_area_y2'] = map(str, area)
+                cfg['target_area_visible'] = str(self.app.target_overlay.winfo_viewable())
 
             self.app.configuration_handler.save_current_window_geometry() 
 

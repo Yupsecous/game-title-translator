@@ -820,6 +820,23 @@ For more information, see the user manual."""
     def update_debug_display(self, original_img_pil, processed_img_cv, ocr_text_content):
         self.display_manager.update_debug_display(original_img_pil, processed_img_cv, ocr_text_content)
 
+    def _widget_exists_safely(self, widget):
+        """Safely check if a widget exists - works with both tkinter and PySide widgets"""
+        if not widget:
+            return False
+        try:
+            # Try tkinter method first
+            if hasattr(widget, 'winfo_exists'):
+                return widget.winfo_exists()
+            # For PySide widgets, check if they're accessible
+            elif hasattr(widget, 'isVisible'):
+                return True  # PySide widgets exist until destroyed
+            else:
+                return True  # Assume widget exists if we can't check
+        except Exception as e:
+            log_debug(f"Error checking widget existence: {e}")
+            return False
+
     def convert_to_webp_for_gemini(self, pil_image):
         """Convert PIL image to lossless WebP bytes for Gemini API."""
         try:
@@ -2081,15 +2098,28 @@ For more information, see the user manual."""
             self.root.update_idletasks()
 
             valid_start_flag = True 
-            if not self.source_overlay or not self.source_overlay.winfo_exists():
+            
+            # Debug logging for overlay validation
+            log_debug(f"Start validation - Source overlay: {self.source_overlay is not None}")
+            log_debug(f"Start validation - Target overlay: {self.target_overlay is not None}")
+            log_debug(f"Start validation - Translation text: {self.translation_text is not None}")
+            
+            if self.target_overlay:
+                log_debug(f"Target overlay type: {type(self.target_overlay).__name__}")
+            if self.translation_text:
+                log_debug(f"Translation text type: {type(self.translation_text).__name__}")
+            
+            if not self.source_overlay or not self._widget_exists_safely(self.source_overlay):
                 messagebox.showerror("Start Error", "Source area overlay missing. Select source area.", parent=self.root)
                 valid_start_flag = False
-            if valid_start_flag and (not self.target_overlay or not self.target_overlay.winfo_exists()):
+            if valid_start_flag and (not self.target_overlay or not self._widget_exists_safely(self.target_overlay)):
+                log_debug(f"Target overlay validation failed - overlay exists: {self.target_overlay is not None}, widget_exists_safely: {self._widget_exists_safely(self.target_overlay) if self.target_overlay else False}")
                 messagebox.showerror("Start Error", "Target area overlay missing. Select target area.", parent=self.root)
                 valid_start_flag = False
-            if valid_start_flag and (not self.translation_text or not self.translation_text.winfo_exists()):
-                 messagebox.showerror("Start Error", "Target text display widget missing. Reselect target area.", parent=self.root)
-                 valid_start_flag = False
+            if valid_start_flag and (not self.translation_text or not self._widget_exists_safely(self.translation_text)):
+                log_debug(f"Translation text validation failed - text exists: {self.translation_text is not None}, widget_exists_safely: {self._widget_exists_safely(self.translation_text) if self.translation_text else False}")
+                messagebox.showerror("Start Error", "Target text display widget missing. Reselect target area.", parent=self.root)
+                valid_start_flag = False
             
             # Only validate Tesseract path when using Tesseract OCR
             if self.get_ocr_model_setting() == 'tesseract':
