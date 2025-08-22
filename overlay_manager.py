@@ -13,12 +13,15 @@ def _select_screen_area_interactive(app, prompt_text, is_target=False):
         sel_win.attributes("-alpha", 0.6)  # Make it a bit more visible
         sel_win.configure(cursor="crosshair")
         
-        # Ensure the selection window appears immediately and gets focus
-        sel_win.update_idletasks()  # Force window to be created
-        sel_win.wait_visibility()   # Wait for window to be visible
-        sel_win.lift()              # Bring to front
-        sel_win.focus_force()       # Force focus
-        sel_win.grab_set()          # Grab input
+        # ISSUE 1 FIX: More aggressive focus handling for fullscreen app transitions
+        sel_win.attributes("-topmost", True)    # Force topmost
+        sel_win.update_idletasks()              # Force window to be created
+        sel_win.wait_visibility()               # Wait for window to be visible
+        sel_win.attributes("-topmost", True)    # Ensure still topmost after visibility
+        sel_win.lift()                          # Bring to front
+        sel_win.focus_force()                   # Force focus
+        sel_win.grab_set()                      # Grab input
+        sel_win.update()                        # Process events
         
         tk.Label(sel_win, text=prompt_text + "\n(Esc to cancel)", font=("Arial", 16, "bold"), bg="black", fg="white").place(relx=0.5, rely=0.1, anchor="center")
         canvas = tk.Canvas(sel_win, highlightthickness=0, bg=sel_win['bg']) # Match background
@@ -94,8 +97,14 @@ def _select_screen_area_interactive(app, prompt_text, is_target=False):
     return selection_result
 
 def select_source_area_om(app): # Suffix _om for OverlayManager
-    app.root.withdraw()  # FIX: Added missing parentheses
-    time.sleep(0.2)
+    # ISSUE 1 FIX: Ensure proper focus when coming from fullscreen apps like YouTube
+    app.root.lift()           # Bring app to front first
+    app.root.focus_force()    # Force focus on app
+    app.root.update()         # Process any pending events
+    time.sleep(0.1)           # Brief pause for window manager
+    
+    app.root.withdraw()       # Now minimize the app
+    time.sleep(0.3)           # Longer delay for fullscreen transition
     selected = _select_screen_area_interactive(app, "Select OCR Source Area (Click & Drag)", is_target=False)
     app.root.deiconify()
     app.root.lift()
@@ -118,8 +127,14 @@ def select_source_area_om(app): # Suffix _om for OverlayManager
             log_debug("OverlayManager: Source overlay hidden after initial selection")
 
 def select_target_area_om(app):
-    app.root.withdraw()
-    time.sleep(0.2)
+    # ISSUE 1 FIX: Ensure proper focus when coming from fullscreen apps like YouTube
+    app.root.lift()           # Bring app to front first
+    app.root.focus_force()    # Force focus on app
+    app.root.update()         # Process any pending events
+    time.sleep(0.1)           # Brief pause for window manager
+    
+    app.root.withdraw()       # Now minimize the app
+    time.sleep(0.3)           # Longer delay for fullscreen transition
     selected = _select_screen_area_interactive(app, "Select Translation Display Area (Click & Drag)", is_target=True)
     app.root.deiconify()
     app.root.lift()
