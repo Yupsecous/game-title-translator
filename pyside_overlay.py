@@ -441,7 +441,7 @@ if PYSIDE6_AVAILABLE:
             layout.addWidget(self.text_widget)
 
         def _adjust_color_brightness(self, hex_color, adjustment):
-            """Adjust hex color brightness by a signed integer amount (-255..255)."""
+            """Adjust hex color brightness by a signed integer amount (-255.255)."""
             try:
                 hex_color = hex_color.lstrip('#')
                 r = int(hex_color[0:2], 16)
@@ -596,6 +596,10 @@ if PYSIDE6_AVAILABLE:
             IMPORTANT: do NOT return HTCAPTION here for the top bar area. Moving is handled
             by VisualTopBar which preserves SizeAllCursor. Returning HTCAPTION forces Windows
             to set the Arrow cursor which overrides Qt's cursor.
+
+            This implementation converts the WM_NCHITTEST coordinates (which are in
+            physical pixels on Windows) to Qt logical/device-independent coordinates
+            before calling mapFromGlobal().
             """
             if sys.platform != "win32" or eventType != "windows_generic_MSG":
                 return super().nativeEvent(eventType, message)
@@ -605,16 +609,32 @@ if PYSIDE6_AVAILABLE:
                 msg = ctypes.wintypes.MSG.from_address(message.__int__())
                 # WM_NCHITTEST = 0x0084
                 if msg.message == 0x0084:
-                    # Extract x,y from lParam (signed short components)
                     lparam = msg.lParam
-                    # low-order word is X, high-order word is Y; convert to signed short where appropriate
-                    x = ctypes.c_short(lparam & 0xFFFF).value
-                    y = ctypes.c_short((lparam >> 16) & 0xFFFF).value
+                    # Extract X and Y as signed shorts (preserves negative coords if any)
+                    x_phys = ctypes.c_short(lparam & 0xFFFF).value
+                    y_phys = ctypes.c_short((lparam >> 16) & 0xFFFF).value
 
-                    local_pt = self.mapFromGlobal(QPoint(x, y))
+                    # Convert physical -> logical coordinates using devicePixelRatioF()
+                    try:
+                        # QWidget.devicePixelRatioF() is preferred if available
+                        scale = self.devicePixelRatioF()
+                    except Exception:
+                        try:
+                            scale = float(self.window().devicePixelRatio())
+                        except Exception:
+                            scale = 1.0
+
+                    if not scale or scale <= 0:
+                        scale = 1.0
+
+                    logical_x = int(round(x_phys / scale))
+                    logical_y = int(round(y_phys / scale))
+
+                    local_pt = self.mapFromGlobal(QPoint(logical_x, logical_y))
 
                     # If outside window bounds, fallback
-                    if (local_pt.x() < 0 or local_pt.y() < 0 or local_pt.x() > self.width() or local_pt.y() > self.height()):
+                    if (local_pt.x() < 0 or local_pt.y() < 0 or
+                            local_pt.x() > self.width() or local_pt.y() > self.height()):
                         return super().nativeEvent(eventType, message)
 
                     margin = 4
@@ -672,7 +692,11 @@ def ensure_qapplication():
         # Environment tweaks for HiDPI behavior
         os.environ.setdefault('QT_AUTO_SCREEN_SCALE_FACTOR', '1')
         os.environ.setdefault('QT_ENABLE_HIGHDPI_SCALING', '1')
+        
         try:
+            # Ensure Qt knows we want high-dpi support (set attributes before creating app)
+            QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+            QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
             QApplication.setHighDpiScaleFactorRoundingPolicy(
                 Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
             )
