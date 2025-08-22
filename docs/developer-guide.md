@@ -42,7 +42,8 @@ Game-Changing Translator follows a modular design with the following key compone
    - `unified_translation_cache.py` - Unified LRU cache system for all translation providers
    - `ocr_utils.py` - OCR utility functions with adaptive preprocessing
    - `translation_utils.py` - Translation utility functions
-   - `rtl_text_processor.py` - Right-to-Left text processing for proper RTL language display
+   - `rtl_text_processor.py` - Right-to-Left text processing for tkinter widgets (fallback RTL support)
+   - `pyside_overlay.py` - PySide6-based RTL translation overlays with native Qt RTL support
    - `language_manager.py` - Language code management and mappings for different translation services
    - `config_manager.py` - Configuration file handling with OCR Preview geometry support
    - `resource_handler.py` - Resource path resolution for packaged applications
@@ -90,7 +91,9 @@ ocr-translator/
 ├── convert_marian.py              # HuggingFace conversion script (© HuggingFace Team)
 ├── ocr_utils.py                   # OCR utility functions
 ├── overlay_manager.py             # Overlay window management
+├── pyside_overlay.py              # PySide6 RTL translation overlays with native Qt support
 ├── resource_handler.py            # Resource path resolution
+├── rtl_text_processor.py          # RTL text processing for tkinter widgets
 ├── translation_utils.py           # Translation utilities
 ├── ui_elements.py                 # Custom UI components
 ├── unified_translation_cache.py   # Unified LRU cache for all translation providers
@@ -383,11 +386,64 @@ The application supports multiple UI languages through:
 
 ### RTL Text Processing System
 
-The application includes comprehensive support for Right-to-Left (RTL) languages through the `rtl_text_processor.py` module, providing proper text display and punctuation handling for Arabic, Hebrew, and Persian languages.
+The application includes comprehensive support for Right-to-Left (RTL) languages through a hybrid architecture combining native Qt support (PySide6) with fallback tkinter processing, providing optimal text display and punctuation handling for Arabic, Hebrew, and Persian languages.
 
-#### RTLTextProcessor Class
+#### Hybrid RTL Architecture
 
-The RTLTextProcessor provides several key methods for handling RTL text:
+The application implements a two-tier RTL support system for maximum compatibility and performance:
+
+**Primary: PySide6 Native RTL Support**
+- **Technology**: Qt's native RTL + HTML rendering + Arabic reshaping
+- **Used for**: Translation overlay windows (target overlays)
+- **Advantages**: True bidirectional text support, perfect character positioning, native text rendering quality
+- **Implementation**: `pyside_overlay.py` module with `RTLTextDisplay` class
+
+**Fallback: tkinter + RTL Processor**
+- **Technology**: python-bidi + arabic-reshaper + tkinter text tags
+- **Used for**: When PySide6 unavailable or tkinter widgets
+- **Advantages**: Proven solution, full compatibility with existing setup
+- **Implementation**: `rtl_text_processor.py` module with `RTLTextProcessor` class
+
+#### PySide6 RTL Integration (`pyside_overlay.py`)
+
+The PySide6 integration provides superior RTL support through Qt's native capabilities:
+
+**Core Components:**
+- **`RTLTextDisplay`** - RTL-capable QTextEdit widget with tkinter compatibility methods
+- **`PySideTranslationOverlay`** - Native Qt window with resize/move handling
+- **`PySideOverlayManager`** - Manager for PySide overlays that coexists with tkinter
+
+**Key Features:**
+- **HTML-based RTL rendering** with `dir="rtl"` and `text-align: right`
+- **Native Arabic/Hebrew character shaping** using arabic-reshaper library
+- **Qt's bidirectional text algorithm** for proper text flow
+- **Full tkinter compatibility layer** for seamless integration
+- **Graceful fallback** when PySide6 unavailable
+
+**Architecture Benefits:**
+- ✅ **Solves Hebrew word wrapping issues** - Qt handles RTL text natively
+- ✅ **Proper punctuation positioning** - No manual repositioning needed
+- ✅ **Superior font rendering** - Qt's text engine vs tkinter limitations
+- ✅ **Zero breaking changes** - Existing code works unchanged
+- ✅ **Automatic detection** - Switches between PySide/tkinter seamlessly
+
+**Implementation Example:**
+```python
+# Automatic RTL detection and rendering
+if hasattr(self.app.translation_text, 'set_rtl_text'):
+    # PySide text widget - use Qt's native RTL display
+    self.app.translation_text.set_rtl_text(
+        text, language_code, bg_color, text_color, font_size
+    )
+else:
+    # Fallback to tkinter with RTL processor
+    processed_text = RTLTextProcessor.process_bidi_text(text, language_code)
+    # Apply to tkinter widget...
+```
+
+#### tkinter RTL Processor (`rtl_text_processor.py`)
+
+The RTLTextProcessor provides RTL support for tkinter widgets and serves as a fallback:
 
 **Core Features:**
 - **Punctuation repositioning** for RTL text display in tkinter widgets
@@ -421,11 +477,26 @@ The RTL processor uses a simplified approach optimized for tkinter limitations:
 - Focuses on punctuation correction rather than full text reversal
 - Maintains compatibility with tkinter Text widget constraints
 
+#### Shared Components and Integration
+
+**RTL Language Detection:** Unified between both systems for consistency
+```python
+# PySide overlay uses existing RTL processor for consistency
+from rtl_text_processor import RTLTextProcessor
+return RTLTextProcessor._is_rtl_language(lang_code)
+```
+
+**Arabic Reshaping:** Both systems use the `arabic-reshaper` library for proper character joining
+
+**Display Manager Integration:** Automatic detection and routing
+- Detects PySide vs tkinter text widgets automatically
+- Routes to appropriate RTL handling system
+- Maintains backward compatibility with existing code
+
 **Integration Points:**
-- Called from translation handlers when RTL target languages are detected
-- Integrated into display managers for proper UI text rendering
-- Used in overlay windows to ensure RTL translations display correctly
-- Applied to both OCR results and final translation output for RTL languages
+- **overlay_manager.py**: Creates PySide overlays with tkinter fallback
+- **display_manager.py**: Routes text updates to appropriate RTL system
+- **app_logic.py**: Safe widget existence checking for both systems
 
 **Supported Languages:**
 - **Persian (fa)**: Full support with Persian-specific punctuation handling
@@ -433,7 +504,19 @@ The RTL processor uses a simplified approach optimized for tkinter limitations:
 - **Hebrew (he)**: Hebrew text directionality and punctuation
 - **Language detection**: Automatic processing based on language code prefixes
 
-This system ensures that RTL translations appear correctly in the application's UI components, addressing the common challenge of RTL text display in Western UI frameworks.
+#### Dependencies
+
+**PySide6 RTL Support:**
+- `PySide6>=6.4.0` - Qt6 framework for native RTL support
+- `arabic-reshaper>=3.0.0` - Character shaping for Arabic/Persian
+- `python-bidi>=0.4.2` - BiDi algorithm (shared with tkinter fallback)
+
+**Graceful Degradation:**
+- Application works fully without PySide6 installed
+- Automatically falls back to proven tkinter RTL system
+- No functionality loss when PySide6 unavailable
+
+This hybrid system ensures that RTL translations appear correctly across all scenarios while providing optimal display quality when advanced RTL support is available.
 
 ### Working with Gemini API Files
 
@@ -795,5 +878,7 @@ The application has several categories of dependencies:
 - `google-cloud-translate` - Google Translate API
 - `deepl` - DeepL API
 - `torch` + `transformers` - MarianMT neural translation
+- `PySide6` - Qt6 framework for native RTL support in translation overlays
+- `python-bidi` + `arabic-reshaper` - BiDi algorithm and Arabic reshaping for RTL text processing
 
-The application gracefully handles missing optional dependencies and provides appropriate fallback behavior.
+The application gracefully handles missing optional dependencies and provides appropriate fallback behavior. When PySide6 is unavailable, the application automatically falls back to tkinter-based overlays with the existing RTL text processor.
