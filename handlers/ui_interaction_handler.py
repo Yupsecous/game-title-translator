@@ -66,8 +66,15 @@ class UIInteractionHandler:
                 self.app.target_text_colour_var.set(hex_color) 
                 if hasattr(self.app, 'color_displays') and 'target_text' in self.app.color_displays:
                     self.app.color_displays['target_text'].configure(bg=hex_color)
+                
+                # Update text color for both tkinter and PySide overlays
                 if self.app.translation_text and self.app.translation_text.winfo_exists():
                     self.app.translation_text.configure(fg=hex_color)
+                
+                # Also update the overlay if it has a specific text color update method
+                if (self.app.target_overlay and 
+                    hasattr(self.app.target_overlay, 'update_text_color')):
+                    self.app.target_overlay.update_text_color(hex_color)
             log_debug(f"Color {color_type} changed to: {hex_color}")
             
     def toggle_api_key_visibility(self, api_type_toggle):

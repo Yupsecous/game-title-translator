@@ -60,6 +60,11 @@ if PYSIDE6_AVAILABLE:
 
         def __init__(self, parent=None):
             super().__init__(parent)
+            # Initialize color storage attributes
+            self._bg_color = "#2c3e50"
+            self._fg_color = "#ecf0f1"
+            self._current_text = ""
+            self._current_language = None
             self.setup_widget()
 
         def setup_widget(self):
@@ -90,6 +95,12 @@ if PYSIDE6_AVAILABLE:
 
         def set_rtl_text(self, text: str, language_code: str = None, bg_color: str = "#2c3e50", text_color: str = "#ecf0f1", font_size: int = 14):
             """Set text content while respecting RTL/LTR and applying inline HTML."""
+            # Store current state for color updates
+            self._current_text = text
+            self._current_language = language_code
+            self._bg_color = bg_color
+            self._fg_color = text_color
+            
             # Normalize whitespace
             processed = text.replace('\r\n', '\n').replace('\r', '\n')
             processed = ' '.join(processed.split())
@@ -145,7 +156,7 @@ if PYSIDE6_AVAILABLE:
             rtl_pattern = r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]'
             return bool(re.search(rtl_pattern, text))
 
-        # Simple compatibility wrappers mimicking some tkinter Text behavior
+        # Simple compatibility wrappers mimicking tkinter Text behavior
         def winfo_exists(self):
             return True
 
@@ -153,12 +164,90 @@ if PYSIDE6_AVAILABLE:
             return self.isVisible()
 
         def config(self, **kwargs):
+            """Enhanced config method with full tkinter Text widget compatibility"""
             if 'state' in kwargs:
                 state_val = kwargs['state']
                 if 'DISABLED' in str(state_val).upper():
                     self.setReadOnly(True)
                 elif 'NORMAL' in str(state_val).upper():
                     self.setReadOnly(False)
+            
+            # Handle background color (bg parameter)
+            if 'bg' in kwargs:
+                bg_color = kwargs['bg']
+                try:
+                    # Update the widget's stylesheet for background color
+                    current_style = self.styleSheet()
+                    # Extract existing padding if present
+                    padding_match = re.search(r'padding:\s*([^;]+);', current_style)
+                    padding = padding_match.group(1) if padding_match else "5px"
+                    
+                    new_style = f"""
+                        QTextEdit {{
+                            background-color: {bg_color};
+                            border: none;
+                            padding: {padding};
+                        }}
+                    """
+                    self.setStyleSheet(new_style)
+                    
+                    # Store background color for later use
+                    self._bg_color = bg_color
+                    log_debug(f"PySide RTLTextDisplay: Updated background color to {bg_color}")
+                except Exception as e:
+                    log_debug(f"Error setting PySide text background color: {e}")
+            
+            # Handle foreground/text color (fg parameter)
+            if 'fg' in kwargs:
+                fg_color = kwargs['fg']
+                try:
+                    # Store text color for later use in HTML rendering
+                    self._fg_color = fg_color
+                    
+                    # Re-render current text with new color if text exists
+                    if hasattr(self, '_current_text') and hasattr(self, '_current_language'):
+                        self.set_rtl_text(
+                            self._current_text, 
+                            self._current_language, 
+                            getattr(self, '_bg_color', '#2c3e50'), 
+                            fg_color, 
+                            self.font().pointSize()
+                        )
+                    log_debug(f"PySide RTLTextDisplay: Updated text color to {fg_color}")
+                except Exception as e:
+                    log_debug(f"Error setting PySide text foreground color: {e}")
+            
+            # Handle font changes (font parameter)
+            if 'font' in kwargs:
+                font_spec = kwargs['font']
+                try:
+                    if isinstance(font_spec, tuple) and len(font_spec) >= 2:
+                        # Font specified as tuple (family, size, *style)
+                        font_family = font_spec[0]
+                        font_size = int(font_spec[1])
+                        
+                        # Update the widget font
+                        qfont = QFont(font_family, font_size)
+                        self.setFont(qfont)
+                        
+                        # Re-render current text with new font if text exists
+                        if hasattr(self, '_current_text') and hasattr(self, '_current_language'):
+                            self.set_rtl_text(
+                                self._current_text, 
+                                self._current_language, 
+                                getattr(self, '_bg_color', '#2c3e50'), 
+                                getattr(self, '_fg_color', '#ecf0f1'), 
+                                font_size
+                            )
+                        log_debug(f"PySide RTLTextDisplay: Updated font to {font_family} {font_size}")
+                    else:
+                        log_debug(f"Unsupported font specification format: {font_spec}")
+                except Exception as e:
+                    log_debug(f"Error setting PySide text font: {e}")
+
+        def configure(self, **kwargs):
+            """Alias for config method to match tkinter Text widget interface exactly"""
+            return self.config(**kwargs)
 
         def get(self, start=None, end=None):
             return self.toPlainText()
@@ -395,14 +484,30 @@ if PYSIDE6_AVAILABLE:
                     }}
                 """)
             if self.text_widget:
-                pad_x, pad_y = self._text_padding
-                self.text_widget.setStyleSheet(f"""
-                    QTextEdit {{
-                        background-color: {new_color};
-                        border: none;
-                        padding: {pad_y}px {pad_x}px;
-                    }}
-                """)
+                # Use the enhanced config method to ensure proper color handling
+                try:
+                    self.text_widget.config(bg=new_color)
+                    log_debug(f"PySide overlay: Updated text widget background color to {new_color}")
+                except Exception as e:
+                    log_debug(f"Error updating PySide text widget color: {e}")
+                    # Fallback to direct stylesheet update
+                    pad_x, pad_y = self._text_padding
+                    self.text_widget.setStyleSheet(f"""
+                        QTextEdit {{
+                            background-color: {new_color};
+                            border: none;
+                            padding: {pad_y}px {pad_x}px;
+                        }}
+                    """)
+
+        def update_text_color(self, new_text_color):
+            """Update text color for the translation display."""
+            if self.text_widget:
+                try:
+                    self.text_widget.config(fg=new_text_color)
+                    log_debug(f"PySide overlay: Updated text color to {new_text_color}")
+                except Exception as e:
+                    log_debug(f"Error updating PySide text color: {e}")
 
         def get_geometry(self):
             """Return geometry as [x1, y1, x2, y2] for compatibility with tkinter overlay code."""
