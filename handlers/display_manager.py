@@ -6,7 +6,12 @@ import numpy as np
 from PIL import Image, ImageTk
 from logger import log_debug
 
-# Import RTL text processor for proper punctuation handling
+# RTL Text Processing Architecture:
+# 1. PRIMARY: PySide overlay with Qt's native RTL support (optimal for all RTL languages)
+# 2. FALLBACK: tkinter with rtl_text_processor.py using python-bidi (legacy compatibility)
+# Both systems share RTL language detection for consistency
+
+# Import RTL text processor for tkinter fallback and shared utilities
 try:
     from rtl_text_processor import RTLTextProcessor
     RTL_PROCESSOR_AVAILABLE = True
@@ -225,7 +230,7 @@ class DisplayManager:
             text_content_main_thread: Text content to display
         """
         if not self.app.target_overlay or not self.app.target_overlay.winfo_exists() or \
-           not self.app.translation_text or not self.app.translation_text.winfo_exists():
+           not self.app.translation_text:
             return
 
         try:
@@ -234,13 +239,15 @@ class DisplayManager:
                 if not self.app.target_overlay.winfo_viewable():
                     self.app.target_overlay.show() 
                 else: # Ensure it's topmost if already visible
-                    self.app.target_overlay.attributes("-topmost", True)
+                    if hasattr(self.app.target_overlay, 'attributes'):
+                        self.app.target_overlay.attributes("-topmost", True)
+                    else:
+                        # PySide overlay - ensure it's on top
+                        self.app.target_overlay.raise_()
 
-            current_displayed_text = self.app.translation_text.get("1.0", tk.END).strip()
             new_text_to_display = text_content_main_thread.strip() if text_content_main_thread else ""
 
             log_debug(f"DisplayManager: Processing text for display: '{new_text_to_display}'")
-            log_debug(f"DisplayManager: RTL processor available: {RTL_PROCESSOR_AVAILABLE}")
 
             # Get target language code for RTL detection
             target_lang_code = None
@@ -259,25 +266,14 @@ class DisplayManager:
                         
                         # Check if it's already a language code
                         if (len(target_lang_name) <= 3 and 
-                            target_lang_lower in RTLTextProcessor.RTL_LANGUAGES):
+                            RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(target_lang_name)):
                             target_lang_code = target_lang_lower
                             log_debug(f"DisplayManager: Detected RTL language code: {target_lang_code}")
                         # Check if it's a display name for an RTL language  
-                        elif target_lang_lower in ['hebrew', 'arabic', 'persian', 'farsi', 'urdu', 'pashto', 'kurdish', 'sindhi', 'yiddish']:
-                            # Handle RTL display names directly
-                            rtl_name_to_code = {
-                                'hebrew': 'he',
-                                'arabic': 'ar', 
-                                'persian': 'fa',
-                                'farsi': 'fa',
-                                'urdu': 'ur',
-                                'pashto': 'ps',
-                                'kurdish': 'ku',
-                                'sindhi': 'sd',
-                                'yiddish': 'yi'
-                            }
-                            target_lang_code = rtl_name_to_code[target_lang_lower]
-                            log_debug(f"DisplayManager: Mapped RTL display name '{target_lang_name}' to code: {target_lang_code}")
+                        elif (RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(target_lang_name)):
+                            # Use RTL processor's enhanced detection for display names
+                            target_lang_code = target_lang_lower
+                            log_debug(f"DisplayManager: Detected RTL display name '{target_lang_name}' as RTL")
                         else:
                             # Convert display name to language code
                             if 'gemini' in current_model.lower():
@@ -292,34 +288,45 @@ class DisplayManager:
                 except Exception as e:
                     log_debug(f"DisplayManager: Error detecting language code: {e}")
 
-            # Check if language is RTL and we have the RTL processor
-            is_rtl = RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(target_lang_code)
-            
-            log_debug(f"DisplayManager: RTL detection - Language: '{target_lang_code}', Is RTL: {is_rtl}, RTL Processor Available: {RTL_PROCESSOR_AVAILABLE}")
-            
             # Store current text and language for resize handling
             self.current_logical_text = new_text_to_display
             self.current_language_code = target_lang_code
             
-            # Update text if changed
-            if current_displayed_text != new_text_to_display:
+            # Check if we're using PySide overlay (preferred for RTL) or tkinter (fallback)
+            if hasattr(self.app.translation_text, 'set_rtl_text'):
+                # PySide text widget - use Qt's native RTL display (optimal RTL handling)
+                log_debug(f"DisplayManager: Using PySide RTL text display for language: {target_lang_code}")
+                
+                # Get styling from app settings
+                text_color = self.app.target_text_colour_var.get()
+                font_size = self.app.target_font_size_var.get()
+                bg_color = self.app.target_colour_var.get()
+                
+                # Update the PySide text widget with native RTL support
+                self.app.translation_text.set_rtl_text(
+                    new_text_to_display, 
+                    target_lang_code, 
+                    bg_color, 
+                    text_color, 
+                    font_size
+                )
+            else:
+                # Fallback to tkinter handling using existing rtl_text_processor.py
+                log_debug(f"DisplayManager: Using tkinter text widget with RTL processor (fallback)")
+                # Check if language is RTL and we have the RTL processor
+                is_rtl = RTL_PROCESSOR_AVAILABLE and RTLTextProcessor._is_rtl_language(target_lang_code)
+                
                 if is_rtl and new_text_to_display:
-                    # Use manual wrapping approach for RTL text (like in the demo)
+                    # Use manual wrapping approach for RTL text
                     log_debug(f"DisplayManager: Using manual wrapping for RTL text - Language: {target_lang_code}")
-                    
-                    # Special logging for Hebrew to debug the issue
-                    if target_lang_code and 'he' in target_lang_code.lower():
-                        log_debug(f"DisplayManager: *** HEBREW DETECTED *** - Processing Hebrew text with manual wrapping")
                     
                     # Small delay for initial processing to ensure widget is ready
                     if not hasattr(self.app.translation_text, '_rtl_processed_once'):
-                        # First time processing - add delay to ensure widget is fully rendered
                         self.app.translation_text._rtl_processed_once = True
                         log_debug(f"DisplayManager: First-time RTL processing with delay for language: {target_lang_code}")
                         self.app.root.after(100, lambda: self.manually_wrap_and_process_rtl(
                             self.app.translation_text, new_text_to_display, target_lang_code, retry_count=0))
                     else:
-                        # Subsequent processing - no delay needed
                         log_debug(f"DisplayManager: Subsequent RTL processing for language: {target_lang_code}")
                         self.manually_wrap_and_process_rtl(self.app.translation_text, new_text_to_display, target_lang_code)
                 else:
@@ -338,12 +345,17 @@ class DisplayManager:
                     
                     self.app.translation_text.config(state=tk.DISABLED)
                 
-                self.app.translation_text.see("1.0") # Scroll to top
+                if hasattr(self.app.translation_text, 'see'):
+                    self.app.translation_text.see("1.0") # Scroll to top
+                
         except tk.TclError as e_uttomt: 
             log_debug(f"Error updating translation text widget (TclError, likely destroyed): {e_uttomt}")
         except Exception as e_uttomt_gen:
             log_debug(f"Unexpected error updating translation text: {type(e_uttomt_gen).__name__} - {e_uttomt_gen}")
-            if self.app.translation_text and self.app.translation_text.winfo_exists(): # Ensure disabled on other errors
+            if (self.app.translation_text and 
+                hasattr(self.app.translation_text, 'config') and 
+                hasattr(self.app.translation_text, 'winfo_exists') and 
+                self.app.translation_text.winfo_exists()): 
                 try: 
                     self.app.translation_text.config(state=tk.DISABLED)
                 except tk.TclError: 
