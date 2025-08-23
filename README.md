@@ -70,7 +70,7 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
-### 🚀 NEW in Version 3.5.5
+### 🚀 NEW in Version 3.5.7
 
 - **Persian Language Support**: Added comprehensive Persian language support to both Gemini API and Google Translate translation services
 - **Right-to-Left (RTL) Text Processing**: Enhanced text display formatting for RTL languages with improved punctuation positioning and proper text flow
