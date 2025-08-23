@@ -1940,7 +1940,7 @@ For more information, see the user manual."""
         create_source_overlay_om(self)
 
     def create_target_overlay(self):
-        create_target_overlay_om(self)
+        create_target_overlay_om(self)  # System recreation, preserve position
 
     def toggle_source_visibility(self):
         toggle_source_visibility_om(self)

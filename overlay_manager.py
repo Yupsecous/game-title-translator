@@ -147,7 +147,7 @@ def select_target_area_om(app):
             f"{app.ui_lang.get_label('dialog_target_area_set_message', 'Target display area set to:')}\n{app.target_area}", 
             parent=app.root
         )
-        create_target_overlay_om(app) # Call the overlay creation function
+        create_target_overlay_om(app, skip_preservation=True) # Call the overlay creation function, skip preservation for user selection
         
         # Hide target overlay by default after creation
         if app.target_overlay and app.target_overlay.winfo_exists() and app.target_overlay.winfo_viewable():
@@ -243,7 +243,7 @@ def _preserve_overlay_position(app):
     except Exception as e:
         log_debug(f"OverlayManager: Error preserving overlay position: {e}")
 
-def create_target_overlay_om(app):
+def create_target_overlay_om(app, skip_preservation=False):
     if not app.target_area or len(app.target_area) != 4:
          try:
              x1 = int(app.config['Settings'].get('target_area_x1', '200'))
@@ -255,17 +255,25 @@ def create_target_overlay_om(app):
              log_debug(f"OverlayManager: Could not load target area from config for overlay creation: {e}")
              return
 
-    # Clean up existing overlay - preserve position before destruction
+    # Clean up existing overlay - preserve position before destruction (unless skipped)
     if app.target_overlay and hasattr(app.target_overlay, 'winfo_exists'):
         try:
             if app.target_overlay.winfo_exists():
-                _preserve_overlay_position(app)  # Save current position before destroying
+                if not skip_preservation:
+                    _preserve_overlay_position(app)  # Save current position before destroying
+                    log_debug("OverlayManager: Preserved overlay position before recreation")
+                else:
+                    log_debug("OverlayManager: Skipped overlay position preservation (user area selection)")
                 app.target_overlay.destroy()
         except tk.TclError:
             log_debug("OverlayManager: Error destroying existing tkinter target overlay (already gone?).")
     elif app.target_overlay and hasattr(app.target_overlay, 'close'):
         try:
-            _preserve_overlay_position(app)  # Save current position before destroying
+            if not skip_preservation:
+                _preserve_overlay_position(app)  # Save current position before destroying
+                log_debug("OverlayManager: Preserved overlay position before recreation")
+            else:
+                log_debug("OverlayManager: Skipped overlay position preservation (user area selection)")
             app.target_overlay.close()
         except:
             log_debug("OverlayManager: Error destroying existing PySide target overlay (already gone?).")
@@ -463,7 +471,7 @@ def load_areas_from_config_om(app):
         app.target_area = [target_x1, target_y1, target_x2, target_y2] # Set on app instance
 
         if not app.target_overlay or not app.target_overlay.winfo_exists():
-            create_target_overlay_om(app) # Use OM function
+            create_target_overlay_om(app) # System loading from config, preserve position (though likely none to preserve)
             log_debug(f"OverlayManager: Created target overlay from config: {app.target_area}")
 
     except (ValueError, KeyError) as e:

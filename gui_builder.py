@@ -434,9 +434,9 @@ def create_settings_tab(app):
                         
                         if is_rtl != current_rtl_status:
                             log_debug(f"Text direction changed (RTL: {is_rtl}), recreating target overlay")
-                            # Import and recreate the target overlay with new RTL settings
+                            # Import and recreate the target overlay with new RTL settings (preserve position)
                             from overlay_manager import create_target_overlay_om
-                            create_target_overlay_om(app)
+                            create_target_overlay_om(app)  # System recreation, preserve position
                 except Exception as e:
                     log_debug(f"Error updating RTL configuration: {e}")
                 
