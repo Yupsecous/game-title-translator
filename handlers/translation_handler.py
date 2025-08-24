@@ -2037,6 +2037,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             if selected_translation_model == 'gemini_api' and not self._is_error_message(cached_result):
                 self._update_sliding_window(cleaned_text_main, cached_result)
             
+            # Apply dialog formatting before returning cached result
+            if cached_result and not self._is_error_message(cached_result):
+                cached_result = self._format_dialog_text(cached_result)
+            
             return cached_result
 
         # 2. Check File Cache
@@ -2061,6 +2065,11 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             )
             if selected_translation_model == 'gemini_api' and not self._is_error_message(file_cache_hit):
                 self._update_sliding_window(cleaned_text_main, file_cache_hit)
+            
+            # Apply dialog formatting before returning file cache result
+            if file_cache_hit and not self._is_error_message(file_cache_hit):
+                file_cache_hit = self._format_dialog_text(file_cache_hit)
+            
             return file_cache_hit
 
         # 3. All Caches Miss - Perform API Call  
@@ -2102,7 +2111,82 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
         log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s{batch_info}")
+        
+        # Apply dialog formatting before returning
+        if translated_api_text and not self._is_error_message(translated_api_text):
+            translated_api_text = self._format_dialog_text(translated_api_text)
+        
         return translated_api_text
+
+    def _format_dialog_text(self, text):
+        """Format dialog text by adding line breaks before dashes that follow sentence-ending punctuation.
+        
+        This pre-processing ensures that dialog like:
+        "- How are you? - Fine. - Great."
+        
+        becomes:
+        "- How are you?
+        - Fine.
+        - Great."
+        
+        Args:
+            text (str): The translation text to format
+            
+        Returns:
+            str: The formatted text with proper dialog line breaks
+        """
+        # DEBUG: Always log when this function is called
+        log_debug(f"DIALOG_FORMAT_DEBUG: _format_dialog_text called with: {repr(text)}")
+        
+        if not text or not isinstance(text, str):
+            log_debug(f"DIALOG_FORMAT_DEBUG: Text is None or not string, returning: {repr(text)}")
+            return text
+        
+        # Check if the text starts with any dash (more robust - no space required)
+        dash_check = (text.startswith("-") or text.startswith("–") or text.startswith("—"))
+        log_debug(f"DIALOG_FORMAT_DEBUG: Text starts with dash: {dash_check}")
+        
+        if not dash_check:
+            log_debug(f"DIALOG_FORMAT_DEBUG: Text doesn't start with dash, returning unchanged")
+            return text
+        
+        log_debug(f"DIALOG_FORMAT_DEBUG: Text starts with dash, proceeding with formatting")
+        
+        # Apply the formatting transformations
+        formatted_text = text
+        
+        # Check for patterns before applying
+        patterns_found = []
+        patterns_to_check = [". -", ". –", ". —", "? -", "? –", "? —", "! -", "! –", "! —"]
+        for pattern in patterns_to_check:
+            if pattern in text:
+                patterns_found.append(pattern)
+        
+        log_debug(f"DIALOG_FORMAT_DEBUG: Patterns found: {patterns_found}")
+        
+        # Replace ". -" with ".\n-" (period + space + hyphen)
+        formatted_text = formatted_text.replace(". -", ".\n-")
+        formatted_text = formatted_text.replace(". –", ".\n–")
+        formatted_text = formatted_text.replace(". —", ".\n—")
+        
+        # Replace "? -" with "?\n-" (question mark + space + hyphen)
+        formatted_text = formatted_text.replace("? -", "?\n-")
+        formatted_text = formatted_text.replace("? –", "?\n–")
+        formatted_text = formatted_text.replace("? —", "?\n—")
+        
+        # Replace "! -" with "!\n-" (exclamation mark + space + hyphen)
+        formatted_text = formatted_text.replace("! -", "!\n-")
+        formatted_text = formatted_text.replace("! –", "!\n–")
+        formatted_text = formatted_text.replace("! —", "!\n—")
+        
+        if formatted_text != text:
+            log_debug(f"DIALOG_FORMAT_DEBUG: Dialog formatting applied!")
+            log_debug(f"DIALOG_FORMAT_DEBUG: Original: {repr(text)}")
+            log_debug(f"DIALOG_FORMAT_DEBUG: Formatted: {repr(formatted_text)}")
+        else:
+            log_debug(f"DIALOG_FORMAT_DEBUG: No changes made to text")
+        
+        return formatted_text
     
     def _is_error_message(self, text):
         """Check if a translation result is an error message."""
