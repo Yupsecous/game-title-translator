@@ -129,8 +129,6 @@ if PYSIDE6_AVAILABLE:
             # CRITICAL FIX: Convert newlines to HTML line breaks for proper dialog formatting
             # HTML ignores \n characters, so we need to convert them to <br> tags
             html_processed = processed.replace('\n', '<br>')
-            print(processed)
-            print(html_processed)
 
             if is_rtl:
                 self.setLayoutDirection(Qt.RightToLeft)
