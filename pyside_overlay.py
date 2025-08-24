@@ -101,9 +101,16 @@ if PYSIDE6_AVAILABLE:
             self._bg_color = bg_color
             self._fg_color = text_color
             
-            # Normalize whitespace
+            # Normalize whitespace WHILE PRESERVING intentional line breaks (SURGICAL FIX)
             processed = text.replace('\r\n', '\n').replace('\r', '\n')
-            processed = ' '.join(processed.split())
+            # Split by lines, clean whitespace within each line, then rejoin with newlines
+            lines = processed.split('\n')
+            cleaned_lines = []
+            for line in lines:
+                # Clean excessive whitespace within each line, but preserve the line structure
+                cleaned_line = ' '.join(line.split())  # This only affects whitespace within the line
+                cleaned_lines.append(cleaned_line)
+            processed = '\n'.join(cleaned_lines)
 
             # Determine direction heuristically if language_code not provided
             is_rtl = False
@@ -119,15 +126,21 @@ if PYSIDE6_AVAILABLE:
                 except Exception:
                     pass
 
+            # CRITICAL FIX: Convert newlines to HTML line breaks for proper dialog formatting
+            # HTML ignores \n characters, so we need to convert them to <br> tags
+            html_processed = processed.replace('\n', '<br>')
+            print(processed)
+            print(html_processed)
+
             if is_rtl:
                 self.setLayoutDirection(Qt.RightToLeft)
                 html_text = f"""<div style="text-align: right; direction: rtl; font-family: '{self.font().family()}'; font-size: {font_size}pt; color: {text_color};">
-                {processed}
+                {html_processed}
                 </div>"""
             else:
                 self.setLayoutDirection(Qt.LeftToRight)
                 html_text = f"""<div style="text-align: left; direction: ltr; font-family: '{self.font().family()}'; font-size: {font_size}pt; color: {text_color};">
-                {processed}
+                {html_processed}
                 </div>"""
 
             # Use HTML insertion for richer control

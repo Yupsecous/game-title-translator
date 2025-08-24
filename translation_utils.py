@@ -22,7 +22,21 @@ def get_lang_code_for_translation_api(lang_code):
 
 def post_process_translation_text(text):
     if not text: return text
+    
+    # Fix spacing before punctuation marks
     text = re.sub(r'\s+\?', '?', text)
     text = re.sub(r'([.!?])([A-Z])', r'\1 \2', text)
-    text = re.sub(r'\s{2,}', ' ', text)
+    
+    # PRESERVE dialog line breaks while cleaning up excessive spaces
+    # Split by newlines, clean spaces within each line, then rejoin
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        # Clean up multiple spaces within each line, but preserve the line structure
+        cleaned_line = re.sub(r'[ \t]{2,}', ' ', line)  # Only target spaces and tabs, not newlines
+        cleaned_lines.append(cleaned_line)
+    
+    # Rejoin with preserved newlines
+    text = '\n'.join(cleaned_lines)
+    
     return text
