@@ -1719,7 +1719,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Create OCR prompt with error correction - use exact prompt requested
             # prompt = f"""1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.
 # 2. If there is no text in the image, return only: <EMPTY>."""
-            prompt = f"""1. Transcribe the subtitles from the image but ignore any other text. Transcribe the subtitles exactly as they appear. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all subtitles in the image. Don't return anything else.
+            prompt = f"""1. Transcribe the subtitles from the image but ignore any other text. Transcribe the subtitles exactly as they appear but replace line breaks with spaces. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all subtitles in the image. Don't return anything else.
 2. If there are no subtitles in the image, return only: <EMPTY>."""
             
             log_debug(f"Making Gemini OCR API call for language: {source_lang_name}")
