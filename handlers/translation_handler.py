@@ -2170,6 +2170,38 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         log_debug(f"DIALOG_FORMAT_DEBUG: Patterns found: {patterns_found}")
         
+        # New rule: Handle quoted dialogue format
+        dialogue_patterns = ['"-', '" "', '- "', '" - "']
+        has_dialogue_quotes = formatted_text.count('"') >= 4
+        has_dialogue_pattern = any(pattern in formatted_text for pattern in dialogue_patterns)
+
+        if has_dialogue_quotes and has_dialogue_pattern:
+            # Check if there are occurrences of '"-'
+            if '"-' in formatted_text:
+                # Replace '"-' with '-'
+                formatted_text = formatted_text.replace('"-', '-')
+            # Check if there are occurrences of '- "' (dash + space + quote)
+            elif '- "' in formatted_text:
+                # Replace '- "' with '-'
+                formatted_text = formatted_text.replace('- "', '-')
+            else:
+                # Replace odd occurrences of '"' with '-'
+                result = []
+                quote_count = 0
+                for char in formatted_text:
+                    if char == '"':
+                        quote_count += 1
+                        if quote_count % 2 == 1:  # Odd occurrence (1st, 3rd, 5th, etc.)
+                            result.append('-')
+                        else:  # Even occurrence (2nd, 4th, 6th, etc.)
+                            result.append('"')
+                    else:
+                        result.append(char)
+                formatted_text = ''.join(result)
+            
+            # Remove all remaining quotes
+            formatted_text = formatted_text.replace('"', '')
+
         # Replace ". -" with ".\n-" (period + space + hyphen)
         formatted_text = formatted_text.replace(". -", ".\n-")
         formatted_text = formatted_text.replace(". –", ".\n–")
