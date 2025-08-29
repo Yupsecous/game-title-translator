@@ -28,15 +28,16 @@ def main_entry_point():
             if update_info:
                 log_debug(f"Applying staged update to version: {update_info.get('version', 'unknown')}")
             
-            # Apply the update
+            # Apply the update - this will launch batch file and return True if successful
             success = update_applier.apply_staged_update()
             
             if success:
-                log_debug("Staged update applied successfully")
-                # Optional: Clean up backup after successful update
-                # update_applier.cleanup_backup()  # Commented out to keep backup for safety
+                log_debug("Staged update batch file launched - exiting for update")
+                # Exit immediately to allow batch file to replace executable
+                print("Update is being applied. Application will restart automatically...")
+                return  # Exit the function, don't start GUI
             else:
-                log_debug("Staged update application failed")
+                log_debug("Staged update application failed - continuing with normal startup")
         else:
             log_debug("No staged update found")
             
