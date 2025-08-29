@@ -36,6 +36,8 @@ from worker_threads import run_capture_thread, run_ocr_thread, run_translation_t
 from language_manager import LanguageManager
 from language_ui import UILanguageManager
 
+from constants import APP_VERSION, APP_RELEASE_DATE
+from update_checker import UpdateChecker
 from handlers import (
     CacheManager, 
     ConfigurationHandler, 
@@ -440,6 +442,9 @@ class GameChangingTranslator:
         self.translation_cache = {}
         
         self.cache_manager = CacheManager(self)
+        
+        # Initialize Update Checker
+        self.update_checker = UpdateChecker()
 
         # Only set Tesseract path when actually using Tesseract OCR
         if self.ocr_model_var.get() == 'tesseract':
@@ -546,9 +551,9 @@ class GameChangingTranslator:
         about_frame = ttk.LabelFrame(scrollable_about, text=self.ui_lang.get_label("about_tab_title", "About"))
         about_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Hard-coded About content based on language
+        # Dynamic About content using centralized version
         if self.ui_lang.current_lang == 'pol':
-            about_text = """Game-Changing Translator 3.5.7 (wersja z 22 sierpnia 2025 r.)
+            about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE} r.)
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -558,7 +563,7 @@ Program został napisany w\u00a0języku Python przy użyciu następujących mode
 
 Więcej informacji zawiera instrukcja obsługi."""
         else:
-            about_text = """Game-Changing Translator v3.5.7 (Released 22 August 2025)
+            about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -574,6 +579,21 @@ For more information, see the user manual."""
         about_text_widget.pack(fill="both", expand=True, padx=20, pady=20)
         about_text_widget.insert(tk.END, about_text)
         about_text_widget.config(state=tk.DISABLED)  # Make it read-only
+        
+        # Add Check for Updates button
+        update_button_frame = ttk.Frame(about_frame)
+        update_button_frame.pack(fill="x", padx=20, pady=10)
+        
+        check_updates_btn = ttk.Button(
+            update_button_frame, 
+            text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
+            command=self.check_for_updates,
+            width=20
+        )
+        check_updates_btn.pack(side="left")
+        
+        # Store reference for language updates
+        self.check_updates_btn = check_updates_btn
 
         # Handle tab change events to set focus appropriately
         def on_tab_changed(event):
@@ -1586,6 +1606,238 @@ For more information, see the user manual."""
         except Exception as e:
             log_debug(f"Error exporting statistics to text: {e}")
             messagebox.showerror("Export Error", f"Error exporting statistics: {str(e)}")
+    
+    # =============================================================================
+    # AUTO-UPDATE SYSTEM METHODS
+    # =============================================================================
+    
+    def check_for_updates(self):
+        """Check for updates and handle the user interaction."""
+        try:
+            log_debug("User initiated update check")
+            
+            # Show checking dialog
+            if self.ui_lang.current_lang == 'pol':
+                check_msg = "Sprawdzanie aktualizacji..."
+                check_title = "Sprawdzanie aktualizacji"
+            else:
+                check_msg = "Checking for updates..."
+                check_title = "Checking for Updates"
+            
+            # Create a progress dialog
+            progress_dialog = self._create_progress_dialog(check_title, check_msg)
+            progress_dialog.update()
+            
+            try:
+                # Check for updates
+                update_info = self.update_checker.check_for_updates()
+                
+                # Close progress dialog
+                progress_dialog.destroy()
+                
+                if update_info:
+                    # Update available - show confirmation dialog
+                    if self._show_update_confirmation_dialog(update_info):
+                        # User confirmed - download update
+                        self._download_and_stage_update(update_info)
+                else:
+                    # No updates available
+                    self._show_no_updates_dialog()
+                    
+            except Exception as e:
+                # Close progress dialog
+                try:
+                    progress_dialog.destroy()
+                except:
+                    pass
+                raise e
+                
+        except Exception as e:
+            log_debug(f"Error checking for updates: {e}")
+            self._show_update_error_dialog(str(e))
+    
+    def _create_progress_dialog(self, title, message):
+        """Create a simple progress dialog."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.geometry("300x100")
+        dialog.resizable(False, False)
+        
+        # Center on parent window
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Add message
+        ttk.Label(dialog, text=message).pack(pady=20)
+        
+        return dialog
+    
+    def _show_update_confirmation_dialog(self, update_info):
+        """Show update confirmation dialog and return user choice."""
+        try:
+            current_version = APP_VERSION
+            new_version = update_info['version']
+            release_notes = update_info.get('release_notes', '')[:300]  # Limit length
+            file_size = self.update_checker.format_file_size(update_info.get('size', 0))
+            
+            if self.ui_lang.current_lang == 'pol':
+                title = "Aktualizacja dostępna"
+                message = f"Nowa wersja {new_version} jest dostępna!\n\n"
+                message += f"Aktualna wersja: {current_version}\n"
+                message += f"Nowa wersja: {new_version}\n"
+                if file_size != "Unknown size":
+                    message += f"Rozmiar pliku: {file_size}\n\n"
+                if release_notes.strip():
+                    message += f"Informacje o wydaniu:\n{release_notes}\n\n"
+                message += "Czy chcesz pobrać i zainstalować aktualizację?"
+            else:
+                title = "Update Available"
+                message = f"New version {new_version} is available!\n\n"
+                message += f"Current version: {current_version}\n"
+                message += f"New version: {new_version}\n"
+                if file_size != "Unknown size":
+                    message += f"File size: {file_size}\n\n"
+                if release_notes.strip():
+                    message += f"Release notes:\n{release_notes}\n\n"
+                message += "Would you like to download and install the update?"
+            
+            return messagebox.askyesno(title, message)
+            
+        except Exception as e:
+            log_debug(f"Error showing update confirmation dialog: {e}")
+            return False
+    
+    def _show_no_updates_dialog(self):
+        """Show no updates available dialog."""
+        if self.ui_lang.current_lang == 'pol':
+            title = "Brak aktualizacji"
+            message = f"Masz najnowszą wersję!\n\nAktualna wersja: {APP_VERSION}"
+        else:
+            title = "No Updates"
+            message = f"You have the latest version!\n\nCurrent version: {APP_VERSION}"
+        
+        messagebox.showinfo(title, message)
+    
+    def _show_update_error_dialog(self, error_message):
+        """Show update error dialog."""
+        if self.ui_lang.current_lang == 'pol':
+            title = "Błąd aktualizacji"
+            message = f"Nie można sprawdzić aktualizacji:\n\n{error_message}"
+        else:
+            title = "Update Error"
+            message = f"Unable to check for updates:\n\n{error_message}"
+        
+        messagebox.showerror(title, message)
+    
+    def _download_and_stage_update(self, update_info):
+        """Download and stage the update with progress dialog."""
+        try:
+            log_debug(f"Starting download of update: {update_info['version']}")
+            
+            if self.ui_lang.current_lang == 'pol':
+                title = "Pobieranie aktualizacji"
+                initial_msg = "Pobieranie aktualizacji..."
+            else:
+                title = "Downloading Update"
+                initial_msg = "Downloading update..."
+            
+            # Create progress dialog
+            progress_dialog = tk.Toplevel(self.root)
+            progress_dialog.title(title)
+            progress_dialog.geometry("400x150")
+            progress_dialog.resizable(False, False)
+            progress_dialog.transient(self.root)
+            progress_dialog.grab_set()
+            
+            # Progress label
+            progress_label = ttk.Label(progress_dialog, text=initial_msg)
+            progress_label.pack(pady=10)
+            
+            # Progress bar
+            progress_var = tk.DoubleVar()
+            progress_bar = ttk.Progressbar(
+                progress_dialog, 
+                variable=progress_var, 
+                maximum=100,
+                length=350
+            )
+            progress_bar.pack(pady=10)
+            
+            # Status label
+            status_label = ttk.Label(progress_dialog, text="")
+            status_label.pack(pady=5)
+            
+            def progress_callback(current, total, status):
+                """Update progress dialog."""
+                try:
+                    if total > 0:
+                        percentage = (current / total) * 100
+                        progress_var.set(percentage)
+                        
+                        # Format size display
+                        current_mb = current / (1024 * 1024)
+                        total_mb = total / (1024 * 1024)
+                        
+                        if self.ui_lang.current_lang == 'pol':
+                            status_text = f"{current_mb:.1f} MB z {total_mb:.1f} MB ({percentage:.1f}%)"
+                        else:
+                            status_text = f"{current_mb:.1f} MB of {total_mb:.1f} MB ({percentage:.1f}%)"
+                        
+                        status_label.config(text=status_text)
+                    
+                    progress_dialog.update()
+                except:
+                    pass  # Ignore errors in progress updates
+            
+            # Start download in the main thread (blocking)
+            progress_dialog.update()
+            success = self.update_checker.download_update(update_info, progress_callback)
+            
+            # Close progress dialog
+            progress_dialog.destroy()
+            
+            if success:
+                self._show_restart_required_dialog()
+            else:
+                if self.ui_lang.current_lang == 'pol':
+                    title = "Błąd pobierania"
+                    message = "Nie udało się pobrać aktualizacji. Spróbuj ponownie później."
+                else:
+                    title = "Download Error"
+                    message = "Failed to download update. Please try again later."
+                
+                messagebox.showerror(title, message)
+                
+        except Exception as e:
+            log_debug(f"Error downloading update: {e}")
+            try:
+                progress_dialog.destroy()
+            except:
+                pass
+            
+            if self.ui_lang.current_lang == 'pol':
+                title = "Błąd pobierania"
+                message = f"Błąd podczas pobierania aktualizacji:\n\n{str(e)}"
+            else:
+                title = "Download Error"
+                message = f"Error downloading update:\n\n{str(e)}"
+            
+            messagebox.showerror(title, message)
+    
+    def _show_restart_required_dialog(self):
+        """Show restart required dialog."""
+        if self.ui_lang.current_lang == 'pol':
+            title = "Wymagane ponowne uruchomienie"
+            message = "Aktualizacja została pobrana pomyślnie!\n\n"
+            message += "Aby zastosować aktualizację, zamknij aplikację i uruchom ją ponownie.\n\n"
+            message += "Aktualizacja zostanie automatycznie zastosowana przy następnym uruchomieniu."
+        else:
+            title = "Restart Required"
+            message = "Update downloaded successfully!\n\n"
+            message += "To apply the update, please close the application and start it again.\n\n"
+            message += "The update will be applied automatically on the next startup."
+        
+        messagebox.showinfo(title, message)
 
     def toggle_debug_logging(self):
         """Toggle debug logging on/off and update button text."""

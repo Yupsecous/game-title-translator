@@ -62,6 +62,14 @@ test_*.py
 *Test*.md
 *fix*.md
 *TO_EXCLUDE*.md
+AUTO_UPDATE_TESTING_GUIDE.md
+
+# Auto-update system temporary directories and files
+update_staging/
+update_backup/
+temp_preserve/
+*.staged
+update_info.json
 cleanup_repository.py
 *prompt*.txt
 GPU_chat/
