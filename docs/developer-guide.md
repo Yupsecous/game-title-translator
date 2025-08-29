@@ -48,6 +48,8 @@ Game-Changing Translator follows a modular design with the following key compone
    - `config_manager.py` - Configuration file handling with OCR Preview geometry support
    - `resource_handler.py` - Resource path resolution for packaged applications
    - `resource_copier.py` - Resource management for compiled executables
+   - `update_checker.py` - GitHub API integration for automatic update checking
+   - `update_applier.py` - Simple update application system with batch file creation
    - `logger.py` - Logging functionality
    - `constants.py` - Application constants and language definitions
 
@@ -97,6 +99,8 @@ ocr-translator/
 ├── translation_utils.py           # Translation utilities
 ├── ui_elements.py                 # Custom UI components
 ├── unified_translation_cache.py   # Unified LRU cache for all translation providers
+├── update_checker.py              # GitHub API integration for automatic update checking
+├── update_applier.py              # Simple update application system with batch file creation
 └── worker_threads.py              # Worker thread implementations
 ```
 
@@ -334,6 +338,55 @@ Gemini(LANG_PAIR,timestamp):original_text:==:translated_text
 - Works alongside unified in-memory cache (Level 1)
 - Reduces API costs through intelligent caching
 - Cache effectiveness depends on OCR consistency
+
+### Auto-Update System
+
+The application features a complete auto-update system that allows users to easily update to the latest version through a "Check for Updates" button in the About tab.
+
+#### Update Checker (`update_checker.py`)
+
+The UpdateChecker class provides GitHub API integration for checking and downloading updates:
+
+**Core Features:**
+- **GitHub API Integration** - Queries the latest release information from GitHub API
+- **Version Comparison** - Uses semantic version comparison to detect newer versions
+- **Asset Download** - Downloads the main executable installer from GitHub releases  
+- **Progress Monitoring** - Provides download progress callbacks for UI updates
+- **Staging System** - Downloads updates to a staging directory for safe application
+
+**Key Methods:**
+- `check_for_updates()` - Queries GitHub API for latest release information
+- `download_update(update_info, progress_callback)` - Downloads update file with progress tracking
+- `has_staged_update()` - Checks if there's a staged update waiting to be applied
+- `get_staged_update_info()` - Retrieves metadata about staged updates
+
+#### Update Applier (`update_applier.py`)
+
+The UpdateApplier class handles the actual application of downloaded updates:
+
+**Core Features:**
+- **Simple Batch File Creation** - Creates minimal Windows batch scripts for update installation
+- **File Preservation** - Preserves user configuration files (.log, .ini, .txt) during updates
+- **Clean Installation** - Removes old application files before installing new version
+- **Graceful Process Termination** - Waits for application to close before applying updates
+- **Self-Cleanup** - Batch files automatically clean up temporary files and self-delete
+
+**Update Process:**
+1. Creates staging directory with downloaded installer
+2. Generates Windows batch file with update commands
+3. Batch file waits for application termination
+4. Preserves user configuration files
+5. Removes old application files and directories
+6. Extracts new version from installer
+7. Restores user configuration files
+8. Launches updated application
+9. Cleans up temporary files and self-deletes
+
+**Safety Features:**
+- Validates staged files before applying updates
+- Checks file sizes to ensure complete downloads
+- Preserves user data throughout the update process
+- Provides fallback behavior for failed updates
 
 ### Dynamic Gemini Models Configuration
 

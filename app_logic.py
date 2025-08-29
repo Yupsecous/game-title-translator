@@ -36,7 +36,7 @@ from worker_threads import run_capture_thread, run_ocr_thread, run_translation_t
 from language_manager import LanguageManager
 from language_ui import UILanguageManager
 
-from constants import APP_VERSION, APP_RELEASE_DATE
+from constants import APP_VERSION, APP_RELEASE_DATE, APP_RELEASE_DATE_POLISH
 from update_checker import UpdateChecker
 from handlers import (
     CacheManager, 
@@ -553,7 +553,7 @@ class GameChangingTranslator:
         
         # Dynamic About content using centralized version
         if self.ui_lang.current_lang == 'pol':
-            about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE} r.)
+            about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE_POLISH} r.)
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -591,6 +591,14 @@ For more information, see the user manual."""
             width=20
         )
         check_updates_btn.pack(side="left")
+        
+        # Enable/disable button based on execution environment
+        import sys
+        is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+        if is_compiled:
+            check_updates_btn.config(state="normal")
+        else:
+            check_updates_btn.config(state="disabled")
         
         # Store reference for language updates
         self.check_updates_btn = check_updates_btn
@@ -2656,9 +2664,9 @@ For more information, see the user manual."""
             about_frame = ttk.LabelFrame(scrollable_about, text=self.ui_lang.get_label("about_tab_title", "About"))
             about_frame.pack(fill="both", expand=True, padx=10, pady=10)
             
-            # Hard-coded About content based on language
+            # Dynamic About content using centralized version from constants.py
             if self.ui_lang.current_lang == 'pol':
-                about_text = """Game-Changing Translator 3.5.7 (wersja z 22 sierpnia 2025)
+                about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE_POLISH} r.)
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -2668,7 +2676,7 @@ Program został napisany w\u00a0języku Python przy użyciu następujących mode
 
 Więcej informacji zawiera instrukcja obsługi."""
             else:
-                about_text = """Game-Changing Translator v3.5.7 (Released 22 August 2025)
+                about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
 
 Copyright © 2025 Tomasz Kamiński
 
@@ -2684,6 +2692,29 @@ For more information, see the user manual."""
             about_text_widget.pack(fill="both", expand=True, padx=20, pady=20)
             about_text_widget.insert(tk.END, about_text)
             about_text_widget.config(state=tk.DISABLED)  # Make it read-only
+            
+            # Add Check for Updates button
+            update_button_frame = ttk.Frame(about_frame)
+            update_button_frame.pack(fill="x", padx=20, pady=10)
+            
+            check_updates_btn = ttk.Button(
+                update_button_frame, 
+                text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
+                command=self.check_for_updates,
+                width=20
+            )
+            check_updates_btn.pack(side="left")
+            
+            # Enable/disable button based on execution environment
+            import sys
+            is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+            if is_compiled:
+                check_updates_btn.config(state="normal")
+            else:
+                check_updates_btn.config(state="disabled")
+            
+            # Store reference for language updates
+            self.check_updates_btn = check_updates_btn
             
             # Update translation model UI visibility based on current selection
             self.ui_interaction_handler.update_translation_model_ui()
