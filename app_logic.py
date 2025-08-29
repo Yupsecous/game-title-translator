@@ -1797,7 +1797,8 @@ For more information, see the user manual."""
             progress_dialog.destroy()
             
             if success:
-                self._show_restart_required_dialog()
+                # Immediately apply the update instead of waiting for restart
+                self._apply_update_immediately()
             else:
                 if self.ui_lang.current_lang == 'pol':
                     title = "Błąd pobierania"
@@ -1838,6 +1839,97 @@ For more information, see the user manual."""
             message += "The update will be applied automatically on the next startup."
         
         messagebox.showinfo(title, message)
+    
+    def _apply_update_immediately(self):
+        """Apply the update immediately using the batch file approach."""
+        try:
+            log_debug("Applying update immediately after download")
+            
+            # Import UpdateApplier here to avoid circular imports
+            from update_applier import UpdateApplier
+            update_applier = UpdateApplier()
+            
+            # Check if we have a staged update
+            if not update_applier.has_staged_update():
+                log_debug("No staged update found for immediate application")
+                self._show_update_error_dialog("No staged update found")
+                return
+            
+            # Show confirmation dialog before applying update  
+            if self.ui_lang.current_lang == 'pol':
+                title = "Zastosuj aktualizację"
+                message = "Aktualizacja została pobrana pomyślnie!\n\n"
+                message += "Aplikacja zostanie zamknięta i automatycznie uruchomiona ponownie z nową wersją.\n\n"
+                message += "Kliknij OK, aby kontynuować."
+            else:
+                title = "Apply Update"
+                message = "Update downloaded successfully!\n\n"
+                message += "The application will close and automatically restart with the new version.\n\n"
+                message += "Click OK to continue."
+            
+            # Show info dialog with just OK button
+            messagebox.showinfo(title, message)
+            
+            # Apply the update - this will create the batch file and return True if successful
+            success = update_applier.apply_staged_update()
+            
+            if success:
+                log_debug("Update batch file created successfully - exiting application")
+                
+                # Show brief message before exit
+                if self.ui_lang.current_lang == 'pol':
+                    exit_title = "Zastosowanie aktualizacji"
+                    exit_msg = "Aktualizacja jest stosowana...\n\nAplikacja zostanie automatycznie uruchomiona ponownie."
+                else:
+                    exit_title = "Applying Update"
+                    exit_msg = "Update is being applied...\n\nThe application will restart automatically."
+                
+                # Show non-blocking message
+                temp_dialog = tk.Toplevel(self.root)
+                temp_dialog.title(exit_title)
+                temp_dialog.geometry("350x120")
+                temp_dialog.resizable(False, False)
+                temp_dialog.transient(self.root)
+                ttk.Label(temp_dialog, text=exit_msg, justify="center").pack(pady=20)
+                temp_dialog.update()
+                
+                # Exit after short delay to allow user to see the message
+                self.root.after(2000, self._exit_for_update)
+            else:
+                log_debug("Failed to apply update immediately")
+                if self.ui_lang.current_lang == 'pol':
+                    error_title = "Błąd aktualizacji"
+                    error_msg = "Nie udało się zastosować aktualizacji.\n\nSpróbuj ponownie lub uruchom aplikację ponownie, aby zastosować aktualizację."
+                else:
+                    error_title = "Update Error"
+                    error_msg = "Failed to apply update.\n\nPlease try again or restart the application to apply the update."
+                
+                messagebox.showerror(error_title, error_msg)
+                
+        except Exception as e:
+            log_debug(f"Error applying update immediately: {e}")
+            if self.ui_lang.current_lang == 'pol':
+                error_title = "Błąd aktualizacji"
+                error_msg = f"Wystąpił błąd podczas stosowania aktualizacji:\n\n{str(e)}\n\nUruchom aplikację ponownie, aby zastosować aktualizację."
+            else:
+                error_title = "Update Error"
+                error_msg = f"An error occurred while applying the update:\n\n{str(e)}\n\nRestart the application to apply the update."
+            
+            messagebox.showerror(error_title, error_msg)
+    
+    def _exit_for_update(self):
+        """Exit the application for update application."""
+        log_debug("Exiting application for update")
+        try:
+            # Close all threads and cleanup
+            self.is_running = False
+            
+            # Give threads a moment to stop
+            self.root.after(500, self.root.quit)
+        except Exception as e:
+            log_debug(f"Error during update exit: {e}")
+            # Force quit
+            self.root.quit()
 
     def toggle_debug_logging(self):
         """Toggle debug logging on/off and update button text."""
