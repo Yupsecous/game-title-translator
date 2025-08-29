@@ -53,6 +53,9 @@ a = Analysis(
         'ui_elements',
         'worker_threads',
         'main',
+        # Auto-update system modules
+        'update_checker',  # GitHub API integration and download logic
+        'update_applier',  # Startup update detection and application
         # Handler modules
         'handlers',
         'handlers.cache_manager',
