@@ -5,6 +5,31 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.8] - 2025-08-29
+
+### Added
+- **Auto-Update System**: Complete auto-update functionality accessible through "Check for Updates" button in the About tab
+  - GitHub API integration for checking latest releases automatically
+  - Simple one-click update process with progress tracking
+  - Safe update application with user file preservation
+  - Staging system for secure update downloads and installation
+
+### Changed
+- **Improved Subtitle Display for Dialogs**: Enhanced formatting of conversational subtitles with proper line breaks
+  - Previous format: `   - How are you? - Fine.    `  
+  - New format with proper line separation:
+    ```
+        - How are you?
+        - Fine.                 
+    ```
+  - Better readability for dialog-heavy content like games and movies
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## [3.5.7] - 2025-08-22
 
 ### Added
