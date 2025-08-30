@@ -557,21 +557,21 @@ class GameChangingTranslator:
 
 Copyright © 2025 Tomasz Kamiński
 
-{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
+Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
 
-{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
+Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro.
 
-{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
+Więcej informacji zawiera instrukcja obsługi."""
         else:
             about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
 
 Copyright © 2025 Tomasz Kamiński
 
-{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
+Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
 
-{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
+This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
 
-{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
+For more information, see the user manual."""
         
         # Use Text widget for proper wrapping
         about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 
@@ -2619,21 +2619,21 @@ Copyright © 2025 Tomasz Kamiński
 
 Copyright © 2025 Tomasz Kamiński
 
-{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
+Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
 
-{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
+Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro.
 
-{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
+Więcej informacji zawiera instrukcja obsługi."""
             else:
                 about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
 
 Copyright © 2025 Tomasz Kamiński
 
-{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
+Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
 
-{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
+This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
 
-{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
+For more information, see the user manual."""
             
             # Use Text widget for proper wrapping
             about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 

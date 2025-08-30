@@ -173,15 +173,15 @@ download_error_detail,Błąd podczas pobierania aktualizacji:
 apply_update_title,Zastosuj aktualizację
 apply_update_msg,Aktualizacja została pobrana pomyślnie!
 apply_update_detail,Aplikacja zostanie zamknięta i automatycznie uruchomiona ponownie w nowej wersji.
-apply_update_continue,Kliknij OK, aby kontynuować.
+apply_update_continue,"Kliknij OK, aby kontynuować."
 applying_update_title,Instalacja aktualizacji
 applying_update_msg,Instalowanie aktualizacji...
 applying_update_restart,Aplikacja zostanie automatycznie uruchomiona ponownie.
 update_apply_error_title,Błąd aktualizacji
 update_apply_error_msg,Nie udało się zastosować aktualizacji.
-update_apply_error_detail,Spróbuj ponownie lub uruchom aplikację ponownie, aby zastosować aktualizację.
+update_apply_error_detail,"Spróbuj ponownie lub uruchom aplikację ponownie, aby zastosować aktualizację."
 update_apply_error_exception,Wystąpił błąd podczas stosowania aktualizacji:
-update_apply_error_restart,Uruchom aplikację ponownie, aby zastosować aktualizację.
+update_apply_error_restart,"Uruchom aplikację ponownie, aby zastosować aktualizację."
 stats_copied_title,Skopiowano
 stats_copied_msg,Statystyki zostały skopiowane do schowka.
 stats_copy_error,Błąd podczas kopiowania do schowka.
@@ -201,9 +201,6 @@ gemini_reset_warning_msg,Plik dziennika API Gemini nie istnieje.
 gemini_reset_error_title,Błąd
 gemini_reset_error_msg,Nie można uzyskać dostępu do pliku dziennika Gemini.
 gemini_reset_error_failed,Nie udało się zresetować dziennika API Gemini:
-about_app_description,"Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować."
-about_app_development,"Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro."
-about_app_manual,"Więcej informacji zawiera instrukcja obsługi."
 stats_clipboard_header,Game-Changing Translator - Statystyki użycia API
 stats_section_ocr_header,📊 Statystyki Gemini OCR
 stats_section_translation_header,🔄 Statystyki tłumaczenia Gemini
