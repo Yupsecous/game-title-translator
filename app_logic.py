@@ -587,8 +587,7 @@ For more information, see the user manual."""
         check_updates_btn = ttk.Button(
             update_button_frame, 
             text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
-            command=self.check_for_updates,
-            width=20
+            command=self.check_for_updates
         )
         check_updates_btn.pack(side="left")
         
@@ -1867,7 +1866,7 @@ For more information, see the user manual."""
             if self.ui_lang.current_lang == 'pol':
                 title = "Zastosuj aktualizację"
                 message = "Aktualizacja została pobrana pomyślnie!\n\n"
-                message += "Aplikacja zostanie zamknięta i automatycznie uruchomiona ponownie z nową wersją.\n\n"
+                message += "Aplikacja zostanie zamknięta i automatycznie uruchomiona ponownie w nowej wersji.\n\n"
                 message += "Kliknij OK, aby kontynuować."
             else:
                 title = "Apply Update"
@@ -1886,8 +1885,8 @@ For more information, see the user manual."""
                 
                 # Show brief message before exit
                 if self.ui_lang.current_lang == 'pol':
-                    exit_title = "Zastosowanie aktualizacji"
-                    exit_msg = "Aktualizacja jest stosowana...\n\nAplikacja zostanie automatycznie uruchomiona ponownie."
+                    exit_title = "Instalacja aktualizacji"
+                    exit_msg = "Instalowanie aktualizacji...\n\nAplikacja zostanie automatycznie uruchomiona ponownie."
                 else:
                     exit_title = "Applying Update"
                     exit_msg = "Update is being applied...\n\nThe application will restart automatically."
@@ -2700,8 +2699,7 @@ For more information, see the user manual."""
             check_updates_btn = ttk.Button(
                 update_button_frame, 
                 text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
-                command=self.check_for_updates,
-                width=20
+                command=self.check_for_updates
             )
             check_updates_btn.pack(side="left")
             
