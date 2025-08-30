@@ -95,7 +95,7 @@ marian_beam_explanation,Higher beam values = better but slower translations
 marian_quality_note,Note: MarianMT provides high quality translations
 marian_quality_vary,"for many language pairs. Quality may vary by language."
 marian_download_note,"Models are downloaded on first use (requires Internet)."
-marian_unavailable_line1,MarianMT is not available. To enable, install:
+marian_unavailable_line1,"MarianMT is not available. To enable, install:"
 marian_unavailable_line2,pip install transformers torch sentencepiece
 browse_marian_models_title,Select MarianMT Models CSV File
 browse_tesseract_title,Select tesseract.exe
@@ -201,9 +201,6 @@ gemini_reset_warning_msg,Gemini API log file does not exist.
 gemini_reset_error_title,Error
 gemini_reset_error_msg,Could not access Gemini log file.
 gemini_reset_error_failed,Failed to reset Gemini API log:
-about_app_description,"Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy."
-about_app_development,"This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro."
-about_app_manual,"For more information, see the user manual."
 stats_clipboard_header,Game-Changing Translator - API Usage Statistics
 stats_section_ocr_header,📊 Gemini OCR Statistics
 stats_section_translation_header,🔄 Gemini Translation Statistics  

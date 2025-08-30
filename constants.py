@@ -48,7 +48,7 @@ RTL_LANGUAGES = {
 }
 
 # Version Management - Centralized version control
-APP_VERSION = "v3.5.6"
+APP_VERSION = "v3.5.8"
 APP_RELEASE_DATE = "30 August 2025"
 APP_RELEASE_DATE_POLISH = "30 sierpnia 2025"
 GITHUB_API_URL = "https://api.github.com/repos/tomkam1702/OCR-Translator/releases/latest"
