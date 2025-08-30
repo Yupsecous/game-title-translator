@@ -151,3 +151,69 @@ api_usage_copy_btn,Copy
 api_usage_no_data,No data available
 api_usage_info_note,"ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared. Estimated cost tracking is provided for reference purposes only. You are responsible for monitoring your own API usage and costs through Google's billing dashboard."
 check_for_updates_btn,Check for Updates
+check_updates_title,Checking for Updates
+check_updates_msg,Checking for updates...
+update_available_title,Update Available
+update_available_msg_start,New version {0} is available!
+update_available_current_version,Current version: {0}
+update_available_new_version,New version: {0}
+update_available_file_size,File size: {0}
+update_available_release_notes,Release notes:
+update_available_question,Would you like to download and install the update?
+no_updates_title,No Updates
+no_updates_msg,You have the latest version!
+update_error_title,Update Error
+update_error_msg,Unable to check for updates:
+download_update_title,Downloading Update
+download_update_msg,Downloading update...
+download_progress_format,{0} MB of {1} MB ({2}%)
+download_error_title,Download Error
+download_error_msg,Failed to download update. Please try again later.
+download_error_detail,Error downloading update:
+apply_update_title,Apply Update
+apply_update_msg,Update downloaded successfully!
+apply_update_detail,The application will close and automatically restart with the new version.
+apply_update_continue,Click OK to continue.
+applying_update_title,Applying Update
+applying_update_msg,Update is being applied...
+applying_update_restart,The application will restart automatically.
+update_apply_error_title,Update Error
+update_apply_error_msg,Failed to apply update.
+update_apply_error_detail,Please try again or restart the application to apply the update.
+update_apply_error_exception,An error occurred while applying the update:
+update_apply_error_restart,Restart the application to apply the update.
+stats_copied_title,Copied
+stats_copied_msg,Statistics copied to clipboard.
+stats_copy_error,Error copying to clipboard.
+deepl_usage_unavailable,Unable to retrieve usage data
+deepl_usage_error,Error retrieving usage data
+export_success_title,Export Successful
+export_success_msg,Statistics exported to:
+export_failed_title,Export Failed
+export_csv_failed_msg,Failed to export statistics to CSV.
+export_text_failed_msg,Failed to export statistics to text.
+export_error_title,Export Error
+export_error_msg,Error exporting statistics:
+gemini_reset_success_title,Success
+gemini_reset_success_msg,Gemini API log has been reset.
+gemini_reset_warning_title,Warning
+gemini_reset_warning_msg,Gemini API log file does not exist.
+gemini_reset_error_title,Error
+gemini_reset_error_msg,Could not access Gemini log file.
+gemini_reset_error_failed,Failed to reset Gemini API log:
+about_app_description,"Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy."
+about_app_development,"This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro."
+about_app_manual,"For more information, see the user manual."
+stats_clipboard_header,Game-Changing Translator - API Usage Statistics
+stats_section_ocr_header,📊 Gemini OCR Statistics
+stats_section_translation_header,🔄 Gemini Translation Statistics  
+stats_section_combined_header,💰 Combined API Statistics
+stats_section_deepl_header,📈 DeepL Usage Monitor
+stats_deepl_free_limit,Free Monthly Limit:
+stats_not_available,N/A
+stats_cost_per_min_suffix,/min
+stats_cost_per_hr_suffix,/hr
+stats_duration_suffix,s
+currency_usd, USD
+mb_progress_of, MB of 
+mb_progress_format, MB ({0}%)
