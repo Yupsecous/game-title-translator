@@ -151,3 +151,69 @@ api_usage_copy_btn,Kopiuj
 api_usage_no_data,Brak dostępnych danych
 api_usage_info_note,"ℹ️ Uwaga: statystyki te są oparte na plikach API_OCR_short_log.txt i API_TRA_short_log.txt. W razie usunięcia lub wyczyszczenia tych plików statystyki zostaną zresetowane. Monitorowanie szacunkowych kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie wykorzystania i kosztów API w panelu rozliczeniowym Google."
 check_for_updates_btn,Sprawdź dostępność aktualizacji
+check_updates_title,Sprawdzanie aktualizacji
+check_updates_msg,Sprawdzanie aktualizacji...
+update_available_title,Aktualizacja dostępna
+update_available_msg_start,Nowa wersja {0} jest dostępna!
+update_available_current_version,Aktualna wersja: {0}
+update_available_new_version,Nowa wersja: {0}
+update_available_file_size,Rozmiar pliku: {0}
+update_available_release_notes,Informacje o wydaniu:
+update_available_question,Czy chcesz pobrać i zainstalować aktualizację?
+no_updates_title,Brak aktualizacji
+no_updates_msg,Masz najnowszą wersję!
+update_error_title,Błąd aktualizacji
+update_error_msg,Nie można sprawdzić aktualizacji:
+download_update_title,Pobieranie aktualizacji
+download_update_msg,Pobieranie aktualizacji...
+download_progress_format,{0} MB z {1} MB ({2}%)
+download_error_title,Błąd pobierania
+download_error_msg,Nie udało się pobrać aktualizacji. Spróbuj ponownie później.
+download_error_detail,Błąd podczas pobierania aktualizacji:
+apply_update_title,Zastosuj aktualizację
+apply_update_msg,Aktualizacja została pobrana pomyślnie!
+apply_update_detail,Aplikacja zostanie zamknięta i automatycznie uruchomiona ponownie w nowej wersji.
+apply_update_continue,Kliknij OK, aby kontynuować.
+applying_update_title,Instalacja aktualizacji
+applying_update_msg,Instalowanie aktualizacji...
+applying_update_restart,Aplikacja zostanie automatycznie uruchomiona ponownie.
+update_apply_error_title,Błąd aktualizacji
+update_apply_error_msg,Nie udało się zastosować aktualizacji.
+update_apply_error_detail,Spróbuj ponownie lub uruchom aplikację ponownie, aby zastosować aktualizację.
+update_apply_error_exception,Wystąpił błąd podczas stosowania aktualizacji:
+update_apply_error_restart,Uruchom aplikację ponownie, aby zastosować aktualizację.
+stats_copied_title,Skopiowano
+stats_copied_msg,Statystyki zostały skopiowane do schowka.
+stats_copy_error,Błąd podczas kopiowania do schowka.
+deepl_usage_unavailable,Nie można pobrać danych użycia
+deepl_usage_error,Błąd podczas pobierania danych
+export_success_title,Eksport pomyślny
+export_success_msg,Statystyki wyeksportowane do:
+export_failed_title,Eksport nieudany
+export_csv_failed_msg,Nie udało się wyeksportować statystyk do CSV.
+export_text_failed_msg,Nie udało się wyeksportować statystyk do tekstu.
+export_error_title,Błąd eksportu
+export_error_msg,Błąd podczas eksportowania statystyk:
+gemini_reset_success_title,Sukces
+gemini_reset_success_msg,Dziennik API Gemini został zresetowany.
+gemini_reset_warning_title,Ostrzeżenie
+gemini_reset_warning_msg,Plik dziennika API Gemini nie istnieje.
+gemini_reset_error_title,Błąd
+gemini_reset_error_msg,Nie można uzyskać dostępu do pliku dziennika Gemini.
+gemini_reset_error_failed,Nie udało się zresetować dziennika API Gemini:
+about_app_description,"Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować."
+about_app_development,"Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro."
+about_app_manual,"Więcej informacji zawiera instrukcja obsługi."
+stats_clipboard_header,Game-Changing Translator - Statystyki użycia API
+stats_section_ocr_header,📊 Statystyki Gemini OCR
+stats_section_translation_header,🔄 Statystyki tłumaczenia Gemini
+stats_section_combined_header,💰 Łączne statystyki API
+stats_section_deepl_header,📈 Monitor użycia DeepL
+stats_deepl_free_limit,Darmowy miesięczny limit:
+stats_not_available,N/A
+stats_cost_per_min_suffix, USD/min
+stats_cost_per_hr_suffix, USD/godz.
+stats_duration_suffix, s
+currency_usd, USD
+mb_progress_of, MB z 
+mb_progress_format, MB ({0}%)

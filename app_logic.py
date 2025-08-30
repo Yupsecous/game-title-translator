@@ -557,21 +557,21 @@ class GameChangingTranslator:
 
 Copyright © 2025 Tomasz Kamiński
 
-Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
+{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
 
-Program został napisany w\u00a0języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 i\u00a0Gemini\u00a02.5\u00a0Pro.
+{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
 
-Więcej informacji zawiera instrukcja obsługi."""
+{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
         else:
             about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
 
 Copyright © 2025 Tomasz Kamiński
 
-Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
+{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
 
-This application was developed in Python using the following AI models: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 and Gemini\u00a02.5\u00a0Pro.
+{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
 
-For more information, see the user manual."""
+{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
         
         # Use Text widget for proper wrapping
         about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 
@@ -1142,16 +1142,28 @@ For more information, see the user manual."""
                     # Update the GUI fields
                     self.update_gemini_stats()
                     
-                    messagebox.showinfo("Success", "Gemini API log has been reset.")
+                    messagebox.showinfo(
+                        self.ui_lang.get_label("gemini_reset_success_title", "Success"), 
+                        self.ui_lang.get_label("gemini_reset_success_msg", "Gemini API log has been reset.")
+                    )
                 else:
                     log_debug(f"Gemini API log file does not exist: {log_file_path}")
-                    messagebox.showwarning("Warning", "Gemini API log file does not exist.")
+                    messagebox.showwarning(
+                        self.ui_lang.get_label("gemini_reset_warning_title", "Warning"), 
+                        self.ui_lang.get_label("gemini_reset_warning_msg", "Gemini API log file does not exist.")
+                    )
             else:
                 log_debug("Gemini log file path not available")
-                messagebox.showerror("Error", "Could not access Gemini log file.")
+                messagebox.showerror(
+                    self.ui_lang.get_label("gemini_reset_error_title", "Error"), 
+                    self.ui_lang.get_label("gemini_reset_error_msg", "Could not access Gemini log file.")
+                )
         except Exception as e:
             log_debug(f"Error resetting Gemini API log: {e}")
-            messagebox.showerror("Error", f"Failed to reset Gemini API log: {str(e)}")
+            messagebox.showerror(
+                self.ui_lang.get_label("gemini_reset_error_title", "Error"), 
+                f"{self.ui_lang.get_label('gemini_reset_error_failed', 'Failed to reset Gemini API log:')} {str(e)}"
+            )
 
     def format_currency_for_display(self, amount, unit_suffix=""):
         """Format currency amount according to current UI language."""
@@ -1338,19 +1350,13 @@ For more information, see the user manual."""
                 log_debug(f"Updated DeepL usage: {character_count}/{character_limit} characters ({usage_percentage:.1f}%)")
             else:
                 # Set fallback message if API call failed
-                if self.ui_lang.current_lang == 'pol':
-                    self.deepl_usage_var.set("Nie można pobrać danych użycia")
-                else:
-                    self.deepl_usage_var.set("Unable to retrieve usage data")
+                self.deepl_usage_var.set(self.ui_lang.get_label("deepl_usage_unavailable", "Unable to retrieve usage data"))
                 log_debug("DeepL usage API call failed or returned invalid data")
         except Exception as e:
             log_debug(f"Error updating DeepL usage: {e}")
             # Set error fallback
             if hasattr(self, 'deepl_usage_var') and self.deepl_usage_var is not None:
-                if hasattr(self, 'ui_lang') and self.ui_lang.current_lang == 'pol':
-                    self.deepl_usage_var.set("Błąd podczas pobierania danych")
-                else:
-                    self.deepl_usage_var.set("Error retrieving usage data")
+                self.deepl_usage_var.set(self.ui_lang.get_label("deepl_usage_error", "Error retrieving usage data"))
 
     def _delayed_deepl_usage_update(self):
         """Delayed DeepL usage update to ensure GUI is fully ready."""
@@ -1544,10 +1550,10 @@ For more information, see the user manual."""
                 self.root.update()  # Update clipboard
                 
                 # Show confirmation
-                if self.ui_lang.current_lang == 'pol':
-                    messagebox.showinfo("Skopiowano", "Statystyki zostały skopiowane do schowka.")
-                else:
-                    messagebox.showinfo("Copied", "Statistics copied to clipboard.")
+                messagebox.showinfo(
+                    self.ui_lang.get_label("stats_copied_title", "Copied"), 
+                    self.ui_lang.get_label("stats_copied_msg", "Statistics copied to clipboard.")
+                )
                 
                 log_debug("Statistics copied to clipboard")
             else:
@@ -1555,7 +1561,7 @@ For more information, see the user manual."""
                 
         except Exception as e:
             log_debug(f"Error copying statistics to clipboard: {e}")
-            error_msg = "Błąd podczas kopiowania do schowka." if self.ui_lang.current_lang == 'pol' else "Error copying to clipboard."
+            error_msg = self.ui_lang.get_label("stats_copy_error", "Error copying to clipboard.")
             messagebox.showerror("Error", f"{error_msg}\n{str(e)}")
 
     def export_statistics_csv(self):
@@ -1624,12 +1630,8 @@ For more information, see the user manual."""
             log_debug("User initiated update check")
             
             # Show checking dialog
-            if self.ui_lang.current_lang == 'pol':
-                check_msg = "Sprawdzanie aktualizacji..."
-                check_title = "Sprawdzanie aktualizacji"
-            else:
-                check_msg = "Checking for updates..."
-                check_title = "Checking for Updates"
+            check_msg = self.ui_lang.get_label("check_updates_msg", "Checking for updates...")
+            check_title = self.ui_lang.get_label("check_updates_title", "Checking for Updates")
             
             # Create a progress dialog
             progress_dialog = self._create_progress_dialog(check_title, check_msg)
@@ -1687,26 +1689,15 @@ For more information, see the user manual."""
             release_notes = update_info.get('release_notes', '')[:300]  # Limit length
             file_size = self.update_checker.format_file_size(update_info.get('size', 0))
             
-            if self.ui_lang.current_lang == 'pol':
-                title = "Aktualizacja dostępna"
-                message = f"Nowa wersja {new_version} jest dostępna!\n\n"
-                message += f"Aktualna wersja: {current_version}\n"
-                message += f"Nowa wersja: {new_version}\n"
-                if file_size != "Unknown size":
-                    message += f"Rozmiar pliku: {file_size}\n\n"
-                if release_notes.strip():
-                    message += f"Informacje o wydaniu:\n{release_notes}\n\n"
-                message += "Czy chcesz pobrać i zainstalować aktualizację?"
-            else:
-                title = "Update Available"
-                message = f"New version {new_version} is available!\n\n"
-                message += f"Current version: {current_version}\n"
-                message += f"New version: {new_version}\n"
-                if file_size != "Unknown size":
-                    message += f"File size: {file_size}\n\n"
-                if release_notes.strip():
-                    message += f"Release notes:\n{release_notes}\n\n"
-                message += "Would you like to download and install the update?"
+            title = self.ui_lang.get_label("update_available_title", "Update Available")
+            message = self.ui_lang.get_label("update_available_msg_start", "New version {0} is available!").format(new_version) + "\n\n"
+            message += self.ui_lang.get_label("update_available_current_version", "Current version: {0}").format(current_version) + "\n"
+            message += self.ui_lang.get_label("update_available_new_version", "New version: {0}").format(new_version) + "\n"
+            if file_size != "Unknown size":
+                message += self.ui_lang.get_label("update_available_file_size", "File size: {0}").format(file_size) + "\n\n"
+            if release_notes.strip():
+                message += self.ui_lang.get_label("update_available_release_notes", "Release notes:") + f"\n{release_notes}\n\n"
+            message += self.ui_lang.get_label("update_available_question", "Would you like to download and install the update?")
             
             return messagebox.askyesno(title, message)
             
@@ -1716,23 +1707,15 @@ For more information, see the user manual."""
     
     def _show_no_updates_dialog(self):
         """Show no updates available dialog."""
-        if self.ui_lang.current_lang == 'pol':
-            title = "Brak aktualizacji"
-            message = f"Masz najnowszą wersję!\n\nAktualna wersja: {APP_VERSION}"
-        else:
-            title = "No Updates"
-            message = f"You have the latest version!\n\nCurrent version: {APP_VERSION}"
+        title = self.ui_lang.get_label("no_updates_title", "No Updates")
+        message = self.ui_lang.get_label("no_updates_msg", "You have the latest version!") + f"\n\n{self.ui_lang.get_label('update_available_current_version', 'Current version: {0}').format(APP_VERSION)}"
         
         messagebox.showinfo(title, message)
     
     def _show_update_error_dialog(self, error_message):
         """Show update error dialog."""
-        if self.ui_lang.current_lang == 'pol':
-            title = "Błąd aktualizacji"
-            message = f"Nie można sprawdzić aktualizacji:\n\n{error_message}"
-        else:
-            title = "Update Error"
-            message = f"Unable to check for updates:\n\n{error_message}"
+        title = self.ui_lang.get_label("update_error_title", "Update Error")
+        message = f"{self.ui_lang.get_label('update_error_msg', 'Unable to check for updates:')}\n\n{error_message}"
         
         messagebox.showerror(title, message)
     
@@ -1741,12 +1724,8 @@ For more information, see the user manual."""
         try:
             log_debug(f"Starting download of update: {update_info['version']}")
             
-            if self.ui_lang.current_lang == 'pol':
-                title = "Pobieranie aktualizacji"
-                initial_msg = "Pobieranie aktualizacji..."
-            else:
-                title = "Downloading Update"
-                initial_msg = "Downloading update..."
+            title = self.ui_lang.get_label("download_update_title", "Downloading Update")
+            initial_msg = self.ui_lang.get_label("download_update_msg", "Downloading update...")
             
             # Create progress dialog
             progress_dialog = tk.Toplevel(self.root)
@@ -1785,10 +1764,7 @@ For more information, see the user manual."""
                         current_mb = current / (1024 * 1024)
                         total_mb = total / (1024 * 1024)
                         
-                        if self.ui_lang.current_lang == 'pol':
-                            status_text = f"{current_mb:.1f} MB z {total_mb:.1f} MB ({percentage:.1f}%)"
-                        else:
-                            status_text = f"{current_mb:.1f} MB of {total_mb:.1f} MB ({percentage:.1f}%)"
+                        status_text = self.ui_lang.get_label("download_progress_format", "{0} MB of {1} MB ({2}%)").format(f"{current_mb:.1f}", f"{total_mb:.1f}", f"{percentage:.1f}")
                         
                         status_label.config(text=status_text)
                     
@@ -1807,12 +1783,8 @@ For more information, see the user manual."""
                 # Immediately apply the update instead of waiting for restart
                 self._apply_update_immediately()
             else:
-                if self.ui_lang.current_lang == 'pol':
-                    title = "Błąd pobierania"
-                    message = "Nie udało się pobrać aktualizacji. Spróbuj ponownie później."
-                else:
-                    title = "Download Error"
-                    message = "Failed to download update. Please try again later."
+                title = self.ui_lang.get_label("download_error_title", "Download Error")
+                message = self.ui_lang.get_label("download_error_msg", "Failed to download update. Please try again later.")
                 
                 messagebox.showerror(title, message)
                 
@@ -1823,12 +1795,8 @@ For more information, see the user manual."""
             except:
                 pass
             
-            if self.ui_lang.current_lang == 'pol':
-                title = "Błąd pobierania"
-                message = f"Błąd podczas pobierania aktualizacji:\n\n{str(e)}"
-            else:
-                title = "Download Error"
-                message = f"Error downloading update:\n\n{str(e)}"
+            title = self.ui_lang.get_label("download_error_title", "Download Error")
+            message = f"{self.ui_lang.get_label('download_error_detail', 'Error downloading update:')}\n\n{str(e)}"
             
             messagebox.showerror(title, message)
     
@@ -1863,16 +1831,10 @@ For more information, see the user manual."""
                 return
             
             # Show confirmation dialog before applying update  
-            if self.ui_lang.current_lang == 'pol':
-                title = "Zastosuj aktualizację"
-                message = "Aktualizacja została pobrana pomyślnie!\n\n"
-                message += "Aplikacja zostanie zamknięta i automatycznie uruchomiona ponownie w nowej wersji.\n\n"
-                message += "Kliknij OK, aby kontynuować."
-            else:
-                title = "Apply Update"
-                message = "Update downloaded successfully!\n\n"
-                message += "The application will close and automatically restart with the new version.\n\n"
-                message += "Click OK to continue."
+            title = self.ui_lang.get_label("apply_update_title", "Apply Update")
+            message = self.ui_lang.get_label("apply_update_msg", "Update downloaded successfully!") + "\n\n"
+            message += self.ui_lang.get_label("apply_update_detail", "The application will close and automatically restart with the new version.") + "\n\n"
+            message += self.ui_lang.get_label("apply_update_continue", "Click OK to continue.")
             
             # Show info dialog with just OK button
             messagebox.showinfo(title, message)
@@ -1884,12 +1846,8 @@ For more information, see the user manual."""
                 log_debug("Update batch file created successfully - exiting application")
                 
                 # Show brief message before exit
-                if self.ui_lang.current_lang == 'pol':
-                    exit_title = "Instalacja aktualizacji"
-                    exit_msg = "Instalowanie aktualizacji...\n\nAplikacja zostanie automatycznie uruchomiona ponownie."
-                else:
-                    exit_title = "Applying Update"
-                    exit_msg = "Update is being applied...\n\nThe application will restart automatically."
+                exit_title = self.ui_lang.get_label("applying_update_title", "Applying Update")
+                exit_msg = self.ui_lang.get_label("applying_update_msg", "Update is being applied...") + "\n\n" + self.ui_lang.get_label("applying_update_restart", "The application will restart automatically.")
                 
                 # Show non-blocking message
                 temp_dialog = tk.Toplevel(self.root)
@@ -1904,23 +1862,15 @@ For more information, see the user manual."""
                 self.root.after(2000, self._exit_for_update)
             else:
                 log_debug("Failed to apply update immediately")
-                if self.ui_lang.current_lang == 'pol':
-                    error_title = "Błąd aktualizacji"
-                    error_msg = "Nie udało się zastosować aktualizacji.\n\nSpróbuj ponownie lub uruchom aplikację ponownie, aby zastosować aktualizację."
-                else:
-                    error_title = "Update Error"
-                    error_msg = "Failed to apply update.\n\nPlease try again or restart the application to apply the update."
+                error_title = self.ui_lang.get_label("update_apply_error_title", "Update Error")
+                error_msg = self.ui_lang.get_label("update_apply_error_msg", "Failed to apply update.") + "\n\n" + self.ui_lang.get_label("update_apply_error_detail", "Please try again or restart the application to apply the update.")
                 
                 messagebox.showerror(error_title, error_msg)
                 
         except Exception as e:
             log_debug(f"Error applying update immediately: {e}")
-            if self.ui_lang.current_lang == 'pol':
-                error_title = "Błąd aktualizacji"
-                error_msg = f"Wystąpił błąd podczas stosowania aktualizacji:\n\n{str(e)}\n\nUruchom aplikację ponownie, aby zastosować aktualizację."
-            else:
-                error_title = "Update Error"
-                error_msg = f"An error occurred while applying the update:\n\n{str(e)}\n\nRestart the application to apply the update."
+            error_title = self.ui_lang.get_label("update_apply_error_title", "Update Error")
+            error_msg = f"{self.ui_lang.get_label('update_apply_error_exception', 'An error occurred while applying the update:')}\n\n{str(e)}\n\n{self.ui_lang.get_label('update_apply_error_restart', 'Restart the application to apply the update.')}"
             
             messagebox.showerror(error_title, error_msg)
     
@@ -2669,21 +2619,21 @@ For more information, see the user manual."""
 
 Copyright © 2025 Tomasz Kamiński
 
-Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z\u00a0dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i\u00a0tłumaczy tekst w\u00a0czasie rzeczywistym. Może służyć do tłumaczenia napisów w\u00a0grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
+{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
 
-Program został napisany w\u00a0języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 i\u00a0Gemini\u00a02.5\u00a0Pro.
+{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
 
-Więcej informacji zawiera instrukcja obsługi."""
+{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
             else:
                 about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
 
 Copyright © 2025 Tomasz Kamiński
 
-Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
+{self.ui_lang.get_label("about_app_description", "Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.")}
 
-This application was developed in Python using the following AI models: Claude\u00a03.7\u00a0Sonnet, Claude\u00a0Sonnet\u00a04 and Gemini\u00a02.5\u00a0Pro.
+{self.ui_lang.get_label("about_app_development", "This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.")}
 
-For more information, see the user manual."""
+{self.ui_lang.get_label("about_app_manual", "For more information, see the user manual.")}"""
             
             # Use Text widget for proper wrapping
             about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 
