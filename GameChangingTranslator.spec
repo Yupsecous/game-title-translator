@@ -30,6 +30,8 @@ a = Analysis(
         # Essential documentation
         ('README.md', '.'),
         ('LICENSE', '.'),
+        # MarianMT conversion script for English-to-Polish models
+        ('convert_marian.py', '.'),
     ],
     # Include all modules that are actually needed (keep original working set)
     hiddenimports=[

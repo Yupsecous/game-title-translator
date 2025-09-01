@@ -12,6 +12,7 @@ import urllib.request
 from pathlib import Path
 
 from logger import log_debug
+from resource_handler import get_resource_path
 
 # --- Configuration ---
 ENABLE_PYTORCH_THREAD_LIMITING = False  # Set to False to disable PyTorch thread limiting
@@ -1278,9 +1279,8 @@ class MarianMTTranslator:
                 log_debug("decoder.yml file not found in source directory")
                 return False
             
-            # Path to the conversion script
-            script_dir = Path(__file__).parent
-            convert_script = script_dir / "convert_marian.py"
+            # Path to the conversion script - use resource handler for proper path resolution
+            convert_script = Path(get_resource_path("convert_marian.py"))
             
             if not convert_script.exists():
                 log_debug(f"Conversion script not found at: {convert_script}")
