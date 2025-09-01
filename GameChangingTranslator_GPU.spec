@@ -26,6 +26,8 @@ a = Analysis(
         ('docs', 'docs'),
         ('README.md', '.'),
         ('LICENSE', '.'),
+        # MarianMT conversion script for English-to-Polish models
+        ('convert_marian.py', '.'),
     ],
     hiddenimports=[
         # Core application
