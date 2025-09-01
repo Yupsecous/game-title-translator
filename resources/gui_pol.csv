@@ -151,6 +151,7 @@ api_usage_copy_btn,Kopiuj
 api_usage_no_data,Brak dostępnych danych
 api_usage_info_note,"ℹ️ Uwaga: statystyki te są oparte na plikach API_OCR_short_log.txt i API_TRA_short_log.txt. W razie usunięcia lub wyczyszczenia tych plików statystyki zostaną zresetowane. Monitorowanie szacunkowych kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie wykorzystania i kosztów API w panelu rozliczeniowym Google."
 check_for_updates_btn,Sprawdź dostępność aktualizacji
+check_for_updates_on_startup,Sprawdź dostępność aktualizacji przy uruchomieniu
 check_updates_title,Sprawdzanie aktualizacji
 check_updates_msg,Sprawdzanie aktualizacji...
 update_available_title,Aktualizacja dostępna

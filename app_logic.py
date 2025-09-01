@@ -217,6 +217,7 @@ class GameChangingTranslator:
         self.remove_trailing_garbage_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'remove_trailing_garbage', fallback=False))
         self.debug_logging_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'debug_logging_enabled', fallback=True))
         self.gui_language_var = tk.StringVar(value=self.config['Settings'].get('gui_language', 'English'))
+        self.check_for_updates_on_startup_var = tk.BooleanVar(value=self.config['Settings'].get('check_for_updates_on_startup', 'yes') == 'yes')
         
         # OCR Model Selection (Phase 1 - Gemini OCR)
         self.ocr_model_var = tk.StringVar(value=self.config['Settings'].get('ocr_model', 'tesseract'))
@@ -378,6 +379,7 @@ class GameChangingTranslator:
         self.target_text_colour_var.trace_add("write", self.settings_changed_callback)
         self.remove_trailing_garbage_var.trace_add("write", self.settings_changed_callback)
         self.debug_logging_enabled_var.trace_add("write", self.settings_changed_callback)
+        self.check_for_updates_on_startup_var.trace_add("write", self.settings_changed_callback)
         self.google_api_key_var.trace_add("write", self.settings_changed_callback)
         self.deepl_api_key_var.trace_add("write", self.settings_changed_callback)
         self.deepl_model_type_var.trace_add("write", self.settings_changed_callback)
@@ -543,65 +545,8 @@ class GameChangingTranslator:
         create_api_usage_tab(self)
         create_debug_tab(self)
         
-        # Create About tab with scrollable content
-        scrollable_about = create_scrollable_tab(self.tab_control, self.ui_lang.get_label("about_tab_title", "About"))
-        self.tab_about = scrollable_about
-        
-        # Create the about frame inside the scrollable area
-        about_frame = ttk.LabelFrame(scrollable_about, text=self.ui_lang.get_label("about_tab_title", "About"))
-        about_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Dynamic About content using centralized version
-        if self.ui_lang.current_lang == 'pol':
-            about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE_POLISH} r.)
-
-Copyright © 2025 Tomasz Kamiński
-
-Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
-
-Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro.
-
-Więcej informacji zawiera instrukcja obsługi."""
-        else:
-            about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
-
-Copyright © 2025 Tomasz Kamiński
-
-Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
-
-This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
-
-For more information, see the user manual."""
-        
-        # Use Text widget for proper wrapping
-        about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 
-                                   borderwidth=0, highlightthickness=0)
-        about_text_widget.pack(fill="both", expand=True, padx=20, pady=20)
-        about_text_widget.insert(tk.END, about_text)
-        about_text_widget.config(state=tk.DISABLED)  # Make it read-only
-        
-        # Add Check for Updates button
-        update_button_frame = ttk.Frame(about_frame)
-        update_button_frame.pack(fill="x", padx=20, pady=10)
-        
-        check_updates_btn = ttk.Button(
-            update_button_frame, 
-            text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
-            command=self.check_for_updates
-        )
-        check_updates_btn.pack(side="left")
-        
-        # Enable/disable button based on execution environment
-        import sys
-        is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-        if is_compiled:
-            check_updates_btn.config(state="normal")
-        else:
-            check_updates_btn.config(state="disabled")
-        
-        # Store reference for language updates
-        self.check_updates_btn = check_updates_btn
-
+        # Create About tab using the centralized function
+        self.create_about_tab()
         # Handle tab change events to set focus appropriately
         def on_tab_changed(event):
             selected_tab_index = self.tab_control.index(self.tab_control.select())
@@ -632,6 +577,18 @@ For more information, see the user manual."""
         
         self._fully_initialized = True
         log_debug("GameChangingTranslator fully initialized.")
+        
+        # Automatic update check for compiled version
+        import sys
+        is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+        if is_compiled and self.check_for_updates_on_startup_var.get():
+            log_debug("Compiled version detected with automatic update check enabled - scheduling automatic update check")
+            # Schedule the automatic update check to run after UI is fully loaded
+            self.root.after(1000, lambda: self.check_for_updates(auto_check=True))
+        elif is_compiled:
+            log_debug("Compiled version detected but automatic update check is disabled")
+        else:
+            log_debug("Source code version detected - no automatic update check")
         
         # Ensure OCR model UI is correctly set up on initial load
         if hasattr(self, 'ui_interaction_handler'):
@@ -1624,25 +1581,36 @@ For more information, see the user manual."""
     # AUTO-UPDATE SYSTEM METHODS
     # =============================================================================
     
-    def check_for_updates(self):
-        """Check for updates and handle the user interaction."""
+    def check_for_updates(self, auto_check=False):
+        """Check for updates and handle the user interaction.
+        
+        Args:
+            auto_check (bool): If True, this is an automatic startup check and 
+                              no dialog will be shown when no updates are available.
+        """
         try:
-            log_debug("User initiated update check")
+            if auto_check:
+                log_debug("Automatic update check on startup")
+            else:
+                log_debug("User initiated update check")
             
-            # Show checking dialog
-            check_msg = self.ui_lang.get_label("check_updates_msg", "Checking for updates...")
-            check_title = self.ui_lang.get_label("check_updates_title", "Checking for Updates")
-            
-            # Create a progress dialog
-            progress_dialog = self._create_progress_dialog(check_title, check_msg)
-            progress_dialog.update()
+            # Show checking dialog (only for manual checks)
+            progress_dialog = None
+            if not auto_check:
+                check_msg = self.ui_lang.get_label("check_updates_msg", "Checking for updates...")
+                check_title = self.ui_lang.get_label("check_updates_title", "Checking for Updates")
+                
+                # Create a progress dialog
+                progress_dialog = self._create_progress_dialog(check_title, check_msg)
+                progress_dialog.update()
             
             try:
                 # Check for updates
                 update_info = self.update_checker.check_for_updates()
                 
                 # Close progress dialog
-                progress_dialog.destroy()
+                if progress_dialog:
+                    progress_dialog.destroy()
                 
                 if update_info:
                     # Update available - show confirmation dialog
@@ -1650,20 +1618,24 @@ For more information, see the user manual."""
                         # User confirmed - download update
                         self._download_and_stage_update(update_info)
                 else:
-                    # No updates available
-                    self._show_no_updates_dialog()
+                    # No updates available - only show dialog for manual checks
+                    if not auto_check:
+                        self._show_no_updates_dialog()
                     
             except Exception as e:
                 # Close progress dialog
-                try:
-                    progress_dialog.destroy()
-                except:
-                    pass
+                if progress_dialog:
+                    try:
+                        progress_dialog.destroy()
+                    except:
+                        pass
                 raise e
                 
         except Exception as e:
             log_debug(f"Error checking for updates: {e}")
-            self._show_update_error_dialog(str(e))
+            # Only show error dialog for manual checks
+            if not auto_check:
+                self._show_update_error_dialog(str(e))
     
     def _create_progress_dialog(self, title, message):
         """Create a simple progress dialog."""
@@ -2570,6 +2542,80 @@ For more information, see the user manual."""
         """Get the API name of currently selected Gemini OCR model."""
         display_name = self.gemini_ocr_model_var.get()
         return self.gemini_models_manager.get_api_name_by_display_name(display_name)
+    
+    def create_about_tab(self):
+        """Create the About tab with consistent content for both initial load and language changes."""
+        from ui_elements import create_scrollable_tab
+        
+        # Create About tab with scrollable content
+        scrollable_about = create_scrollable_tab(self.tab_control, self.ui_lang.get_label("about_tab_title", "About"))
+        self.tab_about = scrollable_about
+        
+        # Create the about frame inside the scrollable area
+        about_frame = ttk.LabelFrame(scrollable_about, text=self.ui_lang.get_label("about_tab_title", "About"))
+        about_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Dynamic About content using centralized version
+        if self.ui_lang.current_lang == 'pol':
+            about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE_POLISH} r.)
+
+Copyright © 2025 Tomasz Kamiński
+
+Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
+
+Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro.
+
+Więcej informacji zawiera instrukcja obsługi."""
+        else:
+            about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
+
+Copyright © 2025 Tomasz Kamiński
+
+Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
+
+This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
+
+For more information, see the user manual."""
+        
+        # Use Text widget for proper wrapping
+        about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 
+                                   borderwidth=0, highlightthickness=0)
+        about_text_widget.pack(fill="both", expand=True, padx=20, pady=20)
+        about_text_widget.insert(tk.END, about_text)
+        about_text_widget.config(state=tk.DISABLED)  # Make it read-only
+        
+        # Add Check for Updates button and checkbox
+        update_button_frame = ttk.Frame(about_frame)
+        update_button_frame.pack(fill="x", padx=20, pady=10)
+        
+        check_updates_btn = ttk.Button(
+            update_button_frame, 
+            text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
+            command=self.check_for_updates
+        )
+        check_updates_btn.pack(side="left")
+        
+        # Add checkbox for automatic update checking
+        check_updates_checkbox = ttk.Checkbutton(
+            update_button_frame,
+            text=self.ui_lang.get_label("check_for_updates_on_startup", "Check for updates on startup"),
+            variable=self.check_for_updates_on_startup_var
+        )
+        check_updates_checkbox.pack(side="left", padx=(20, 0))
+        
+        # Enable/disable button and checkbox based on execution environment
+        import sys
+        is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+        if is_compiled:
+            check_updates_btn.config(state="normal")
+            check_updates_checkbox.config(state="normal")
+        else:
+            check_updates_btn.config(state="disabled")
+            check_updates_checkbox.config(state="disabled")
+        
+        # Store references for language updates
+        self.check_updates_btn = check_updates_btn
+        self.check_updates_checkbox = check_updates_checkbox
 
     def update_ui_language(self):
         """Update all UI elements to reflect the selected language"""
@@ -2605,64 +2651,8 @@ For more information, see the user manual."""
             create_api_usage_tab(self)
             create_debug_tab(self)
             
-            # Recreate About tab with scrollable content
-            scrollable_about = create_scrollable_tab(self.tab_control, self.ui_lang.get_label("about_tab_title", "About"))
-            self.tab_about = scrollable_about
-            
-            # Create the about frame inside the scrollable area
-            about_frame = ttk.LabelFrame(scrollable_about, text=self.ui_lang.get_label("about_tab_title", "About"))
-            about_frame.pack(fill="both", expand=True, padx=10, pady=10)
-            
-            # Dynamic About content using centralized version from constants.py
-            if self.ui_lang.current_lang == 'pol':
-                about_text = f"""Game-Changing Translator {APP_VERSION} (wersja z {APP_RELEASE_DATE_POLISH} r.)
-
-Copyright © 2025 Tomasz Kamiński
-
-Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
-
-Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro.
-
-Więcej informacji zawiera instrukcja obsługi."""
-            else:
-                about_text = f"""Game-Changing Translator {APP_VERSION} (Released {APP_RELEASE_DATE})
-
-Copyright © 2025 Tomasz Kamiński
-
-Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
-
-This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
-
-For more information, see the user manual."""
-            
-            # Use Text widget for proper wrapping
-            about_text_widget = tk.Text(about_frame, wrap=tk.WORD, relief="flat", 
-                                       borderwidth=0, highlightthickness=0)
-            about_text_widget.pack(fill="both", expand=True, padx=20, pady=20)
-            about_text_widget.insert(tk.END, about_text)
-            about_text_widget.config(state=tk.DISABLED)  # Make it read-only
-            
-            # Add Check for Updates button
-            update_button_frame = ttk.Frame(about_frame)
-            update_button_frame.pack(fill="x", padx=20, pady=10)
-            
-            check_updates_btn = ttk.Button(
-                update_button_frame, 
-                text=self.ui_lang.get_label("check_for_updates_btn", "Check for Updates"),
-                command=self.check_for_updates
-            )
-            check_updates_btn.pack(side="left")
-            
-            # Enable/disable button based on execution environment
-            import sys
-            is_compiled = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-            if is_compiled:
-                check_updates_btn.config(state="normal")
-            else:
-                check_updates_btn.config(state="disabled")
-            
-            # Store reference for language updates
-            self.check_updates_btn = check_updates_btn
+            # Recreate About tab using the centralized function
+            self.create_about_tab()
             
             # Update translation model UI visibility based on current selection
             self.ui_interaction_handler.update_translation_model_ui()
