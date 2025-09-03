@@ -11,6 +11,8 @@ Features / fixes included:
 - nativeEvent WM_NCHITTEST no longer returns HTCAPTION (prevents Windows from
   overriding the cursor). Resizing hit-tests are still returned to allow native resize.
 - create_overlay accepts forwarded visual kwargs (top_bar_height, text_padding, font_size, etc.)
+- MODIFIED: Split opacity for background (85%) and text (100%) by using a
+  semi-transparent central widget on a fully transparent window.
 """
 
 import sys
@@ -99,7 +101,7 @@ if PYSIDE6_AVAILABLE:
             self._current_text = text
             self._current_language = language_code
             self._bg_color = bg_color
-            self._fg_color = text_color
+            # self._fg_color = text_color
             
             # Normalize whitespace WHILE PRESERVING intentional line breaks (SURGICAL FIX)
             processed = text.replace('\r\n', '\n').replace('\r', '\n')
@@ -132,12 +134,12 @@ if PYSIDE6_AVAILABLE:
 
             if is_rtl:
                 self.setLayoutDirection(Qt.RightToLeft)
-                html_text = f"""<div style="text-align: right; direction: rtl; font-family: '{self.font().family()}'; font-size: {font_size}pt; color: {text_color};">
+                html_text = f"""<div style="text-align: right; direction: rtl; font-family: '{self.font().family()}'; font-size: {font_size}pt; color: {self._fg_color};">
                 {html_processed}
                 </div>"""
             else:
                 self.setLayoutDirection(Qt.LeftToRight)
-                html_text = f"""<div style="text-align: left; direction: ltr; font-family: '{self.font().family()}'; font-size: {font_size}pt; color: {text_color};">
+                html_text = f"""<div style="text-align: left; direction: ltr; font-family: '{self.font().family()}'; font-size: {font_size}pt; color: {self._fg_color};">
                 {html_processed}
                 </div>"""
 
@@ -187,24 +189,25 @@ if PYSIDE6_AVAILABLE:
             if 'bg' in kwargs:
                 bg_color = kwargs['bg']
                 try:
-                    # Update the widget's stylesheet for background color
-                    current_style = self.styleSheet()
+                    # Store the intended background color for text re-rendering, but
+                    # keep the widget itself transparent for the split-opacity effect.
+                    self._bg_color = bg_color
+                    
                     # Extract existing padding if present
+                    current_style = self.styleSheet()
                     padding_match = re.search(r'padding:\s*([^;]+);', current_style)
                     padding = padding_match.group(1) if padding_match else "5px"
                     
+                    # Force background to be transparent
                     new_style = f"""
                         QTextEdit {{
-                            background-color: {bg_color};
+                            background-color: transparent;
                             border: none;
                             padding: {padding};
                         }}
                     """
                     self.setStyleSheet(new_style)
-                    
-                    # Store background color for later use
-                    self._bg_color = bg_color
-                    log_debug(f"PySide RTLTextDisplay: Updated background color to {bg_color}")
+                    log_debug(f"PySide RTLTextDisplay: Stored bg_color {bg_color}, set background to transparent.")
                 except Exception as e:
                     log_debug(f"Error setting PySide text background color: {e}")
             
@@ -382,16 +385,14 @@ if PYSIDE6_AVAILABLE:
         def setup_window(self, initial_geometry, bg_color, title):
             """Setup overlay window visuals and layout."""
             self.setWindowTitle(title)
-            # Frameless, top-most window
+            
+            # Make window frameless and transparent to allow for split opacity
+            self.setAttribute(Qt.WA_TranslucentBackground)
             self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
             self.setWindowFlag(Qt.Tool, True)
-            # self.setMinimumSize(100, 50)
 
-            # Apply opacity if possible
-            try:
-                self.setWindowOpacity(self._opacity)
-            except Exception:
-                pass
+            # The main window itself is transparent; opacity is handled by the central widget's background
+            self.setStyleSheet("background-color: transparent;")
 
             # Geometry
             try:
@@ -411,23 +412,25 @@ if PYSIDE6_AVAILABLE:
             layout.setContentsMargins(0, 0, 0, 0)
             layout.setSpacing(0)
 
-            # Border styling (honor border_px; if zero, no border)
+            # The central widget holds the semi-transparent background and border
             border_css = f"border: {self._border_px}px solid {self._adjust_color_brightness(bg_color, -20)};" if self._border_px > 0 else "border: none;"
+            semi_transparent_bg = self._hex_to_rgba(bg_color, self._opacity)
 
-            self.setStyleSheet(f"""
-                QMainWindow {{
-                    background-color: {bg_color};
+            central_widget.setStyleSheet(f"""
+                QWidget {{
+                    background-color: {semi_transparent_bg};
                     {border_css}
                 }}
             """)
 
             # Top bar (purely visual) using the requested height
             self.top_bar = VisualTopBar(self, height=self._top_bar_height)
-            self.top_bar.setStyleSheet(f"""
-                QWidget {{
-                    background-color: {bg_color};
+            # Top bar is transparent to show the central widget's background
+            self.top_bar.setStyleSheet("""
+                QWidget {
+                    background-color: transparent;
                     border: none;
-                }}
+                }
             """)
             layout.addWidget(self.top_bar)
 
@@ -441,15 +444,27 @@ if PYSIDE6_AVAILABLE:
                 pass
 
             pad_x, pad_y = self._text_padding
-            # Set padding in the QTextEdit to match tkinter padx/pady layout
+            # Set padding and ensure background is transparent for the text widget
             self.text_widget.setStyleSheet(f"""
                 QTextEdit {{
-                    background-color: {bg_color};
+                    background-color: transparent;
                     border: none;
                     padding: {pad_y}px {pad_x}px; /* top/bottom left/right */
                 }}
             """)
             layout.addWidget(self.text_widget)
+
+        def _hex_to_rgba(self, hex_color, opacity):
+            """Convert #RRGGBB hex to rgba(r,g,b,a) string for stylesheets."""
+            try:
+                hex_color = hex_color.lstrip('#')
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+                return f"rgba({r}, {g}, {b}, {opacity})"
+            except Exception:
+                # Fallback if color format is invalid
+                return hex_color
 
         def _adjust_color_brightness(self, hex_color, adjustment):
             """Adjust hex color brightness by a signed integer amount (-255.255)."""
@@ -473,39 +488,52 @@ if PYSIDE6_AVAILABLE:
                 font_size = self._font_size
             # Our RTLTextDisplay provides set_rtl_text which matches tkinter semantics
             try:
-                self.text_widget.set_rtl_text(text, language_code, self.bg_color, text_color, font_size)
+                # FIX: Use the text widget's own stored foreground color (_fg_color),
+                # which supports the RGBA value for opacity. The 'text_color'
+                # parameter was overwriting it with a solid color.
+                final_text_color = self.text_widget._fg_color
+                self.text_widget.set_rtl_text(text, language_code, self.bg_color, final_text_color, font_size)
             except Exception as e:
                 log_debug(f"Error setting translation text: {e}")
 
         def update_color(self, new_color):
             """Update colors for window and child widgets."""
             self.bg_color = new_color
+
+            # Update the central widget, which holds the visual background
+            semi_transparent_bg = self._hex_to_rgba(new_color, self._opacity)
             border_css = f"border: {self._border_px}px solid {self._adjust_color_brightness(new_color, -20)};" if self._border_px > 0 else "border: none;"
-            self.setStyleSheet(f"""
-                QMainWindow {{
-                    background-color: {new_color};
-                    {border_css}
-                }}
-            """)
-            if self.top_bar:
-                self.top_bar.setStyleSheet(f"""
+
+            if self.centralWidget():
+                self.centralWidget().setStyleSheet(f"""
                     QWidget {{
-                        background-color: {new_color};
-                        border: none;
+                        background-color: {semi_transparent_bg};
+                        {border_css}
                     }}
                 """)
+
+            # Ensure top_bar remains transparent to show the central widget's background
+            if self.top_bar:
+                self.top_bar.setStyleSheet("""
+                    QWidget {
+                        background-color: transparent;
+                        border: none;
+                    }
+                """)
+                
+            # The text_widget's background must also remain transparent.
+            # Its config method is modified to handle this correctly.
             if self.text_widget:
-                # Use the enhanced config method to ensure proper color handling
                 try:
                     self.text_widget.config(bg=new_color)
-                    log_debug(f"PySide overlay: Updated text widget background color to {new_color}")
+                    log_debug(f"PySide overlay: Stored new bg color '{new_color}' in text widget.")
                 except Exception as e:
                     log_debug(f"Error updating PySide text widget color: {e}")
-                    # Fallback to direct stylesheet update
+                    # Fallback to direct stylesheet update if config fails
                     pad_x, pad_y = self._text_padding
                     self.text_widget.setStyleSheet(f"""
                         QTextEdit {{
-                            background-color: {new_color};
+                            background-color: transparent;
                             border: none;
                             padding: {pad_y}px {pad_x}px;
                         }}
