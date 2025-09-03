@@ -1068,7 +1068,7 @@ def create_settings_tab(app):
         app.update_target_font_type()
         if app._fully_initialized:
             app.save_settings()
-    font_type_combobox.bind('<<ComboboxSelected>>', on_font_type_change)
+    font_type_combobox.bind('<<ComboboxSelected>>', create_combobox_handler_wrapper(on_font_type_change))
     current_row += 1
     
     file_cache_frame_outer = ttk.LabelFrame(frame, text=app.ui_lang.get_label("file_cache_frame_title")) 
