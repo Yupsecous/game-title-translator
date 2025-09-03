@@ -4,6 +4,31 @@ from tkinter import ttk, filedialog, messagebox, colorchooser
 import os
 from logger import log_debug
 from ui_elements import create_scrollable_tab
+import tkinter.font as tkFont
+
+def get_system_fonts():
+    """Get available system fonts with preferred fonts at the top"""
+    try:
+        # Get all system fonts
+        all_fonts = list(tkFont.families())
+        all_fonts.sort()
+        
+        # Preferred fonts to show at the top (if available)
+        preferred_fonts = ['Arial', 'Times New Roman', 'Calibri', 'Cambria']
+        
+        # Build final list with preferred fonts first
+        final_fonts = []
+        for font in preferred_fonts:
+            if font in all_fonts:
+                final_fonts.append(font)
+                all_fonts.remove(font)  # Remove to avoid duplicates
+        
+        # Add remaining fonts alphabetically
+        final_fonts.extend(all_fonts)
+        return final_fonts
+    except Exception:
+        # Fallback if system font detection fails
+        return ['Arial', 'Times New Roman', 'Calibri', 'Cambria', 'Helvetica', 'Courier New', 'Verdana', 'Tahoma']
 
 def create_main_tab(app):
     # Create a scrollable tab content frame
@@ -1031,6 +1056,19 @@ def create_settings_tab(app):
         except (ValueError, tk.TclError): app.target_font_size_var.set(12)
         app.save_settings()
     font_spinbox.bind("<FocusOut>", on_font_size_focus_out)
+    current_row += 1
+
+    # Font type dropdown
+    ttk.Label(frame, text=app.ui_lang.get_label("font_type_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
+    font_type_combobox = ttk.Combobox(frame, textvariable=app.target_font_type_var, 
+                                    values=get_system_fonts(), width=20, state='readonly')
+    font_type_combobox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
+    
+    def on_font_type_change(event):
+        app.update_target_font_type()
+        if app._fully_initialized:
+            app.save_settings()
+    font_type_combobox.bind('<<ComboboxSelected>>', on_font_type_change)
     current_row += 1
     
     file_cache_frame_outer = ttk.LabelFrame(frame, text=app.ui_lang.get_label("file_cache_frame_title")) 

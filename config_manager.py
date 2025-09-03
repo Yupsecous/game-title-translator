@@ -27,6 +27,7 @@ DEFAULT_CONFIG_SETTINGS = {
     'target_area_colour': '#162c43',
     'target_text_colour': '#ffffff',
     'target_font_size': '18',
+    'target_font_type': 'Arial',
     'num_beams': '2',
     'google_translate_api_key': '',
     'deepl_api_key': '',

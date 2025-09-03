@@ -908,7 +908,16 @@ class UIInteractionHandler:
         if self.app.translation_text and self.app.translation_text.winfo_exists():
             try:
                 font_size = self.app.target_font_size_var.get()
-                self.app.translation_text.configure(font=("Arial", font_size))
+                font_type = self.app.target_font_type_var.get()
+                self.app.translation_text.configure(font=(font_type, font_size))
+            except tk.TclError: pass
+
+    def update_target_font_type(self):
+        if self.app.translation_text and self.app.translation_text.winfo_exists():
+            try:
+                font_size = self.app.target_font_size_var.get()
+                font_type = self.app.target_font_type_var.get()
+                self.app.translation_text.configure(font=(font_type, font_size))
             except tk.TclError: pass
     
     def refresh_debug_log(self):
@@ -1062,6 +1071,7 @@ class UIInteractionHandler:
             cfg['target_area_colour'] = self.app.target_colour_var.get()
             cfg['target_text_colour'] = self.app.target_text_colour_var.get()
             cfg['target_font_size'] = str(self.app.target_font_size_var.get())
+            cfg['target_font_type'] = self.app.target_font_type_var.get()
             cfg['gui_language'] = self.app.gui_language_var.get()
             cfg['ocr_model'] = self.app.ocr_model_var.get()  # OCR Model Selection (Phase 2)
             cfg['check_for_updates_on_startup'] = 'yes' if self.app.check_for_updates_on_startup_var.get() else 'no'
