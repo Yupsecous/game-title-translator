@@ -300,6 +300,7 @@ class DisplayManager:
                 # Get styling from app settings
                 text_color = self.app.target_text_colour_var.get()
                 font_size = self.app.target_font_size_var.get()
+                font_type = self.app.target_font_type_var.get()
                 bg_color = self.app.target_colour_var.get()
                 
                 # Update the PySide text widget with native RTL support
@@ -310,6 +311,9 @@ class DisplayManager:
                     text_color, 
                     font_size
                 )
+                
+                # Update font separately to ensure both type and size are applied
+                self.app.translation_text.configure(font=(font_type, font_size))
             else:
                 # Fallback to tkinter handling using existing rtl_text_processor.py
                 log_debug(f"DisplayManager: Using tkinter text widget with RTL processor (fallback)")

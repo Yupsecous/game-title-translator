@@ -65,6 +65,7 @@ source_color_label,Kolor obszaru źródłowego:
 target_color_label,Kolor obszaru tłumaczenia:
 target_text_color_label,Kolor tekstu tłumaczenia:
 font_size_label,Rozmiar czcionki okna tłumaczenia:
+font_type_label,Typ czcionki okna tłumaczenia:
 file_cache_frame_title,Opcje buforowania do plików
 file_cache_description,"Buforowanie do plików zapisuje tłumaczenia na dysk, aby zmniejszyć koszty API i poprawić wydajność."
 google_cache_checkbox,"Włącz bufor Google Translate (zapisuje na dysk, zmniejsza wywołania API)"
