@@ -919,6 +919,40 @@ class UIInteractionHandler:
                 font_type = self.app.target_font_type_var.get()
                 self.app.translation_text.configure(font=(font_type, font_size))
             except tk.TclError: pass
+
+    def update_target_opacity(self):
+        """Update the background opacity of the translation overlay"""
+        if self.app.target_overlay and self.app.target_overlay.winfo_exists():
+            try:
+                # For PySide overlays, update opacity through the update_color method
+                if hasattr(self.app.target_overlay, 'update_color'):
+                    current_bg_color = self.app.target_colour_var.get()
+                    current_opacity = self.app.target_opacity_var.get()
+                    self.app.target_overlay.update_color(current_bg_color, current_opacity)
+                # For tkinter overlays, update alpha attribute
+                else:
+                    opacity = self.app.target_opacity_var.get()
+                    self.app.target_overlay.attributes("-alpha", opacity)
+            except Exception as e:
+                from logger import log_debug
+                log_debug(f"Error updating target opacity: {e}")
+
+    def update_target_text_opacity(self):
+        """Update the text opacity of the translation overlay"""
+        if self.app.target_overlay and self.app.target_overlay.winfo_exists():
+            try:
+                # For PySide overlays, update text color with new opacity
+                if hasattr(self.app.target_overlay, 'update_text_color'):
+                    from overlay_manager import _hex_to_rgba_om
+                    text_hex_color = self.app.target_text_colour_var.get()
+                    text_opacity = self.app.target_text_opacity_var.get()
+                    text_rgba_color = _hex_to_rgba_om(text_hex_color, text_opacity)
+                    self.app.target_overlay.update_text_color(text_rgba_color)
+                # For tkinter overlays, text opacity is not supported
+                # (background and text share same opacity level)
+            except Exception as e:
+                from logger import log_debug
+                log_debug(f"Error updating target text opacity: {e}")
     
     def refresh_debug_log(self):
         if not hasattr(self.app, 'log_text') or not self.app.log_text or not self.app.log_text.winfo_exists(): return
@@ -1072,6 +1106,8 @@ class UIInteractionHandler:
             cfg['target_text_colour'] = self.app.target_text_colour_var.get()
             cfg['target_font_size'] = str(self.app.target_font_size_var.get())
             cfg['target_font_type'] = self.app.target_font_type_var.get()
+            cfg['target_opacity'] = str(self.app.target_opacity_var.get())
+            cfg['target_text_opacity'] = str(self.app.target_text_opacity_var.get())
             cfg['gui_language'] = self.app.gui_language_var.get()
             cfg['ocr_model'] = self.app.ocr_model_var.get()  # OCR Model Selection (Phase 2)
             cfg['check_for_updates_on_startup'] = 'yes' if self.app.check_for_updates_on_startup_var.get() else 'no'
