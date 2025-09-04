@@ -11,9 +11,9 @@ RTL_LANGUAGES = {
 }
 
 # Version Management - Centralized version control
-APP_VERSION = "v3.5.8"
-APP_RELEASE_DATE = "30 August 2025"
-APP_RELEASE_DATE_POLISH = "30 sierpnia 2025"
+APP_VERSION = "v3.5.9"
+APP_RELEASE_DATE = "4 September 2025"
+APP_RELEASE_DATE_POLISH = "4 września 2025"
 GITHUB_API_URL = "https://api.github.com/repos/tomkam1702/OCR-Translator/releases/latest"
 
 def parse_version(version_str):
