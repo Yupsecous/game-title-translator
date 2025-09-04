@@ -282,10 +282,17 @@ def create_target_overlay_om(app, skip_preservation=False):
         top_bar_height = int(app.config['Settings'].get('target_top_bar_height', '10'))
         border_px = int(app.config['Settings'].get('target_border_px', '0'))
 
-        # Background opacity
-        opacity = float(app.config['Settings'].get('target_opacity', '0.15'))
-        # MODIFIED: Read text opacity from config, default to 1.0 (fully opaque)
-        text_opacity = float(app.config['Settings'].get('target_text_opacity', '1.0'))
+        # Background opacity - prefer app variable over config
+        try:
+            opacity = app.target_opacity_var.get()
+        except (AttributeError, tk.TclError):
+            opacity = float(app.config['Settings'].get('target_opacity', '0.15'))
+        
+        # Text opacity - prefer app variable over config  
+        try:
+            text_opacity = app.target_text_opacity_var.get()
+        except (AttributeError, tk.TclError):
+            text_opacity = float(app.config['Settings'].get('target_text_opacity', '1.0'))
 
         if is_pyside_available():
             log_debug("OverlayManager: PySide6 available, attempting to create PySide overlay")

@@ -496,9 +496,17 @@ if PYSIDE6_AVAILABLE:
             except Exception as e:
                 log_debug(f"Error setting translation text: {e}")
 
-        def update_color(self, new_color):
-            """Update colors for window and child widgets."""
+        def update_color(self, new_color, new_opacity=None):
+            """Update colors and optionally opacity for window and child widgets."""
             self.bg_color = new_color
+            
+            # Update opacity if provided
+            if new_opacity is not None:
+                try:
+                    self._opacity = float(new_opacity)
+                    log_debug(f"PySide overlay: Updated opacity to {self._opacity}")
+                except (ValueError, TypeError):
+                    log_debug(f"PySide overlay: Invalid opacity value {new_opacity}, keeping existing")
 
             # Update the central widget, which holds the visual background
             semi_transparent_bg = self._hex_to_rgba(new_color, self._opacity)

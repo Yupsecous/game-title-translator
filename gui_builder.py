@@ -1071,6 +1071,49 @@ def create_settings_tab(app):
     font_type_combobox.bind('<<ComboboxSelected>>', create_combobox_handler_wrapper(on_font_type_change))
     current_row += 1
     
+    # Opacity controls
+    opacity_frame = ttk.Frame(frame)
+    opacity_frame.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    ttk.Label(opacity_frame, text=app.ui_lang.get_label("opacity_label", "Opacity:")).grid(row=0, column=0, padx=(0, 10), pady=0, sticky="w")
+    
+    # Background opacity
+    ttk.Label(opacity_frame, text=app.ui_lang.get_label("opacity_background_label", "Background:")).grid(row=0, column=1, padx=(0, 5), pady=0, sticky="w")
+    bg_opacity_spinbox = ttk.Spinbox(opacity_frame, from_=0.00, to=1.00, increment=0.05, width=8,
+                                   textvariable=app.target_opacity_var, format="%.2f")
+    bg_opacity_spinbox.grid(row=0, column=2, padx=(0, 10), pady=0, sticky="w")
+    
+    # Text opacity  
+    ttk.Label(opacity_frame, text=app.ui_lang.get_label("opacity_text_label", "Text:")).grid(row=0, column=3, padx=(0, 5), pady=0, sticky="w")
+    text_opacity_spinbox = ttk.Spinbox(opacity_frame, from_=0.00, to=1.00, increment=0.05, width=8,
+                                     textvariable=app.target_text_opacity_var, format="%.2f")
+    text_opacity_spinbox.grid(row=0, column=4, padx=0, pady=0, sticky="w")
+    
+    # Bind focus out events to validate and update overlays
+    def on_bg_opacity_focus_out(event):
+        try:
+            value = float(app.target_opacity_var.get())
+            if not (0.00 <= value <= 1.00):
+                app.target_opacity_var.set(max(0.00, min(1.00, value)))
+        except (ValueError, tk.TclError):
+            app.target_opacity_var.set(0.15)
+        app.update_target_opacity()
+        # Note: Settings are saved automatically via trace callback
+    
+    def on_text_opacity_focus_out(event):
+        try:
+            value = float(app.target_text_opacity_var.get())
+            if not (0.00 <= value <= 1.00):
+                app.target_text_opacity_var.set(max(0.00, min(1.00, value)))
+        except (ValueError, tk.TclError):
+            app.target_text_opacity_var.set(1.0)
+        app.update_target_text_opacity()
+        # Note: Settings are saved automatically via trace callback
+    
+    bg_opacity_spinbox.bind("<FocusOut>", on_bg_opacity_focus_out)
+    text_opacity_spinbox.bind("<FocusOut>", on_text_opacity_focus_out)
+    current_row += 1
+    
     file_cache_frame_outer = ttk.LabelFrame(frame, text=app.ui_lang.get_label("file_cache_frame_title")) 
     file_cache_frame_outer.grid(row=current_row, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
     ttk.Label(file_cache_frame_outer, text=app.ui_lang.get_label("file_cache_description"), wraplength=400).grid(row=0, column=0, columnspan=2, padx=5, pady=2, sticky="w")

@@ -316,6 +316,8 @@ class GameChangingTranslator:
         self.ocr_debugging_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'ocr_debugging', fallback=False))
         self.target_font_size_var = tk.IntVar(value=int(self.config['Settings'].get('target_font_size', '12')))
         self.target_font_type_var = tk.StringVar(value=self.config['Settings'].get('target_font_type', 'Arial'))
+        self.target_opacity_var = tk.DoubleVar(value=float(self.config['Settings'].get('target_opacity', '0.15')))
+        self.target_text_opacity_var = tk.DoubleVar(value=float(self.config['Settings'].get('target_text_opacity', '1.0')))
         
         # Initialize Handlers
         # self.cache_manager = CacheManager(self)
@@ -401,6 +403,8 @@ class GameChangingTranslator:
         self.confidence_var.trace_add("write", self.settings_changed_callback)
         self.target_font_size_var.trace_add("write", self.settings_changed_callback)
         self.target_font_type_var.trace_add("write", self.settings_changed_callback)
+        self.target_opacity_var.trace_add("write", self.settings_changed_callback)
+        self.target_text_opacity_var.trace_add("write", self.settings_changed_callback)
         self.num_beams_var.trace_add("write", self.settings_changed_callback)
         self.marian_model_var.trace_add("write", self.settings_changed_callback) 
         self.gui_language_var.trace_add("write", self.settings_changed_callback)
@@ -1046,6 +1050,12 @@ class GameChangingTranslator:
 
     def update_target_font_type(self):
         self.ui_interaction_handler.update_target_font_type()
+
+    def update_target_opacity(self):
+        self.ui_interaction_handler.update_target_opacity()
+
+    def update_target_text_opacity(self):
+        self.ui_interaction_handler.update_target_text_opacity()
 
     def refresh_debug_log(self):
         self.ui_interaction_handler.refresh_debug_log()

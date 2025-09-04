@@ -64,6 +64,9 @@ target_color_label,Target Area Colour:
 target_text_color_label,Target Text Colour:
 font_size_label,Target Window Font Size:
 font_type_label,Target Window Font Type:
+opacity_label,Opacity:
+opacity_background_label,Background:
+opacity_text_label,Text:
 file_cache_frame_title,File Caching Options
 file_cache_description,"File caching saves translations to disk to reduce API costs, and improves performance."
 google_cache_checkbox,"Enable Google Translate file cache (saves to disk, reduces API calls)"
