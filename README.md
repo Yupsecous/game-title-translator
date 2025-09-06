@@ -70,6 +70,29 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
+### 🚀 NEW in Version 3.5.8
+
+- **Auto-Update System**: Complete auto-update functionality accessible through "Check for Updates" button in the About tab
+  - GitHub API integration for checking latest releases automatically
+  - Simple one-click update process with progress tracking
+  - Safe update application with user file preservation
+  - Staging system for secure update downloads and installation
+- **Enhanced Typography Customisation**: Target Window Font Type selection allowing users to choose any Windows system font for translation display
+  - Expanded beyond the previous default Arial font limitation
+  - Access to complete Windows font library for personalised translation appearance
+  - Improved readability options to suit individual preferences and visual requirements
+- **Advanced Opacity Controls**: Independent transparency management for translation windows
+  - Separate background and text opacity sliders providing independent control (0.0 to 1.0 range)
+  - Replaced previous fixed 0.85 opacity preset with flexible user-defined transparency levels
+  - Enhanced visual integration allowing translation windows to blend seamlessly with any background content
+- **Improved Subtitle Display**: Enhanced formatting of conversational subtitles with proper line breaks for better readability in dialog-heavy content
+  - Previous format: `   - How are you? - Fine.    `  
+  - New format with proper line separation:
+    ```
+        - How are you?
+        - Fine.                 
+    ```
+
 ### 🚀 NEW in Version 3.5.7
 
 - **Persian Language Support**: Added comprehensive Persian language support to both Gemini API and Google Translate translation services

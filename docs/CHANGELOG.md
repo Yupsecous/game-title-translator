@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Simple one-click update process with progress tracking
   - Safe update application with user file preservation
   - Staging system for secure update downloads and installation
+- **Target Window Font Type Selection**: Enhanced typography customisation allowing selection of any Windows system font for translation display
+  - Expanded beyond the previous default Arial font limitation
+  - Access to complete Windows font library for personalised translation appearance
+  - Improved readability options to suit individual preferences and visual requirements
+- **Independent Opacity Controls**: Granular transparency management for enhanced translation window customisation
+  - Separate background and text opacity sliders providing independent control (0.0 to 1.0 range)
+  - Replaced previous fixed 0.85 opacity preset with flexible user-defined transparency levels
+  - Enhanced visual integration allowing translation windows to blend seamlessly with any background content
 
 ### Changed
 - **Improved Subtitle Display for Dialogs**: Enhanced formatting of conversational subtitles with proper line breaks
