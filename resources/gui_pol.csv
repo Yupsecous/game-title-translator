@@ -44,6 +44,14 @@ gemini_context_window_2,2 (dwa napisy)
 gemini_context_window_3,3 (trzy napisy)
 gemini_context_window_4,4 (cztery napisy)
 gemini_context_window_5,5 (pięć napisów)
+openai_api_key_label,Klucz API OpenAI:
+openai_context_window_label,Okno kontekstu:
+openai_context_window_0,0 (brak)
+openai_context_window_1,1 (ostatni napis)
+openai_context_window_2,2 (dwa napisy)
+openai_context_window_3,3 (trzy napisy)
+openai_context_window_4,4 (cztery napisy)
+openai_context_window_5,5 (pięć napisów)
 deepl_classic_model,Klasyczna
 deepl_nextgen_model,Nowej generacji
 models_file_label,Lista modeli MarianMT:

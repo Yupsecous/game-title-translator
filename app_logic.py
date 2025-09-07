@@ -1124,6 +1124,13 @@ class GameChangingTranslator:
             # Start translation session if switching to Gemini
             if current_model == 'gemini_api':
                 self.translation_handler.start_translation_session()
+            
+            # Handle OpenAI session management if needed
+            if current_model == 'openai_api':
+                # OpenAI doesn't require special session management like Gemini
+                # But we could add any OpenAI-specific initialization here if needed
+                pass
+                self.translation_handler.start_translation_session()
         
         self.ui_interaction_handler.on_translation_model_selection_changed(event, initial_setup)
         if not initial_setup and self._fully_initialized: 
@@ -1420,6 +1427,30 @@ class GameChangingTranslator:
                         wpm_str = wpm_str.replace('.', ',')
                     self.translation_stat_vars['api_usage_words_per_minute'].set(wpm_str)
                 
+                # Update OpenAI Translation statistics
+                openai_trans = stats['openai_translation']
+                if hasattr(self, 'openai_translation_stat_vars'):
+                    self.openai_translation_stat_vars['api_usage_openai_total_translation_cost'].set(self.format_currency_for_display(openai_trans['total_cost']))
+                    self.openai_translation_stat_vars['api_usage_openai_total_words_translated'].set(self.format_number_with_separators(openai_trans['total_words']))
+                    self.openai_translation_stat_vars['api_usage_openai_total_translation_calls'].set(self.format_number_with_separators(openai_trans['total_calls']))
+                    self.openai_translation_stat_vars['api_usage_openai_median_duration_translation'].set(
+                        f"{openai_trans['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' 
+                        else f"{openai_trans['median_duration']:.3f}s"
+                    )
+                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_word'].set(self.format_currency_for_display(openai_trans['avg_cost_per_word']))
+                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_call'].set(self.format_currency_for_display(openai_trans['avg_cost_per_call']))
+                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_minute'].set(self.format_currency_for_display(openai_trans['avg_cost_per_minute'], "/min"))
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
+                    
+                    # Format words per minute with proper decimal separator
+                    wpm_str = f"{openai_trans['words_per_minute']:.2f}"
+                    if self.ui_lang.current_lang == 'pol':
+                        wpm_str = wpm_str.replace('.', ',')
+                    self.openai_translation_stat_vars['api_usage_openai_words_per_minute'].set(wpm_str)
+                
                 # Update Combined statistics
                 combined = stats['combined']
                 if hasattr(self, 'combined_stat_vars'):
@@ -1479,8 +1510,26 @@ class GameChangingTranslator:
                     clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
                     clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(trans['total_cost'])}\n\n"
                     
-                    # Combined Statistics - match GUI order
-                    clipboard_text += "💰 Łączne statystyki API\n"
+                    # OpenAI Translation Statistics - match GUI order
+                    clipboard_text += "🔄 Statystyki tłumaczenia OpenAI\n"
+                    clipboard_text += "-" * 30 + "\n"
+                    openai_trans = stats['openai_translation']
+                    clipboard_text += f"Łączne wywołania tłumaczenia: {self.format_number_with_separators(openai_trans['total_calls'])}\n"
+                    clipboard_text += f"Łącznie słów przetłumaczonych: {self.format_number_with_separators(openai_trans['total_words'])}\n"
+                    clipboard_text += f"Mediana czasu trwania: {openai_trans['median_duration']:.3f} s".replace('.', ',') + "\n"
+                    openai_wpm_str = f"{openai_trans['words_per_minute']:.2f}".replace('.', ',')
+                    clipboard_text += f"Średnia słów na minutę: {openai_wpm_str}\n"
+                    clipboard_text += f"Średni koszt na słowo: {self.format_currency_for_display(openai_trans['avg_cost_per_word'])}\n"
+                    clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(openai_trans['avg_cost_per_call'])}\n"
+                    clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(openai_trans['avg_cost_per_minute'], '/min')}\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
+                    clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(openai_trans['total_cost'])}\n\n"
+                    
+                    # Combined Gemini Statistics - match GUI order
+                    clipboard_text += "💰 Łączne statystyki API Gemini\n"
                     clipboard_text += "-" * 25 + "\n"
                     combined = stats['combined']
                     clipboard_text += f"Łączny koszt API: {self.format_currency_for_display(combined['total_cost'])}\n"
@@ -1533,8 +1582,25 @@ class GameChangingTranslator:
                     clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
                     clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(trans['total_cost'])}\n\n"
                     
-                    # Combined Statistics - match GUI order
-                    clipboard_text += "💰 Combined API Statistics\n"
+                    # OpenAI Translation Statistics - match GUI order
+                    clipboard_text += "🔄 OpenAI Translation Statistics\n"
+                    clipboard_text += "-" * 30 + "\n"
+                    openai_trans = stats['openai_translation']
+                    clipboard_text += f"Total Translation Calls: {self.format_number_with_separators(openai_trans['total_calls'])}\n"
+                    clipboard_text += f"Total Words Translated: {self.format_number_with_separators(openai_trans['total_words'])}\n"
+                    clipboard_text += f"Median Duration: {openai_trans['median_duration']:.3f}s\n"
+                    clipboard_text += f"Average Words per Minute: {openai_trans['words_per_minute']:.2f}\n"
+                    clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(openai_trans['avg_cost_per_word'])}\n"
+                    clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(openai_trans['avg_cost_per_call'])}\n"
+                    clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(openai_trans['avg_cost_per_minute'], '/min')}\n"
+                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                    cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
+                    cost_per_hour = cost_per_minute_rounded * 60
+                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
+                    clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(openai_trans['total_cost'])}\n\n"
+                    
+                    # Combined Gemini Statistics - match GUI order
+                    clipboard_text += "💰 Combined Gemini API Statistics\n"
                     clipboard_text += "-" * 25 + "\n"
                     combined = stats['combined']
                     clipboard_text += f"Combined Cost per Minute: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
@@ -2589,6 +2655,10 @@ class GameChangingTranslator:
         # For backward compatibility, also add the legacy gemini_api key pointing to the first available model
         if gemini_translation_models:
             self.translation_model_names['gemini_api'] = gemini_translation_models[0]
+            
+        # For backward compatibility, also add the legacy openai_api key pointing to the first available model
+        if openai_translation_models:
+            self.translation_model_names['openai_api'] = openai_translation_models[0]
         
         # Update the reverse mapping as well
         self.translation_model_values = {v: k for k, v in self.translation_model_names.items()}
