@@ -13,6 +13,7 @@ PySide6>=6.4.0
 google-cloud-translate>=3.0.0
 google-generativeai>=0.3.0
 deepl>=1.12.0
+openai>=1.0.0
 
 # Optional offline translation (MarianMT)
 transformers>=4.18.0

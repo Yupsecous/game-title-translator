@@ -443,14 +443,38 @@ class StatisticsHandler:
                 f.write(f"Translation,Average Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
                 f.write(f"Translation,Total Translation Cost,{self._format_currency_for_export(trans['total_cost'], use_polish_format)}\n")
                 
-                # Combined statistics - match GUI order with proper cost per hour calculation
+                # OpenAI Translation statistics - match GUI order with proper cost per hour calculation
+                openai_trans = stats['openai_translation']
+                f.write(f"OpenAI Translation,Total Translation Calls,{self._format_number_with_separators_for_export(openai_trans['total_calls'], use_polish_format)}\n")
+                f.write(f"OpenAI Translation,Total Words Translated,{self._format_number_with_separators_for_export(openai_trans['total_words'], use_polish_format)}\n")
+                # Format duration with proper Polish formatting
+                duration_str = f"{openai_trans['median_duration']:.3f}s"
+                if use_polish_format:
+                    duration_str = f"{openai_trans['median_duration']:.3f} s".replace('.', ',')
+                f.write(f"OpenAI Translation,Median Duration,{duration_str}\n")
+                # Format words per minute with proper decimal separator
+                wpm = openai_trans['words_per_minute']
+                wpm_str = f"{wpm:.2f}"
+                if use_polish_format:
+                    wpm_str = wpm_str.replace('.', ',')
+                f.write(f"OpenAI Translation,Average Words per Minute,{wpm_str}\n")
+                f.write(f"OpenAI Translation,Average Cost per Word,{self._format_currency_for_export(openai_trans['avg_cost_per_word'], use_polish_format)}\n")
+                f.write(f"OpenAI Translation,Average Cost per Call,{self._format_currency_for_export(openai_trans['avg_cost_per_call'], use_polish_format)}\n")
+                f.write(f"OpenAI Translation,Average Cost per Minute,{self._format_currency_for_export(openai_trans['avg_cost_per_minute'], use_polish_format)}\n")
+                # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
+                cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
+                cost_per_hour = cost_per_minute_rounded * 60
+                f.write(f"OpenAI Translation,Average Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
+                f.write(f"OpenAI Translation,Total Translation Cost,{self._format_currency_for_export(openai_trans['total_cost'], use_polish_format)}\n")
+                
+                # Combined Gemini statistics - match GUI order with proper cost per hour calculation
                 combined = stats['combined']
-                f.write(f"Combined,Combined Cost per Minute,{self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}\n")
+                f.write(f"Combined Gemini,Combined Cost per Minute,{self._format_currency_for_export(combined['combined_cost_per_minute'], use_polish_format)}\n")
                 # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
                 cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
                 cost_per_hour = cost_per_minute_rounded * 60
-                f.write(f"Combined,Combined Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
-                f.write(f"Combined,Total API Cost,{self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
+                f.write(f"Combined Gemini,Combined Cost per Hour,{self._format_currency_for_export(cost_per_hour, use_polish_format)}\n")
+                f.write(f"Combined Gemini,Total API Cost,{self._format_currency_for_export(combined['total_cost'], use_polish_format)}\n")
                 
                 # DeepL section with actual value
                 deepl_value = deepl_usage if deepl_usage else "N/A"

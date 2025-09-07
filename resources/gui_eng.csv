@@ -42,6 +42,14 @@ gemini_context_window_2,2 (Two subtitles)
 gemini_context_window_3,3 (Three subtitles)
 gemini_context_window_4,4 (Four subtitles)
 gemini_context_window_5,5 (Five subtitles)
+openai_api_key_label,OpenAI API Key:
+openai_context_window_label,Context Window:
+openai_context_window_0,0 (Disabled)
+openai_context_window_1,1 (Last subtitle)
+openai_context_window_2,2 (Two subtitles)
+openai_context_window_3,3 (Three subtitles)
+openai_context_window_4,4 (Four subtitles)
+openai_context_window_5,5 (Five subtitles)
 deepl_classic_model,Classic
 deepl_nextgen_model,Next-gen
 models_file_label,MarianMT Model List:
@@ -130,7 +138,9 @@ deepl_usage_loading,Loading...
 api_usage_tab_title,API Usage
 api_usage_section_ocr,📊 Gemini OCR Statistics
 api_usage_section_translation,🔄 Gemini Translation Statistics
-api_usage_section_combined,💰 Combined API Statistics
+api_usage_section_openai_translation,🔄 OpenAI Translation Statistics
+api_usage_section_combined,💰 Combined Gemini API Statistics
+api_usage_section_combined_gemini,💰 Combined Gemini API Statistics
 api_usage_section_deepl,📈 DeepL Usage Tracker
 api_usage_total_ocr_cost,Total OCR Cost:
 api_usage_total_ocr_calls,Total OCR Calls:

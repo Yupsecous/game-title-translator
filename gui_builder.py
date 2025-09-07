@@ -1415,8 +1415,8 @@ def create_api_usage_tab(app):
     
     current_row += 1
     
-    # Combined Statistics Section
-    combined_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_combined"))
+    # Combined Gemini Statistics Section
+    combined_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_combined_gemini", "💰 Combined Gemini API Statistics"))
     combined_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
     
     # Combined statistics labels and values

@@ -85,6 +85,8 @@ class UIInteractionHandler:
             target_entry, target_button, visibility_flag_attr = self.app.deepl_api_key_entry, self.app.deepl_api_key_button, "deepl_api_key_visible"
         elif api_type_toggle == "gemini":
             target_entry, target_button, visibility_flag_attr = self.app.gemini_api_key_entry, self.app.gemini_api_key_button, "gemini_api_key_visible"
+        elif api_type_toggle == "openai":
+            target_entry, target_button, visibility_flag_attr = self.app.openai_api_key_entry, self.app.openai_api_key_button, "openai_api_key_visible"
         
         if target_entry and target_button:
             current_visibility = getattr(self.app, visibility_flag_attr, False)
@@ -122,8 +124,9 @@ class UIInteractionHandler:
         is_google = (selected_model_ui_code == 'google_api')
         is_deepl = (selected_model_ui_code == 'deepl_api')
         is_gemini = (selected_model_ui_code == 'gemini_api')
+        is_openai = self.app.is_openai_model(self.app.translation_model_display_var.get())
         is_marian = (selected_model_ui_code == 'marianmt')
-        is_api_model = is_google or is_deepl or is_gemini
+        is_api_model = is_google or is_deepl or is_gemini or is_openai
 
         manage_grid(self.app.source_lang_label, show=is_api_model)
         manage_grid(self.app.source_lang_combobox, show=is_api_model)
@@ -148,6 +151,20 @@ class UIInteractionHandler:
             manage_grid(self.app.gemini_context_window_label, show=is_gemini)
         if hasattr(self.app, 'gemini_context_window_combobox'):
             manage_grid(self.app.gemini_context_window_combobox, show=is_gemini)
+        
+        # OpenAI API components visibility
+        if hasattr(self.app, 'openai_api_key_label'):
+            manage_grid(self.app.openai_api_key_label, show=is_openai)
+        if hasattr(self.app, 'openai_api_key_entry'):
+            manage_grid(self.app.openai_api_key_entry, show=is_openai)
+        if hasattr(self.app, 'openai_api_key_button'):
+            manage_grid(self.app.openai_api_key_button, show=is_openai)
+        
+        # OpenAI settings visibility
+        if hasattr(self.app, 'openai_context_window_label'):
+            manage_grid(self.app.openai_context_window_label, show=is_openai)
+        if hasattr(self.app, 'openai_context_window_combobox'):
+            manage_grid(self.app.openai_context_window_combobox, show=is_openai)
         
         # Gemini statistics visibility - hide when Gemini is selected since stats are in API Usage tab
         if hasattr(self.app, 'gemini_stats_frame'):
@@ -785,8 +802,15 @@ class UIInteractionHandler:
                     # Store the specific Gemini model selection
                     self.app.gemini_translation_model_var.set(selected_display_name_from_ui)
                     log_debug(f"Selected Gemini translation model: {selected_display_name_from_ui}")
+                # Check if it's an OpenAI model
+                elif (self.app.OPENAI_API_AVAILABLE and 
+                      selected_display_name_from_ui in self.app.openai_models_manager.get_translation_model_names()):
+                    newly_selected_model_code = 'openai_api'
+                    # Store the specific OpenAI model selection
+                    self.app.openai_translation_model_var.set(selected_display_name_from_ui)
+                    log_debug(f"Selected OpenAI translation model: {selected_display_name_from_ui}")
                 else:
-                    # Use the existing lookup for non-Gemini models
+                    # Use the existing lookup for non-Gemini/OpenAI models
                     newly_selected_model_code = self.app.translation_model_values.get(selected_display_name_from_ui, 'google_api')
                 
                 # Track model change
@@ -794,10 +818,14 @@ class UIInteractionHandler:
                 if newly_selected_model_code != previous_model:
                     log_debug(f"Translation model changed from {previous_model} to {newly_selected_model_code}")
                     
-                    # Clear Gemini context when translation model is changed
+                    # Clear contexts when translation model is changed
                     if (hasattr(self.app, 'translation_handler') and 
                         hasattr(self.app.translation_handler, '_clear_gemini_context')):
                         self.app.translation_handler._clear_gemini_context()
+                    
+                    if (hasattr(self.app, 'translation_handler') and 
+                        hasattr(self.app.translation_handler, '_clear_openai_context')):
+                        self.app.translation_handler._clear_openai_context()
                     
                     self.app.translation_model_var.set(newly_selected_model_code) # This triggers save via trace
                     log_debug(f"Translation model var updated by UI to: {newly_selected_model_code}")
@@ -808,6 +836,9 @@ class UIInteractionHandler:
             if model_to_configure_for == 'gemini_api':
                 # For Gemini, use the specific model name
                 expected_display_name = self.app.gemini_translation_model_var.get()
+            elif model_to_configure_for == 'openai_api':
+                # For OpenAI, use the specific model name
+                expected_display_name = self.app.openai_translation_model_var.get()
             else:
                 expected_display_name = self.app.translation_model_names.get(model_to_configure_for)
                 
