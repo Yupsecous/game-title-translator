@@ -1,0 +1,6 @@
+Model Name,API Name,Input Cost per 1M,Output Cost per 1M,Translation,OCR
+GPT-4o,gpt-4o,5,15,yes,no
+GPT-4o Mini,gpt-4o-mini,0.15,0.6,yes,no
+GPT-4 Turbo,gpt-4-turbo,10,30,yes,no
+GPT-4,gpt-4,30,60,yes,no
+GPT-3.5 Turbo,gpt-3.5-turbo,0.5,1.5,yes,no
