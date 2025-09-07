@@ -312,6 +312,10 @@ class GameChangingTranslator:
         # Gemini statistics variables (initialized by GUI builder)
         self.gemini_total_words_var = None
         self.gemini_total_cost_var = None
+        
+        # OpenAI statistics variables (initialized by GUI builder)
+        self.openai_total_words_var = None
+        self.openai_total_cost_var = None
 
         tesseract_path_from_config = self.config['Settings'].get('tesseract_path', r'C:\Program Files\Tesseract-OCR\tesseract.exe')
         self.tesseract_path_var = tk.StringVar(value=tesseract_path_from_config)

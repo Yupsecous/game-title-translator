@@ -20,8 +20,9 @@ class StatisticsHandler:
         
         self.ocr_log_file = os.path.join(base_dir, "API_OCR_short_log.txt")
         self.translation_log_file = os.path.join(base_dir, "API_TRA_short_log.txt")
+        self.openai_translation_log_file = os.path.join(base_dir, "OpenAI_API_TRA_short_log.txt")
         
-        log_debug(f"Statistics handler initialized - OCR log: {self.ocr_log_file}, Translation log: {self.translation_log_file}")
+        log_debug(f"Statistics handler initialized - OCR log: {self.ocr_log_file}, Translation log: {self.translation_log_file}, OpenAI log: {self.openai_translation_log_file}")
         
         # Cache for parsed data to avoid re-parsing
         self._cache_timestamp = 0
@@ -166,6 +167,7 @@ class StatisticsHandler:
             # Parse both log files
             ocr_sessions = self.parse_log_file(self.ocr_log_file)
             translation_sessions = self.parse_log_file(self.translation_log_file)
+            openai_translation_sessions = self.parse_log_file(self.openai_translation_log_file)
             
             # Calculate OCR statistics
             ocr_stats = self._calculate_ocr_statistics(ocr_sessions)
@@ -173,12 +175,16 @@ class StatisticsHandler:
             # Calculate translation statistics
             translation_stats = self._calculate_translation_statistics(translation_sessions)
             
+            # Calculate OpenAI translation statistics
+            openai_translation_stats = self._calculate_translation_statistics(openai_translation_sessions)
+            
             # Calculate combined statistics
             combined_stats = self._calculate_combined_statistics(ocr_stats, translation_stats)
             
             stats = {
                 'ocr': ocr_stats,
                 'translation': translation_stats,
+                'openai_translation': openai_translation_stats,
                 'combined': combined_stats
             }
             
@@ -318,6 +324,17 @@ class StatisticsHandler:
                 'total_duration_seconds': 0.0
             },
             'translation': {
+                'total_cost': 0.0,
+                'total_calls': 0,
+                'total_words': 0,
+                'median_duration': 0.0,
+                'avg_cost_per_word': 0.0,
+                'avg_cost_per_minute': 0.0,
+                'avg_cost_per_hour': 0.0,
+                'words_per_minute': 0.0,
+                'total_duration_seconds': 0.0
+            },
+            'openai_translation': {
                 'total_cost': 0.0,
                 'total_calls': 0,
                 'total_words': 0,
