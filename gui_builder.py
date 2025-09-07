@@ -623,64 +623,22 @@ def create_settings_tab(app):
     app.gemini_context_window_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_gemini_context_window_changed))
 
-    # Gemini API Statistics Row (only visible when Gemini is selected)
-    app.gemini_stats_frame = ttk.Frame(frame)
-    app.gemini_stats_frame.grid(row=9, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
-    
-    # Total Words field (read-only)
-    app.gemini_total_words_label = ttk.Label(app.gemini_stats_frame, text=app.ui_lang.get_label("gemini_total_words_label", "Łącznie słów"))
-    app.gemini_total_words_label.grid(row=0, column=0, padx=(0,5), pady=0, sticky="w")
-    app.gemini_total_words_var = tk.StringVar(value="0")
-    app.gemini_total_words_entry = ttk.Entry(app.gemini_stats_frame, textvariable=app.gemini_total_words_var, 
-                                           width=12, state='readonly')
-    app.gemini_total_words_entry.grid(row=0, column=1, padx=(0,10), pady=0, sticky="w")
-    
-    # Total Cost field (read-only)
-    app.gemini_total_cost_label = ttk.Label(app.gemini_stats_frame, text=app.ui_lang.get_label("gemini_total_cost_label", "Łączny koszt"))
-    app.gemini_total_cost_label.grid(row=0, column=2, padx=(0,5), pady=0, sticky="w")
-    app.gemini_total_cost_var = tk.StringVar(value=app.format_cost_for_display(0.0))
-    app.gemini_total_cost_entry = ttk.Entry(app.gemini_stats_frame, textvariable=app.gemini_total_cost_var, 
-                                          width=15, state='readonly')
-    app.gemini_total_cost_entry.grid(row=0, column=3, padx=(0,10), pady=0, sticky="w")
-    
-    # API Log controls row (new row below Total Words and Total Cost)
-    # Enable API Log checkbox
-    app.gemini_enable_api_log_checkbox = ttk.Checkbutton(
-        app.gemini_stats_frame, 
-        text=app.ui_lang.get_label("gemini_enable_api_log_checkbox", "Enable API Log"),
-        variable=app.gemini_api_log_enabled_var,
-        command=lambda: app._fully_initialized and app.save_settings()
-    )
-    app.gemini_enable_api_log_checkbox.grid(row=1, column=0, padx=(0,10), pady=5, sticky="w")
-    
-    # Refresh Stats button (moved to new row)
-    app.gemini_refresh_stats_button = ttk.Button(app.gemini_stats_frame, 
-                                               text=app.ui_lang.get_label("gemini_refresh_stats_button", "Odśwież"), 
-                                               command=app.update_gemini_stats)
-    app.gemini_refresh_stats_button.grid(row=1, column=1, padx=(0,5), pady=5, sticky="w")
-    
-    # Reset API Log button (moved to new row, renamed to just "Reset")
-    app.gemini_reset_log_button = ttk.Button(app.gemini_stats_frame, 
-                                           text=app.ui_lang.get_label("gemini_reset_log_button", "Wyzeruj"), 
-                                           command=app.reset_gemini_api_log)
-    app.gemini_reset_log_button.grid(row=1, column=2, padx=(0,5), pady=5, sticky="w")
-
     # OpenAI API Key input (only visible when OpenAI is selected)
     app.openai_api_key_label = ttk.Label(frame, text=app.ui_lang.get_label("openai_api_key_label", "OpenAI API Key")) 
-    app.openai_api_key_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+    app.openai_api_key_label.grid(row=9, column=0, padx=5, pady=5, sticky="w")
     app.openai_api_key_entry = ttk.Entry(frame, textvariable=app.openai_api_key_var, width=40, show="*")
-    app.openai_api_key_entry.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
+    app.openai_api_key_entry.grid(row=9, column=1, padx=5, pady=5, sticky="ew")
     # Set initial button text based on visibility
     initial_openai_text = app.ui_lang.get_label("show_btn", "Show") 
     if hasattr(app, 'openai_api_key_visible') and app.openai_api_key_visible:
         initial_openai_text = app.ui_lang.get_label("hide_btn", "Hide")
     app.openai_api_key_button = ttk.Button(frame, text=initial_openai_text, width=5,
                                           command=lambda: app.toggle_api_key_visibility("openai"))
-    app.openai_api_key_button.grid(row=10, column=2, padx=5, pady=5, sticky="w")
+    app.openai_api_key_button.grid(row=9, column=2, padx=5, pady=5, sticky="w")
 
     # OpenAI Context Window Setting (only visible when OpenAI is selected)
     app.openai_context_window_label = ttk.Label(frame, text=app.ui_lang.get_label("openai_context_window_label", "Context Window"))
-    app.openai_context_window_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
+    app.openai_context_window_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
     
     openai_context_window_options = [
         (0, app.ui_lang.get_label("openai_context_window_0", "0 (Disabled)")),
@@ -705,7 +663,7 @@ def create_settings_tab(app):
     app.openai_context_window_combobox = ttk.Combobox(frame, textvariable=app.openai_context_window_display_var,
                                                      values=[display for _, display in openai_context_window_options], 
                                                      width=25, state='readonly')
-    app.openai_context_window_combobox.grid(row=11, column=1, padx=5, pady=5, sticky="ew")
+    app.openai_context_window_combobox.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
     
     def on_openai_context_window_changed(event):
         selected_display = app.openai_context_window_display_var.get()
@@ -725,51 +683,9 @@ def create_settings_tab(app):
     app.openai_context_window_combobox.bind('<<ComboboxSelected>>', 
         create_combobox_handler_wrapper(on_openai_context_window_changed))
 
-    # OpenAI API Statistics Row (only visible when OpenAI is selected)
-    app.openai_stats_frame = ttk.Frame(frame)
-    app.openai_stats_frame.grid(row=12, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
-    
-    # Total Words field (read-only)
-    app.openai_total_words_label = ttk.Label(app.openai_stats_frame, text=app.ui_lang.get_label("openai_total_words_label", "Total Words"))
-    app.openai_total_words_label.grid(row=0, column=0, padx=(0,5), pady=0, sticky="w")
-    app.openai_total_words_var = tk.StringVar(value="0")
-    app.openai_total_words_entry = ttk.Entry(app.openai_stats_frame, textvariable=app.openai_total_words_var, 
-                                           width=12, state='readonly')
-    app.openai_total_words_entry.grid(row=0, column=1, padx=(0,10), pady=0, sticky="w")
-    
-    # Total Cost field (read-only)
-    app.openai_total_cost_label = ttk.Label(app.openai_stats_frame, text=app.ui_lang.get_label("openai_total_cost_label", "Total Cost"))
-    app.openai_total_cost_label.grid(row=0, column=2, padx=(0,5), pady=0, sticky="w")
-    app.openai_total_cost_var = tk.StringVar(value=app.format_cost_for_display(0.0))
-    app.openai_total_cost_entry = ttk.Entry(app.openai_stats_frame, textvariable=app.openai_total_cost_var, 
-                                          width=15, state='readonly')
-    app.openai_total_cost_entry.grid(row=0, column=3, padx=(0,10), pady=0, sticky="w")
-    
-    # API Log controls row (new row below Total Words and Total Cost)
-    # Enable API Log checkbox
-    app.openai_enable_api_log_checkbox = ttk.Checkbutton(
-        app.openai_stats_frame, 
-        text=app.ui_lang.get_label("openai_enable_api_log_checkbox", "Enable API Log"),
-        variable=app.openai_api_log_enabled_var,
-        command=lambda: app._fully_initialized and app.save_settings()
-    )
-    app.openai_enable_api_log_checkbox.grid(row=1, column=0, padx=(0,10), pady=5, sticky="w")
-    
-    # Refresh Stats button
-    app.openai_refresh_stats_button = ttk.Button(app.openai_stats_frame, 
-                                               text=app.ui_lang.get_label("openai_refresh_stats_button", "Refresh"), 
-                                               command=app.update_openai_stats)
-    app.openai_refresh_stats_button.grid(row=1, column=1, padx=(0,5), pady=5, sticky="w")
-    
-    # Reset API Log button
-    app.openai_reset_log_button = ttk.Button(app.openai_stats_frame, 
-                                           text=app.ui_lang.get_label("openai_reset_log_button", "Reset"), 
-                                           command=app.reset_openai_api_log)
-    app.openai_reset_log_button.grid(row=1, column=2, padx=(0,5), pady=5, sticky="w")
-
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
-    app.deepl_model_type_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_model_type_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
     
     # Create model type options with user-friendly names
     deepl_model_options = [
@@ -791,7 +707,7 @@ def create_settings_tab(app):
     app.deepl_model_type_combobox = ttk.Combobox(frame, textvariable=app.deepl_model_display_var,
                                                values=[display for _, display in deepl_model_options], 
                                                width=25, state='readonly')
-    app.deepl_model_type_combobox.grid(row=13, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_model_type_combobox.grid(row=11, column=1, padx=5, pady=5, sticky="ew")
     
     def on_deepl_model_type_changed(event):
         selected_display = app.deepl_model_display_var.get()

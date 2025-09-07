@@ -1181,6 +1181,117 @@ class GameChangingTranslator:
                 f"{self.ui_lang.get_label('gemini_reset_error_failed', 'Failed to reset Gemini API log:')} {str(e)}"
             )
 
+    def update_openai_stats(self):
+        """Update the OpenAI statistics fields by reading the log file."""
+        try:
+            # Check if all required components are available
+            if not hasattr(self, 'openai_total_words_var') or self.openai_total_words_var is None:
+                log_debug("OpenAI stats variables not initialized yet")
+                return
+                
+            if not hasattr(self, 'openai_total_cost_var') or self.openai_total_cost_var is None:
+                log_debug("OpenAI total cost variable not initialized yet")
+                return
+            
+            # Get cumulative totals from OpenAI log file
+            total_words, total_cost = self._get_cumulative_openai_totals()
+            
+            # Update GUI fields
+            self.openai_total_words_var.set(self.format_number_with_separators(total_words))
+            self.openai_total_cost_var.set(self.format_cost_for_display(total_cost))
+            
+            log_debug(f"Updated OpenAI stats: {total_words} words, ${total_cost:.8f}")
+        except Exception as e:
+            log_debug(f"Error updating OpenAI stats: {e}")
+            # Set default values if there's an error
+            if hasattr(self, 'openai_total_words_var') and self.openai_total_words_var is not None:
+                self.openai_total_words_var.set(self.format_number_with_separators(0))
+            if hasattr(self, 'openai_total_cost_var') and self.openai_total_cost_var is not None:
+                self.openai_total_cost_var.set(self.format_cost_for_display(0.0))
+
+    def _get_cumulative_openai_totals(self):
+        """Read the cumulative totals from the OpenAI API log file."""
+        try:
+            # Get the log file path
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                base_dir = os.path.dirname(sys.executable)
+            else:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            openai_log_file = os.path.join(base_dir, "OpenAI_API_call_logs.txt")
+            
+            if not os.path.exists(openai_log_file):
+                log_debug(f"OpenAI log file does not exist: {openai_log_file}")
+                return 0, 0.0
+            
+            # Read the most recent cumulative cost and words from the log
+            cumulative_cost = 0.0
+            cumulative_words = 0
+            
+            with open(openai_log_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+                # Find all instances of cumulative totals
+                cost_matches = re.findall(r'Cumulative Log Cost: \$([0-9.]+)', content)
+                word_matches = re.findall(r'Total Translated Words \(so far\): ([0-9,]+)', content)
+                
+                if cost_matches:
+                    cumulative_cost = float(cost_matches[-1])  # Get the last (most recent) value
+                
+                if word_matches:
+                    # Remove commas from word count and convert to int
+                    word_str = word_matches[-1].replace(',', '')
+                    cumulative_words = int(word_str)
+            
+            log_debug(f"OpenAI cumulative totals: {cumulative_words} words, ${cumulative_cost:.8f}")
+            return cumulative_words, cumulative_cost
+            
+        except Exception as e:
+            log_debug(f"Error reading OpenAI cumulative totals: {e}")
+            return 0, 0.0
+
+    def reset_openai_api_log(self):
+        """Reset/clear the OpenAI API call log file."""
+        try:
+            if hasattr(self.translation_handler, 'openai_log_file'):
+                log_file_path = self.translation_handler.openai_log_file
+                
+                # Clear the file by truncating it
+                if os.path.exists(log_file_path):
+                    with open(log_file_path, 'w', encoding='utf-8') as f:
+                        f.write('')  # Clear the file
+                    log_debug(f"OpenAI API log file cleared: {log_file_path}")
+                    
+                    # Reinitialize the log with header
+                    if hasattr(self.translation_handler, '_initialize_openai_log'):
+                        self.translation_handler._initialize_openai_log()
+                    
+                    # Update the GUI fields
+                    self.update_openai_stats()
+                    
+                    messagebox.showinfo(
+                        self.ui_lang.get_label("openai_reset_success_title", "Success"), 
+                        self.ui_lang.get_label("openai_reset_success_msg", "OpenAI API log has been reset.")
+                    )
+                else:
+                    log_debug(f"OpenAI API log file does not exist: {log_file_path}")
+                    messagebox.showwarning(
+                        self.ui_lang.get_label("openai_reset_warning_title", "Warning"), 
+                        self.ui_lang.get_label("openai_reset_warning_msg", "OpenAI API log file does not exist.")
+                    )
+            else:
+                log_debug("OpenAI log file path not available")
+                messagebox.showerror(
+                    self.ui_lang.get_label("openai_reset_error_title", "Error"), 
+                    self.ui_lang.get_label("openai_reset_error_msg", "Could not access OpenAI log file.")
+                )
+        except Exception as e:
+            log_debug(f"Error resetting OpenAI API log: {e}")
+            messagebox.showerror(
+                self.ui_lang.get_label("openai_reset_error_title", "Error"), 
+                f"{self.ui_lang.get_label('openai_reset_error_failed', 'Failed to reset OpenAI API log:')} {str(e)}"
+            )
+
     def format_currency_for_display(self, amount, unit_suffix=""):
         """Format currency amount according to current UI language."""
         try:
