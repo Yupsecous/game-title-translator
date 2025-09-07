@@ -48,6 +48,7 @@ from handlers import (
     UIInteractionHandler
 )
 from handlers.gemini_models_manager import GeminiModelsManager
+from handlers.openai_models_manager import OpenAIModelsManager
 
 KEYBOARD_AVAILABLE = False
 try:
@@ -77,6 +78,13 @@ try:
 except ImportError:
     pass
 
+OPENAI_API_AVAILABLE = False
+try:
+    import openai
+    OPENAI_API_AVAILABLE = True
+except ImportError:
+    pass
+
 MARIANMT_AVAILABLE = MARIANMT_LIB_AVAILABLE
 
 class GameChangingTranslator:
@@ -93,6 +101,7 @@ class GameChangingTranslator:
         self.GOOGLE_TRANSLATE_API_AVAILABLE = GOOGLE_TRANSLATE_API_AVAILABLE
         self.DEEPL_API_AVAILABLE = DEEPL_API_AVAILABLE
         self.GEMINI_API_AVAILABLE = GEMINI_API_AVAILABLE
+        self.OPENAI_API_AVAILABLE = OPENAI_API_AVAILABLE
         self.MARIANMT_AVAILABLE = MARIANMT_AVAILABLE
         
         # Debug: Log execution environment information
@@ -116,6 +125,8 @@ class GameChangingTranslator:
         else: log_debug("  DeepL API libraries: available")
         if not GEMINI_API_AVAILABLE: log_debug("  Gemini API libraries not available.")
         else: log_debug("  Gemini API libraries: available")
+        if not OPENAI_API_AVAILABLE: log_debug("  OpenAI API libraries not available.")
+        else: log_debug("  OpenAI API libraries: available")
         if not MARIANMT_AVAILABLE: log_debug("  MarianMT libraries not available.")
         else: log_debug("  MarianMT libraries: available")
 
@@ -268,6 +279,9 @@ class GameChangingTranslator:
         # Initialize Gemini Models Manager before updating model names
         self.gemini_models_manager = GeminiModelsManager()
         
+        # Initialize OpenAI Models Manager
+        self.openai_models_manager = OpenAIModelsManager()
+        
         # Update with localized names after UI language is loaded
         self.update_translation_model_names()
         self.translation_model_values = {v: k for k, v in self.translation_model_names.items()}
@@ -282,9 +296,18 @@ class GameChangingTranslator:
         self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
         self.gemini_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_api_log_enabled', fallback=True))
         
+        # OpenAI API variables
+        self.openai_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'openai_file_cache', fallback=True))
+        self.openai_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('openai_context_window', '2')))
+        self.openai_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'openai_api_log_enabled', fallback=False))
+        self.openai_api_key_var = tk.StringVar(value=self.config['Settings'].get('openai_api_key', ''))
+        
         # Separate Gemini model selection for OCR and Translation
         self.gemini_translation_model_var = tk.StringVar(value=self.config['Settings'].get('gemini_translation_model', 'Gemini 2.5 Flash-Lite'))
         self.gemini_ocr_model_var = tk.StringVar(value=self.config['Settings'].get('gemini_ocr_model', 'Gemini 2.5 Flash-Lite'))
+        
+        # OpenAI model selection for Translation (no OCR support)
+        self.openai_translation_model_var = tk.StringVar(value=self.config['Settings'].get('openai_translation_model', 'GPT-4o Mini'))
         
         # Gemini statistics variables (initialized by GUI builder)
         self.gemini_total_words_var = None
@@ -423,6 +446,7 @@ class GameChangingTranslator:
         self.google_api_key_visible = False
         self.deepl_api_key_visible = False
         self.gemini_api_key_visible = False
+        self.openai_api_key_visible = False
         self.marian_translator = None
         self.marian_source_lang = None 
         self.marian_target_lang = None 
@@ -434,6 +458,10 @@ class GameChangingTranslator:
         self.gemini_source_lang = self.config['Settings'].get('gemini_source_lang', 'en')
         self.gemini_target_lang = self.config['Settings'].get('gemini_target_lang', 'pl')
         
+        # OpenAI language settings
+        self.openai_source_lang = self.config['Settings'].get('openai_source_lang', 'en')
+        self.openai_target_lang = self.config['Settings'].get('openai_target_lang', 'pl')
+        
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             base_dir = os.path.dirname(sys.executable)
         else:
@@ -442,11 +470,13 @@ class GameChangingTranslator:
         self.google_cache_file = os.path.join(base_dir, "googletrans_cache.txt")
         self.deepl_cache_file = os.path.join(base_dir, "deepl_cache.txt")
         self.gemini_cache_file = os.path.join(base_dir, "gemini_cache.txt")
-        log_debug(f"Cache file paths: Google: {self.google_cache_file}, DeepL: {self.deepl_cache_file}, Gemini: {self.gemini_cache_file}")
+        self.openai_cache_file = os.path.join(base_dir, "openai_cache.txt")
+        log_debug(f"Cache file paths: Google: {self.google_cache_file}, DeepL: {self.deepl_cache_file}, Gemini: {self.gemini_cache_file}, OpenAI: {self.openai_cache_file}")
         
         self.google_file_cache = {}
         self.deepl_file_cache = {}
         self.gemini_file_cache = {}
+        self.openai_file_cache = {}
         self.translation_cache = {}
         
         self.cache_manager = CacheManager(self)
@@ -524,6 +554,9 @@ class GameChangingTranslator:
         elif active_model_for_init == 'gemini_api':
             initial_source_val = self.gemini_source_lang
             initial_target_val = self.gemini_target_lang
+        elif self.is_openai_model(active_model_for_init):
+            initial_source_val = self.openai_source_lang
+            initial_target_val = self.openai_target_lang
         elif active_model_for_init == 'marianmt':
             if self.marian_model_display_var.get(): 
                 # ui_interaction_handler is now defined
@@ -2521,7 +2554,10 @@ class GameChangingTranslator:
         # Get Gemini model names from CSV file
         gemini_translation_models = self.gemini_models_manager.get_translation_model_names()
         
-        # Base translation model names (non-Gemini models)
+        # Get OpenAI model names from CSV file
+        openai_translation_models = self.openai_models_manager.get_translation_model_names()
+        
+        # Base translation model names (non-Gemini/OpenAI models)
         base_translation_models = {
             'google_api': 'Google Translate API',
             'deepl_api': 'DeepL API', 
@@ -2531,13 +2567,19 @@ class GameChangingTranslator:
         # Build complete translation model names dict
         self.translation_model_names = {}
         
-        # Add Gemini models first (they should appear first in dropdowns)
+        # Add OpenAI models first (they should appear first in dropdowns)
+        for model_name in openai_translation_models:
+            # Use a special key format for OpenAI models
+            key = f'openai_translation_{model_name}'
+            self.translation_model_names[key] = model_name
+        
+        # Add Gemini models next
         for model_name in gemini_translation_models:
             # Use a special key format for Gemini models
             key = f'gemini_translation_{model_name}'
             self.translation_model_names[key] = model_name
         
-        # Add non-Gemini models
+        # Add non-LLM models
         self.translation_model_names.update(base_translation_models)
         
         # For backward compatibility, also add the legacy gemini_api key pointing to the first available model
@@ -2557,6 +2599,27 @@ class GameChangingTranslator:
         """Get the API name of currently selected Gemini OCR model."""
         display_name = self.gemini_ocr_model_var.get()
         return self.gemini_models_manager.get_api_name_by_display_name(display_name)
+    
+    def get_current_openai_model_for_translation(self):
+        """Get the API name of currently selected OpenAI translation model."""
+        display_name = self.openai_translation_model_var.get()
+        return self.openai_models_manager.get_api_name_by_display_name(display_name)
+    
+    def is_openai_model(self, model_name):
+        """Check if the given model name is an OpenAI model."""
+        if not model_name:
+            return False
+        
+        # Check if it's in our OpenAI translation models
+        openai_models = self.openai_models_manager.get_translation_model_names()
+        if model_name in openai_models:
+            return True
+        
+        # Check if it's using the OpenAI key format
+        if model_name.startswith('openai_translation_'):
+            return True
+        
+        return False
     
     def create_about_tab(self):
         """Create the About tab with consistent content for both initial load and language changes."""

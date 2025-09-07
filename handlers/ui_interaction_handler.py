@@ -1035,6 +1035,8 @@ class UIInteractionHandler:
             deepl_target = self.app.deepl_target_lang
             gemini_source = self.app.gemini_source_lang
             gemini_target = self.app.gemini_target_lang
+            openai_source = self.app.openai_source_lang
+            openai_target = self.app.openai_target_lang
             
             # Basic validation: codes should be short and not contain spaces
             def is_valid_code(code):
@@ -1087,6 +1089,18 @@ class UIInteractionHandler:
                 log_debug(f"Saving Gemini target lang: {gemini_target}")
             else:
                 log_debug(f"ERROR: Invalid Gemini target lang code '{gemini_target}' - not saving")
+                
+            if is_valid_code(openai_source):
+                cfg['openai_source_lang'] = openai_source
+                log_debug(f"Saving OpenAI source lang: {openai_source}")
+            else:
+                log_debug(f"ERROR: Invalid OpenAI source lang code '{openai_source}' - not saving")
+                
+            if is_valid_code(openai_target):
+                cfg['openai_target_lang'] = openai_target
+                log_debug(f"Saving OpenAI target lang: {openai_target}")
+            else:
+                log_debug(f"ERROR: Invalid OpenAI target lang code '{openai_target}' - not saving")
             
             cfg['marian_model'] = self.app.marian_model_var.get() 
 
@@ -1123,6 +1137,13 @@ class UIInteractionHandler:
             cfg['gemini_api_log_enabled'] = str(self.app.gemini_api_log_enabled_var.get())
             cfg['gemini_translation_model'] = self.app.gemini_translation_model_var.get()
             cfg['gemini_ocr_model'] = self.app.gemini_ocr_model_var.get()
+            
+            # OpenAI-specific settings
+            cfg['openai_api_key'] = self.app.openai_api_key_var.get()
+            cfg['openai_context_window'] = str(self.app.openai_context_window_var.get())
+            cfg['openai_file_cache'] = str(self.app.openai_file_cache_var.get())
+            cfg['openai_api_log_enabled'] = str(self.app.openai_api_log_enabled_var.get())
+            cfg['openai_translation_model'] = self.app.openai_translation_model_var.get()
             cfg['marian_models_file'] = self.app.models_file_var.get()
             try: 
                 beam_val = int(self.app.num_beams_var.get())

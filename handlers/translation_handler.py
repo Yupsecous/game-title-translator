@@ -43,6 +43,14 @@ except ImportError:
     REQUESTS_AVAILABLE = False
     log_debug("Requests library not available")
 
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+    log_debug("Pre-loaded OpenAI library")
+except ImportError:
+    OPENAI_AVAILABLE = False
+    log_debug("OpenAI library not available")
+
 class NetworkCircuitBreaker:
     """Circuit breaker to detect and handle network degradation."""
     
@@ -117,12 +125,19 @@ class TranslationHandler:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.gemini_log_file = os.path.join(base_dir, "Gemini_API_call_logs.txt")
         
+        # Initialize OpenAI API call log file path
+        self.openai_log_file = os.path.join(base_dir, "OpenAI_API_call_logs.txt")
+        
         # Initialize short log file paths
         self.ocr_short_log_file = os.path.join(base_dir, "API_OCR_short_log.txt")
         self.tra_short_log_file = os.path.join(base_dir, "API_TRA_short_log.txt")
+        self.openai_tra_short_log_file = os.path.join(base_dir, "OpenAI_API_TRA_short_log.txt")
         
         # Initialize Gemini API call log file
         self._initialize_gemini_log()
+        
+        # Initialize OpenAI API call log file
+        self._initialize_openai_log()
         
         # Initialize session counters by reading existing logs
         self._initialize_session_counters()
@@ -143,6 +158,15 @@ class TranslationHandler:
         self._costs_cache_initialized = False
         self._cached_input_cost = 0.0
         self._cached_output_cost = 0.0
+        
+        # Initialize OpenAI client variables
+        self.openai_client = None
+        self.openai_session_api_key = None
+        self.openai_current_source_lang = None
+        self.openai_current_target_lang = None
+        self.openai_context_window = []
+        self.openai_client_created_time = 0
+        self.openai_api_call_count = 0
         
         log_debug("Translation handler initialized with unified cache")
     
@@ -432,6 +456,62 @@ Purpose: Concise translation call results and statistics
 
         except Exception as e:
             log_debug(f"Error initializing Gemini API logs: {e}")
+
+    def _initialize_openai_log(self):
+        """Initialize the OpenAI API call log file and short log files with headers if they're new."""
+        try:
+            # Ensure the directory exists
+            log_dir = os.path.dirname(self.openai_log_file)
+            if log_dir:
+                os.makedirs(log_dir, exist_ok=True)
+
+            timestamp = self._get_precise_timestamp()
+
+            # Initialize main log file
+            if not os.path.exists(self.openai_log_file):
+                header = f"""
+#######################################################
+#                 OPENAI API CALL LOG                 #
+#      Game-Changing Translator - Token Analysis      #
+#######################################################
+
+Logging Started: {timestamp}
+Purpose: Track input/output token usage for OpenAI API calls, along with exact costs.
+Format: Each entry shows complete message content sent to and received from OpenAI,
+        plus exact token counts and costs for the individual call and the session.
+
+"""
+                with open(self.openai_log_file, 'w', encoding='utf-8') as f:
+                    f.write(header)
+                log_debug(f"OpenAI API logging initialized: {self.openai_log_file}")
+            else:
+                # Append a session start separator to existing log
+                session_start_msg = f"\n\n--- NEW LOGGING SESSION STARTED: {timestamp} ---\n"
+                with open(self.openai_log_file, 'a', encoding='utf-8') as f:
+                    f.write(session_start_msg)
+                log_debug(f"OpenAI API logging continues in existing file: {self.openai_log_file}")
+
+            # Initialize short OpenAI translation log file
+            if not os.path.exists(self.openai_tra_short_log_file):
+                tra_header = f"""
+#######################################################
+#           OPENAI TRANSLATION - SHORT LOG            #
+#######################################################
+
+Session Started: {timestamp}
+Purpose: Concise OpenAI translation call results and statistics
+
+"""
+                with open(self.openai_tra_short_log_file, 'w', encoding='utf-8') as f:
+                    f.write(tra_header)
+                log_debug(f"OpenAI translation short log initialized: {self.openai_tra_short_log_file}")
+            else:
+                # Append session separator
+                with open(self.openai_tra_short_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n--- SESSION: {timestamp} ---\n")
+
+        except Exception as e:
+            log_debug(f"Error initializing OpenAI API logs: {e}")
 
     def _initialize_session_counters(self):
         """Initialize session counters by reading existing logs to find the highest session number."""
@@ -2006,6 +2086,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             target_lang = self.app.gemini_target_lang
             extra_params = {"context_window": self.app.gemini_context_window_var.get()}
         
+        elif self.app.is_openai_model(selected_translation_model):
+            if not OPENAI_AVAILABLE: return "OpenAI libraries not available."
+            if not self.app.openai_api_key_var.get().strip(): return "OpenAI API key missing."
+            
+            source_lang = self.app.openai_source_lang
+            target_lang = self.app.openai_target_lang
+            extra_params = {"context_window": self.app.openai_context_window_var.get()}
+        
         else:
             return f"Error: Unknown translation model '{selected_translation_model}'"
         # --- End: Setup ---
@@ -2038,10 +2126,19 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                     if not self.app.cache_manager.check_file_cache('deepl', cache_key):
                         log_debug(f"Syncing LRU cache hit to DeepL file cache for: {cleaned_text_main}")
                         self.app.cache_manager.save_to_file_cache('deepl', cache_key, cached_result)
+                elif self.app.is_openai_model(selected_translation_model) and self.app.openai_file_cache_var.get():
+                    cache_key = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
+                    if not self.app.cache_manager.check_file_cache('openai', cache_key):
+                        log_debug(f"Syncing LRU cache hit to OpenAI file cache for: {cleaned_text_main}")
+                        self.app.cache_manager.save_to_file_cache('openai', cache_key, cached_result)
 
             # Update Gemini context window if the translation was for Gemini
             if selected_translation_model == 'gemini_api' and not self._is_error_message(cached_result):
                 self._update_sliding_window(cleaned_text_main, cached_result)
+            
+            # Update OpenAI context window if the translation was for OpenAI
+            if self.app.is_openai_model(selected_translation_model) and not self._is_error_message(cached_result):
+                self._update_openai_sliding_window(cleaned_text_main, cached_result)
             
             # Apply dialog formatting before returning cached result
             if cached_result and not self._is_error_message(cached_result):
@@ -2061,6 +2158,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             model_type = extra_params.get('model_type', 'latency_optimized')
             key = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
             file_cache_hit = self.app.cache_manager.check_file_cache('deepl', key)
+        elif self.app.is_openai_model(selected_translation_model) and self.app.openai_file_cache_var.get():
+            key = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('openai', key)
         
         if file_cache_hit:
             batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
@@ -2071,6 +2171,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             )
             if selected_translation_model == 'gemini_api' and not self._is_error_message(file_cache_hit):
                 self._update_sliding_window(cleaned_text_main, file_cache_hit)
+            
+            # Update OpenAI context window if the translation was for OpenAI
+            if self.app.is_openai_model(selected_translation_model) and not self._is_error_message(file_cache_hit):
+                self._update_openai_sliding_window(cleaned_text_main, file_cache_hit)
             
             # Apply dialog formatting before returning file cache result
             if file_cache_hit and not self._is_error_message(file_cache_hit):
@@ -2090,6 +2194,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             translated_api_text = self._gemini_translate(cleaned_text_main, source_lang, target_lang)
         elif selected_translation_model == 'deepl_api':
             translated_api_text = self._deepl_translate(cleaned_text_main, source_lang, target_lang)
+        elif self.app.is_openai_model(selected_translation_model):
+            translated_api_text = self._openai_translate(cleaned_text_main, source_lang, target_lang)
         
         # 4. Store successful API translation in both caches and update context
         if translated_api_text and not self._is_error_message(translated_api_text):
@@ -2104,6 +2210,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 model_type = extra_params.get('model_type', 'latency_optimized')
                 cache_key_to_save = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
                 self.app.cache_manager.save_to_file_cache('deepl', cache_key_to_save, translated_api_text)
+            elif self.app.is_openai_model(selected_translation_model) and self.app.openai_file_cache_var.get():
+                cache_key_to_save = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('openai', cache_key_to_save, translated_api_text)
 
             # Store in unified cache
             self.unified_cache.store(
@@ -2114,6 +2223,10 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Update Gemini context window if the translation was for Gemini
             if selected_translation_model == 'gemini_api':
                 self._update_sliding_window(cleaned_text_main, translated_api_text)
+            
+            # Update OpenAI context window if the translation was for OpenAI
+            if self.app.is_openai_model(selected_translation_model):
+                self._update_openai_sliding_window(cleaned_text_main, translated_api_text)
         
         batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
         log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s{batch_info}")
@@ -2396,3 +2509,469 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 log_debug(f"Updated MarianMT beam search value in translator to: {beam_value_clamped}")
             except Exception as e_umbv:
                 log_debug(f"Error updating MarianMT beam value: {e_umbv}")
+
+    # ===============================
+    # OpenAI Translation Methods
+    # ===============================
+
+    def _openai_translate(self, text_to_translate_oai, source_lang_oai, target_lang_oai):
+        """OpenAI API call with context window support."""
+        log_debug(f"OpenAI translate request for: {text_to_translate_oai}")
+        
+        # Initialize circuit breaker if needed
+        if not hasattr(self, 'openai_circuit_breaker'):
+            self.openai_circuit_breaker = NetworkCircuitBreaker()
+        
+        # Check circuit breaker and force refresh if needed
+        if self.openai_circuit_breaker.should_force_refresh():
+            log_debug("OpenAI circuit breaker forcing client refresh due to network issues")
+            self._force_openai_client_refresh()
+            self.openai_circuit_breaker = NetworkCircuitBreaker()  # Reset circuit breaker
+        
+        # Track pending call
+        self._increment_pending_translation_calls()
+        
+        try:
+            api_key_openai = self.app.openai_api_key_var.get().strip()
+            if not api_key_openai:
+                return "OpenAI API key missing"
+            
+            if not OPENAI_AVAILABLE:
+                return "OpenAI libraries not available"
+            
+            # Check if we need to create a new client
+            needs_new_session = (
+                not hasattr(self, 'openai_client') or 
+                self.openai_client is None or
+                self._should_reset_openai_session(api_key_openai)  # API key changed
+            )
+            
+            if needs_new_session:
+                if hasattr(self, 'openai_session_api_key') and self.openai_session_api_key != api_key_openai:
+                    log_debug("Creating new OpenAI client (API key changed)")
+                else:
+                    log_debug("Creating new OpenAI client (no existing client)")
+                self._initialize_openai_session(source_lang_oai, target_lang_oai)
+            else:
+                # Check if language pair changed - clear context
+                if (hasattr(self, 'openai_current_source_lang') and hasattr(self, 'openai_current_target_lang') and
+                    (self.openai_current_source_lang != source_lang_oai or self.openai_current_target_lang != target_lang_oai)):
+                    log_debug(f"Language pair changed from {self.openai_current_source_lang}->{self.openai_current_target_lang} to {source_lang_oai}->{target_lang_oai}, clearing context")
+                    self._clear_openai_context()
+            
+            # Track current language pair for context clearing
+            self.openai_current_source_lang = source_lang_oai
+            self.openai_current_target_lang = target_lang_oai
+            
+            if self.openai_client is None:
+                return "OpenAI client initialization failed"
+            
+            # Get display names for source and target languages
+            source_lang_name = self._get_language_display_name(source_lang_oai, 'openai')
+            target_lang_name = self._get_language_display_name(target_lang_oai, 'openai')
+            
+            # Build context window with new text integrated
+            context_size = self.app.openai_context_window_var.get()
+            messages = self._build_openai_context_messages(text_to_translate_oai, source_lang_name, target_lang_name, context_size)
+            
+            log_debug(f"Sending to OpenAI {source_lang_oai}->{target_lang_oai}: [{text_to_translate_oai}]")
+            log_debug(f"Making OpenAI API call for: {text_to_translate_oai}")
+            
+            api_call_start_time = time.time()
+            
+            # Get the appropriate model for translation
+            translation_model_api_name = self.app.get_current_openai_model_for_translation()
+            if not translation_model_api_name:
+                # Fallback to config if no specific model selected
+                translation_model_api_name = self.app.config['Settings'].get('openai_model_name', 'gpt-4o-mini')
+            
+            response = self.openai_client.chat.completions.create(
+                model=translation_model_api_name,
+                messages=messages,
+                temperature=0.0,
+                max_tokens=2000
+            )
+            call_duration = time.time() - api_call_start_time
+            log_debug(f"OpenAI API call took {call_duration:.3f}s")
+            
+            # Record successful call with circuit breaker
+            needs_refresh = self.openai_circuit_breaker.record_call(call_duration, True)
+            if needs_refresh:
+                # Schedule client refresh for next call
+                self.openai_client = None
+            
+            # Increment API call counter for periodic refresh
+            if hasattr(self, 'openai_api_call_count'):
+                self.openai_api_call_count += 1
+
+            # Extract exact token counts from API response metadata
+            input_tokens, output_tokens = 0, 0
+            model_name = translation_model_api_name  # Fallback to the model we requested
+            model_source = "fallback"  # Track whether we got it from API or fallback
+            try:
+                if response.usage:
+                    input_tokens = response.usage.prompt_tokens
+                    output_tokens = response.usage.completion_tokens
+                    log_debug(f"OpenAI usage metadata found: In={input_tokens}, Out={output_tokens}")
+                # Model name is already known from our request
+                model_name = translation_model_api_name
+                model_source = "api_request"
+                log_debug(f"OpenAI model used: {model_name} (source: {model_source})")
+            except (AttributeError, KeyError):
+                log_debug("Could not find usage metadata in OpenAI response. Using requested model name as fallback.")
+
+            translation_result = response.choices[0].message.content.strip()
+            
+            # Handle multiple lines - only keep the last line
+            if '\n' in translation_result:
+                lines = translation_result.split('\n')
+                # Filter out empty lines and take the last non-empty line
+                non_empty_lines = [line.strip() for line in lines if line.strip()]
+                if non_empty_lines:
+                    translation_result = non_empty_lines[-1]
+                else:
+                    translation_result = lines[-1].strip() if lines else ""
+            
+            # Strip language prefixes from the result
+            target_lang_upper = target_lang_name.upper()
+            
+            # Check for uppercase language name with colon and space
+            if translation_result.startswith(f"{target_lang_upper}: "):
+                translation_result = translation_result[len(f"{target_lang_upper}: "):].strip()
+            # Check for uppercase language name with colon only
+            elif translation_result.startswith(f"{target_lang_upper}:"):
+                translation_result = translation_result[len(f"{target_lang_upper}:"):].strip()
+            # Also check for the old format (lowercase language code) just in case
+            elif translation_result.startswith(f"{target_lang_oai}: "):
+                translation_result = translation_result[len(f"{target_lang_oai}: "):].strip()
+            elif translation_result.startswith(f"{target_lang_oai}:"):
+                translation_result = translation_result[len(f"{target_lang_oai}:"):].strip()                
+            log_debug(f"OpenAI response: {translation_result}")
+            
+            # Log complete API call atomically (request + response + stats together)
+            self._log_complete_openai_translation_call(messages, translation_result, call_duration, 
+                                                     input_tokens, output_tokens, text_to_translate_oai, 
+                                                     source_lang_oai, target_lang_oai, model_name, model_source)
+            
+            return translation_result
+            
+        except Exception as e_oai:
+            # Record failed call with circuit breaker
+            self.openai_circuit_breaker.record_call(0, False)
+            error_str = str(e_oai)
+            log_debug(f"OpenAI API error: {type(e_oai).__name__} - {error_str}")
+            
+            # Suppress certain errors from being displayed in translation window
+            if "rate limit" in error_str.lower():
+                log_debug("Rate limit error suppressed from translation display")
+                return None  # Don't display rate limit errors
+            else:
+                return f"OpenAI API error: {error_str}"
+        finally:
+            # Always decrement pending call counter
+            self._decrement_pending_translation_calls()
+
+    def _initialize_openai_session(self, source_lang, target_lang):
+        """Initialize OpenAI client session."""
+        try:
+            api_key = self.app.openai_api_key_var.get().strip()
+            if not api_key:
+                log_debug("Cannot initialize OpenAI session: API key missing")
+                return False
+            
+            self.openai_client = openai.OpenAI(api_key=api_key)
+            self.openai_session_api_key = api_key
+            self.openai_client_created_time = time.time()
+            self.openai_api_call_count = 0
+            
+            # Clear context window on session initialization
+            self._clear_openai_context()
+            
+            log_debug(f"OpenAI client initialized for {source_lang}->{target_lang}")
+            return True
+            
+        except Exception as e:
+            log_debug(f"Error initializing OpenAI session: {e}")
+            self.openai_client = None
+            return False
+
+    def _should_reset_openai_session(self, current_api_key):
+        """Check if OpenAI session should be reset."""
+        if not hasattr(self, 'openai_session_api_key'):
+            return True
+        
+        # Reset if API key changed
+        if self.openai_session_api_key != current_api_key:
+            log_debug("OpenAI session reset: API key changed")
+            return True
+        
+        # Reset if client was created too long ago (30 minutes)
+        if hasattr(self, 'openai_client_created_time'):
+            current_time = time.time()
+            if current_time - self.openai_client_created_time > 1800:  # 30 minutes
+                log_debug("OpenAI session reset: 30 minute timeout")
+                return True
+        
+        # Reset after every 100 API calls
+        if hasattr(self, 'openai_api_call_count') and self.openai_api_call_count > 100:
+            log_debug("OpenAI session reset: 100 call limit")
+            return True
+        
+        return False
+
+    def _force_openai_client_refresh(self):
+        """Force refresh of OpenAI client."""
+        log_debug("Forcing OpenAI client refresh")
+        self.openai_client = None
+        self.openai_client_created_time = time.time()
+        self.openai_api_call_count = 0
+        log_debug("OpenAI client refresh completed")
+
+    def _clear_openai_context(self):
+        """Clear OpenAI context window."""
+        self.openai_context_window = []
+        log_debug("OpenAI context window cleared")
+
+    def _build_openai_context_messages(self, current_text, source_lang_name, target_lang_name, context_size):
+        """Build OpenAI messages array with context window support."""
+        if context_size == 0:
+            # No context, use simple format 
+            return [
+                {"role": "system", "content": f"Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only."},
+                {"role": "user", "content": current_text}
+            ]
+        else:
+            # Build context window for multi-line format
+            context_content = self._build_openai_context_window_content(current_text, source_lang_name, target_lang_name)
+            return [
+                {"role": "system", "content": f"Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only."},
+                {"role": "user", "content": context_content}
+            ]
+
+    def _build_openai_context_window_content(self, current_text, source_lang_name, target_lang_name):
+        """Build context window content for OpenAI API call."""
+        if not hasattr(self, 'openai_context_window'):
+            self.openai_context_window = []
+        
+        context_size = self.app.openai_context_window_var.get()
+        
+        # Build instruction line based on actual context window content
+        actual_context_count = len(self.openai_context_window)
+        
+        if actual_context_count == 0:
+            instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 1:
+            instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 2:
+            if actual_context_count == 1:
+                instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+            else:
+                instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 3:
+            target_position = min(actual_context_count + 1, 4)  # Max "fourth subtitle"
+            ordinal = self._get_ordinal_number(target_position)
+            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 4:
+            target_position = min(actual_context_count + 1, 5)  # Max "fifth subtitle"
+            ordinal = self._get_ordinal_number(target_position)
+            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 5:
+            target_position = min(actual_context_count + 1, 6)  # Max "sixth subtitle"
+            ordinal = self._get_ordinal_number(target_position)
+            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        
+        # Build the context content
+        content_lines = [instruction_line, ""]
+        
+        # Add previous context
+        for original, translated in self.openai_context_window:
+            content_lines.append(f"{source_lang_name.upper()}: {original}")
+            content_lines.append(f"{target_lang_name.upper()}: {translated}")
+            content_lines.append("")
+        
+        # Add current text to translate
+        content_lines.append(f"{source_lang_name.upper()}: {current_text}")
+        content_lines.append(f"{target_lang_name.upper()}:")
+        
+        return "\n".join(content_lines)
+
+    def _update_openai_sliding_window(self, original_text, translated_text):
+        """Update OpenAI sliding context window with new translation pair."""
+        if not hasattr(self, 'openai_context_window'):
+            self.openai_context_window = []
+        
+        context_size = self.app.openai_context_window_var.get()
+        
+        if context_size > 0:
+            # Add new pair to context window
+            self.openai_context_window.append((original_text, translated_text))
+            
+            # Keep only the most recent entries (up to context_size)
+            if len(self.openai_context_window) > context_size:
+                self.openai_context_window = self.openai_context_window[-context_size:]
+            
+            log_debug(f"OpenAI context window updated. Size: {len(self.openai_context_window)}/{context_size}")
+
+    def _log_complete_openai_translation_call(self, messages, translation_result, call_duration, 
+                                            input_tokens, output_tokens, original_text, 
+                                            source_lang, target_lang, model_name, model_source):
+        """Log complete OpenAI translation call with atomic logging to prevent interleaved entries."""
+        if not self.app.config['Settings'].getboolean('enable_openai_api_log', fallback=False):
+            return
+        
+        try:
+            with self._log_lock:  # Atomic logging to prevent interleaved logs
+                # --- 1. Get current timestamp ---
+                call_start_time = datetime.now()
+                call_end_time = call_start_time + timedelta(seconds=call_duration)
+                
+                # --- 2. Format messages for logging ---
+                formatted_messages = self._format_openai_messages_for_log(messages)
+                
+                # --- 3. Calculate costs ---
+                costs = self._calculate_openai_costs(input_tokens, output_tokens, model_name)
+                total_call_cost = costs['total_cost']
+                
+                # --- 4. Update cumulative session totals ---
+                # Read current session totals from short log
+                session_words, session_input, session_output, session_cost = self._get_openai_session_totals()
+                
+                # Add current call to session totals
+                new_total_words = session_words + len(original_text.split())
+                new_total_input = session_input + input_tokens
+                new_total_output = session_output + output_tokens
+                new_total_cost = session_cost + total_call_cost
+                
+                # --- 5. Build complete log entry ---
+                log_entry = f"""=== OPENAI API CALL LOG ===
+Timestamp: {call_start_time.strftime('%Y-%m-%d %H:%M:%S')}
+Language Pair: {source_lang} -> {target_lang}
+Original Text: {original_text}
+
+CALL DETAILS:
+- Message Length: {len(formatted_messages)} characters
+- Word Count: {len(original_text.split())} words
+- Line Count: {len(original_text.splitlines())} lines
+
+COMPLETE MESSAGE CONTENT SENT TO OPENAI:
+---BEGIN MESSAGE---
+{formatted_messages}
+---END MESSAGE---
+
+RESPONSE RECEIVED:
+Timestamp: {call_end_time.strftime('%Y-%m-%d %H:%M:%S')}
+Call Duration: {call_duration:.3f} seconds
+
+---BEGIN RESPONSE---
+{translation_result}
+---END RESPONSE---
+
+TOKEN & COST ANALYSIS (CURRENT CALL):
+- Translated Words: {len(translation_result.split())}
+- Exact Input Tokens: {input_tokens}
+- Exact Output Tokens: {output_tokens}
+- Input Cost: ${costs['input_cost']:.8f}
+- Output Cost: ${costs['output_cost']:.8f}
+- Total Cost for this Call: ${total_call_cost:.8f}
+
+CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
+- Total Translated Words (so far): {new_total_words}
+- Total Input Tokens (so far): {new_total_input}
+- Total Output Tokens (so far): {new_total_output}
+- Cumulative Log Cost: ${new_total_cost:.8f}
+
+========================================
+
+"""
+                
+                # --- 6. Write to main log file ---
+                with open(self.openai_log_file, 'a', encoding='utf-8') as f:
+                    f.write(log_entry)
+                
+                # --- 7. Write to short translation log ---
+                self._write_short_openai_translation_log(call_start_time, call_end_time, call_duration,
+                                               input_tokens, output_tokens, total_call_cost,
+                                               new_total_input, new_total_output,
+                                               new_total_cost,
+                                               original_text, translation_result, source_lang, target_lang, model_name, model_source)
+                
+                log_debug(f"Complete OpenAI translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
+                
+        except Exception as e:
+            log_debug(f"Error logging complete OpenAI translation call: {e}\n{traceback.format_exc()}")
+
+    def _format_openai_messages_for_log(self, messages):
+        """Format OpenAI messages array for logging."""
+        formatted_lines = []
+        for msg in messages:
+            role = msg.get('role', 'unknown')
+            content = msg.get('content', '')
+            formatted_lines.append(f"[{role.upper()}]: {content}")
+        return "\n".join(formatted_lines)
+
+    def _calculate_openai_costs(self, input_tokens, output_tokens, model_name):
+        """Calculate OpenAI API costs based on token usage."""
+        if hasattr(self.app, 'openai_models_manager') and self.app.openai_models_manager:
+            costs = self.app.openai_models_manager.get_model_costs(model_name)
+        else:
+            # Fallback costs (GPT-4o-mini pricing)
+            costs = {'input_cost': 0.15, 'output_cost': 0.6}
+        
+        input_cost = (input_tokens / 1_000_000) * costs['input_cost']
+        output_cost = (output_tokens / 1_000_000) * costs['output_cost']
+        
+        return {
+            'input_cost': input_cost,
+            'output_cost': output_cost,
+            'total_cost': input_cost + output_cost
+        }
+
+    def _get_openai_session_totals(self):
+        """Get current session totals from OpenAI short log."""
+        words, input_tokens, output_tokens, cost = 0, 0, 0, 0.0
+        
+        try:
+            if os.path.exists(self.openai_tra_short_log_file):
+                with open(self.openai_tra_short_log_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith('#') or not line.strip():
+                            continue
+                        parts = line.strip().split(',')
+                        if len(parts) >= 6:
+                            try:
+                                words += int(parts[1])
+                                input_tokens += int(parts[2])
+                                output_tokens += int(parts[3])
+                                cost += float(parts[4])
+                            except ValueError:
+                                continue
+        except Exception as e:
+            log_debug(f"Error reading OpenAI session totals: {e}")
+        
+        return words, input_tokens, output_tokens, cost
+
+    def _write_short_openai_translation_log(self, call_start_time, call_end_time, call_duration,
+                                          input_tokens, output_tokens, total_call_cost,
+                                          cumulative_input, cumulative_output, cumulative_cost,
+                                          original_text, translation_result, source_lang, target_lang, model_name, model_source):
+        """Write condensed OpenAI translation log entry for statistics processing."""
+        try:
+            timestamp = call_start_time.strftime('%Y-%m-%d %H:%M:%S')
+            word_count = len(original_text.split())
+            
+            # Format: timestamp,words,input_tokens,output_tokens,cost,duration
+            log_line = f"{timestamp},{word_count},{input_tokens},{output_tokens},{total_call_cost:.8f},{call_duration:.3f}\n"
+            
+            with open(self.openai_tra_short_log_file, 'a', encoding='utf-8') as f:
+                f.write(log_line)
+                
+        except Exception as e:
+            log_debug(f"Error writing OpenAI short translation log: {e}")
+
+    def _get_ordinal_number(self, num):
+        """Convert number to ordinal string (e.g., 1 -> 'first', 2 -> 'second')."""
+        ordinals = {
+            1: 'first', 2: 'second', 3: 'third', 4: 'fourth', 
+            5: 'fifth', 6: 'sixth', 7: 'seventh', 8: 'eighth'
+        }
+        return ordinals.get(num, f'{num}th')
