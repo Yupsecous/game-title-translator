@@ -186,6 +186,7 @@ def create_settings_tab(app):
     translation_models_available_for_ui = []
     log_debug(f"GUI Builder: Translation model availability check:")
     log_debug(f"  GEMINI_API_AVAILABLE: {app.GEMINI_API_AVAILABLE}")
+    log_debug(f"  OPENAI_API_AVAILABLE: {app.OPENAI_API_AVAILABLE}")
     log_debug(f"  MARIANMT_AVAILABLE: {app.MARIANMT_AVAILABLE}")  
     log_debug(f"  DEEPL_API_AVAILABLE: {app.DEEPL_API_AVAILABLE}")
     log_debug(f"  GOOGLE_TRANSLATE_API_AVAILABLE: {app.GOOGLE_TRANSLATE_API_AVAILABLE}")
@@ -195,6 +196,12 @@ def create_settings_tab(app):
         gemini_translation_models = app.gemini_models_manager.get_translation_model_names()
         translation_models_available_for_ui.extend(gemini_translation_models)
         log_debug(f"Added Gemini translation models: {gemini_translation_models}")
+    
+    # Add OpenAI models second (from CSV file)
+    if app.OPENAI_API_AVAILABLE:
+        openai_translation_models = app.openai_models_manager.get_translation_model_names()
+        translation_models_available_for_ui.extend(openai_translation_models)
+        log_debug(f"Added OpenAI translation models: {openai_translation_models}")
     
     # Add other translation models
     if app.MARIANMT_AVAILABLE: 
@@ -235,6 +242,25 @@ def create_settings_tab(app):
             # Fallback to first available Gemini model or first overall
             if app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_translation_model_names():
                 app.translation_model_display_var.set(app.gemini_models_manager.get_translation_model_names()[0])
+            else:
+                app.translation_model_display_var.set(translation_models_available_for_ui[0] if translation_models_available_for_ui else "MarianMT (offline and free)")
+    elif app.is_openai_model(current_translation_model):
+        # For OpenAI translation, read the specific model from config
+        if hasattr(app, 'config'):
+            saved_openai_translation_model = app.config['Settings'].get('openai_translation_model', '')
+            if saved_openai_translation_model and saved_openai_translation_model in translation_models_available_for_ui:
+                app.translation_model_display_var.set(saved_openai_translation_model)
+                log_debug(f"Set translation model from config: {saved_openai_translation_model}")
+            elif app.OPENAI_API_AVAILABLE and app.openai_models_manager.get_translation_model_names():
+                app.translation_model_display_var.set(app.openai_models_manager.get_translation_model_names()[0])
+                log_debug(f"Set translation model to first OpenAI: {app.openai_models_manager.get_translation_model_names()[0]}")
+            else:
+                app.translation_model_display_var.set(translation_models_available_for_ui[0] if translation_models_available_for_ui else "MarianMT (offline and free)")
+                log_debug(f"Set translation model to first available: {translation_models_available_for_ui[0] if translation_models_available_for_ui else 'MarianMT'}")
+        else:
+            # Fallback to first available OpenAI model or first overall
+            if app.OPENAI_API_AVAILABLE and app.openai_models_manager.get_translation_model_names():
+                app.translation_model_display_var.set(app.openai_models_manager.get_translation_model_names()[0])
             else:
                 app.translation_model_display_var.set(translation_models_available_for_ui[0] if translation_models_available_for_ui else "MarianMT (offline and free)")
     elif current_translation_model == 'marianmt' and app.MARIANMT_AVAILABLE:
@@ -369,6 +395,8 @@ def create_settings_tab(app):
                 current_stored_value = app.deepl_source_lang
             elif active_model == 'gemini_api':
                 current_stored_value = app.gemini_source_lang
+            elif app.is_openai_model(active_model):
+                current_stored_value = app.openai_source_lang
             
             # Only update and save if the value actually changed
             if api_code != current_stored_value:
@@ -385,6 +413,13 @@ def create_settings_tab(app):
                     if (hasattr(app, 'translation_handler') and 
                         hasattr(app.translation_handler, '_clear_gemini_context')):
                         app.translation_handler._clear_gemini_context()
+                elif app.is_openai_model(active_model):
+                    app.openai_source_lang = api_code
+                    log_debug(f"OpenAI source lang set to: {api_code}")
+                    # Clear OpenAI context when source language is changed
+                    if (hasattr(app, 'translation_handler') and 
+                        hasattr(app.translation_handler, '_clear_openai_context')):
+                        app.translation_handler._clear_openai_context()
                 
                 app.source_lang_var.set(api_code) 
                 log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -431,6 +466,8 @@ def create_settings_tab(app):
                 current_stored_value = app.deepl_target_lang
             elif active_model == 'gemini_api':
                 current_stored_value = app.gemini_target_lang
+            elif app.is_openai_model(active_model):
+                current_stored_value = app.openai_target_lang
             
             # Only update and save if the value actually changed
             if api_code != current_stored_value:
@@ -447,6 +484,13 @@ def create_settings_tab(app):
                     if (hasattr(app, 'translation_handler') and 
                         hasattr(app.translation_handler, '_clear_gemini_context')):
                         app.translation_handler._clear_gemini_context()
+                elif app.is_openai_model(active_model):
+                    app.openai_target_lang = api_code
+                    log_debug(f"OpenAI target lang set to: {api_code}")
+                    # Clear OpenAI context when target language is changed
+                    if (hasattr(app, 'translation_handler') and 
+                        hasattr(app.translation_handler, '_clear_openai_context')):
+                        app.translation_handler._clear_openai_context()
                 
                 app.target_lang_var.set(api_code)
                 log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -621,9 +665,111 @@ def create_settings_tab(app):
                                            command=app.reset_gemini_api_log)
     app.gemini_reset_log_button.grid(row=1, column=2, padx=(0,5), pady=5, sticky="w")
 
+    # OpenAI API Key input (only visible when OpenAI is selected)
+    app.openai_api_key_label = ttk.Label(frame, text=app.ui_lang.get_label("openai_api_key_label", "OpenAI API Key")) 
+    app.openai_api_key_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+    app.openai_api_key_entry = ttk.Entry(frame, textvariable=app.openai_api_key_var, width=40, show="*")
+    app.openai_api_key_entry.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
+    # Set initial button text based on visibility
+    initial_openai_text = app.ui_lang.get_label("show_btn", "Show") 
+    if hasattr(app, 'openai_api_key_visible') and app.openai_api_key_visible:
+        initial_openai_text = app.ui_lang.get_label("hide_btn", "Hide")
+    app.openai_api_key_button = ttk.Button(frame, text=initial_openai_text, width=5,
+                                          command=lambda: app.toggle_api_key_visibility("openai"))
+    app.openai_api_key_button.grid(row=10, column=2, padx=5, pady=5, sticky="w")
+
+    # OpenAI Context Window Setting (only visible when OpenAI is selected)
+    app.openai_context_window_label = ttk.Label(frame, text=app.ui_lang.get_label("openai_context_window_label", "Context Window"))
+    app.openai_context_window_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
+    
+    openai_context_window_options = [
+        (0, app.ui_lang.get_label("openai_context_window_0", "0 (Disabled)")),
+        (1, app.ui_lang.get_label("openai_context_window_1", "1 (Last subtitle)")),
+        (2, app.ui_lang.get_label("openai_context_window_2", "2 (Two subtitles)")),
+        (3, app.ui_lang.get_label("openai_context_window_3", "3 (Three subtitles)")),
+        (4, app.ui_lang.get_label("openai_context_window_4", "4 (Four subtitles)")),
+        (5, app.ui_lang.get_label("openai_context_window_5", "5 (Five subtitles)"))
+    ]
+    
+    app.openai_context_window_display_var = tk.StringVar()
+    # Set initial display value based on current setting
+    current_openai_context_window = app.openai_context_window_var.get()
+    for value, display in openai_context_window_options:
+        if value == current_openai_context_window:
+            app.openai_context_window_display_var.set(display)
+            break
+    else:
+        # Fallback if current setting doesn't match any option
+        app.openai_context_window_display_var.set(openai_context_window_options[2][1])  # Default to 2
+    
+    app.openai_context_window_combobox = ttk.Combobox(frame, textvariable=app.openai_context_window_display_var,
+                                                     values=[display for _, display in openai_context_window_options], 
+                                                     width=25, state='readonly')
+    app.openai_context_window_combobox.grid(row=11, column=1, padx=5, pady=5, sticky="ew")
+    
+    def on_openai_context_window_changed(event):
+        selected_display = app.openai_context_window_display_var.get()
+        # Find the corresponding value
+        for value, display in openai_context_window_options:
+            if display == selected_display:
+                app.openai_context_window_var.set(value)
+                log_debug(f"OpenAI context window changed to: {value} (display: {display})")
+                # Clear OpenAI context when context window changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_clear_openai_context'):
+                    app.translation_handler._clear_openai_context()
+                    log_debug(f"OpenAI context window cleared due to setting change")
+                if app._fully_initialized:
+                    app.save_settings()
+                break
+    
+    app.openai_context_window_combobox.bind('<<ComboboxSelected>>', 
+        create_combobox_handler_wrapper(on_openai_context_window_changed))
+
+    # OpenAI API Statistics Row (only visible when OpenAI is selected)
+    app.openai_stats_frame = ttk.Frame(frame)
+    app.openai_stats_frame.grid(row=12, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+    
+    # Total Words field (read-only)
+    app.openai_total_words_label = ttk.Label(app.openai_stats_frame, text=app.ui_lang.get_label("openai_total_words_label", "Total Words"))
+    app.openai_total_words_label.grid(row=0, column=0, padx=(0,5), pady=0, sticky="w")
+    app.openai_total_words_var = tk.StringVar(value="0")
+    app.openai_total_words_entry = ttk.Entry(app.openai_stats_frame, textvariable=app.openai_total_words_var, 
+                                           width=12, state='readonly')
+    app.openai_total_words_entry.grid(row=0, column=1, padx=(0,10), pady=0, sticky="w")
+    
+    # Total Cost field (read-only)
+    app.openai_total_cost_label = ttk.Label(app.openai_stats_frame, text=app.ui_lang.get_label("openai_total_cost_label", "Total Cost"))
+    app.openai_total_cost_label.grid(row=0, column=2, padx=(0,5), pady=0, sticky="w")
+    app.openai_total_cost_var = tk.StringVar(value=app.format_cost_for_display(0.0))
+    app.openai_total_cost_entry = ttk.Entry(app.openai_stats_frame, textvariable=app.openai_total_cost_var, 
+                                          width=15, state='readonly')
+    app.openai_total_cost_entry.grid(row=0, column=3, padx=(0,10), pady=0, sticky="w")
+    
+    # API Log controls row (new row below Total Words and Total Cost)
+    # Enable API Log checkbox
+    app.openai_enable_api_log_checkbox = ttk.Checkbutton(
+        app.openai_stats_frame, 
+        text=app.ui_lang.get_label("openai_enable_api_log_checkbox", "Enable API Log"),
+        variable=app.openai_api_log_enabled_var,
+        command=lambda: app._fully_initialized and app.save_settings()
+    )
+    app.openai_enable_api_log_checkbox.grid(row=1, column=0, padx=(0,10), pady=5, sticky="w")
+    
+    # Refresh Stats button
+    app.openai_refresh_stats_button = ttk.Button(app.openai_stats_frame, 
+                                               text=app.ui_lang.get_label("openai_refresh_stats_button", "Refresh"), 
+                                               command=app.update_openai_stats)
+    app.openai_refresh_stats_button.grid(row=1, column=1, padx=(0,5), pady=5, sticky="w")
+    
+    # Reset API Log button
+    app.openai_reset_log_button = ttk.Button(app.openai_stats_frame, 
+                                           text=app.ui_lang.get_label("openai_reset_log_button", "Reset"), 
+                                           command=app.reset_openai_api_log)
+    app.openai_reset_log_button.grid(row=1, column=2, padx=(0,5), pady=5, sticky="w")
+
     # DeepL Model Type Selection (only visible when DeepL is selected)
     app.deepl_model_type_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_model_type_label", "Quality"))
-    app.deepl_model_type_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+    app.deepl_model_type_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
     
     # Create model type options with user-friendly names
     deepl_model_options = [
@@ -645,7 +791,7 @@ def create_settings_tab(app):
     app.deepl_model_type_combobox = ttk.Combobox(frame, textvariable=app.deepl_model_display_var,
                                                values=[display for _, display in deepl_model_options], 
                                                width=25, state='readonly')
-    app.deepl_model_type_combobox.grid(row=10, column=1, padx=5, pady=5, sticky="ew")
+    app.deepl_model_type_combobox.grid(row=13, column=1, padx=5, pady=5, sticky="ew")
     
     def on_deepl_model_type_changed(event):
         selected_display = app.deepl_model_display_var.get()
@@ -778,19 +924,19 @@ def create_settings_tab(app):
     app.update_deepl_usage_for_language = update_deepl_usage_for_language
 
     app.models_file_label = ttk.Label(frame, text=app.ui_lang.get_label("models_file_label")) 
-    app.models_file_label.grid(row=11, column=0, padx=5, pady=5, sticky="w")
+    app.models_file_label.grid(row=14, column=0, padx=5, pady=5, sticky="w")
     app.models_file_frame = ttk.Frame(frame)
-    app.models_file_frame.grid(row=11, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+    app.models_file_frame.grid(row=14, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
     app.models_file_entry = ttk.Entry(app.models_file_frame, textvariable=app.models_file_var)
     app.models_file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
     app.models_file_button = ttk.Button(app.models_file_frame, text=app.ui_lang.get_label("browse_btn"), command=app.browse_marian_models_file)
     app.models_file_button.pack(side=tk.RIGHT, padx=(5,0))
 
     app.beam_size_label = ttk.Label(frame, text=app.ui_lang.get_label("beam_size_label")) 
-    app.beam_size_label.grid(row=12, column=0, padx=5, pady=5, sticky="w")
+    app.beam_size_label.grid(row=15, column=0, padx=5, pady=5, sticky="w")
     app.beam_spinbox = ttk.Spinbox(frame, from_=1, to=50, textvariable=app.num_beams_var, width=10,
                                   validate="key", validatecommand=(validate_beam_size, '%P'))
-    app.beam_spinbox.grid(row=12, column=1, padx=5, pady=5, sticky="w")
+    app.beam_spinbox.grid(row=15, column=1, padx=5, pady=5, sticky="w")
     def on_beam_spinbox_focus_out(event):
         try:
             value = int(app.num_beams_var.get())
@@ -802,7 +948,7 @@ def create_settings_tab(app):
     app.beam_spinbox.bind("<FocusOut>", on_beam_spinbox_focus_out)
 
     app.marian_explanation_labels = [] 
-    row_offset = 15  # Adjusted from 16 to account for removed DeepL usage display
+    row_offset = 18  # Adjusted from 15 to account for added OpenAI settings (3 new rows)
     if app.MARIANMT_AVAILABLE:
         texts = [
             app.ui_lang.get_label("marian_beam_explanation", "Higher beam values = better but slower translations"),
@@ -1132,8 +1278,20 @@ def create_settings_tab(app):
     )
     app.gemini_file_cache_checkbox.grid(row=3, column=0, padx=5, pady=2, sticky="w")
     
-    ttk.Label(file_cache_frame_outer, text=f"{app.ui_lang.get_label('cache_files_label')} {os.path.basename(app.google_cache_file)}, {os.path.basename(app.deepl_cache_file)}, {os.path.basename(app.gemini_cache_file)}", wraplength=400).grid(row=4, column=0, columnspan=2, padx=5, pady=2, sticky="w")
-    ttk.Button(file_cache_frame_outer, text=app.ui_lang.get_label("clear_caches_btn"), command=app.clear_file_caches).grid(row=5, column=0, padx=5, pady=5, sticky="w")
+    # OpenAI file cache checkbox (always visible here, not just when OpenAI is selected)
+    app.openai_file_cache_checkbox = ttk.Checkbutton(
+        file_cache_frame_outer, 
+        text=app.ui_lang.get_label("openai_file_cache_checkbox", "Enable OpenAI file cache"),
+        variable=app.openai_file_cache_var,
+        command=lambda: [
+            log_debug(f"OpenAI file cache toggled: {app.openai_file_cache_var.get()}"),
+            app._fully_initialized and app.save_settings()
+        ]
+    )
+    app.openai_file_cache_checkbox.grid(row=4, column=0, padx=5, pady=2, sticky="w")
+    
+    ttk.Label(file_cache_frame_outer, text=f"{app.ui_lang.get_label('cache_files_label')} {os.path.basename(app.google_cache_file)}, {os.path.basename(app.deepl_cache_file)}, {os.path.basename(app.gemini_cache_file)}, openai_cache.txt", wraplength=400).grid(row=5, column=0, columnspan=2, padx=5, pady=2, sticky="w")
+    ttk.Button(file_cache_frame_outer, text=app.ui_lang.get_label("clear_caches_btn"), command=app.clear_file_caches).grid(row=6, column=0, padx=5, pady=5, sticky="w")
     current_row += 1
     
     button_frame_outer = ttk.Frame(frame)
@@ -1220,6 +1378,40 @@ def create_api_usage_tab(app):
         value_label = ttk.Label(translation_section, textvariable=var, foreground="blue")
         value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
         app.translation_stat_vars[label_key] = var
+    
+    current_row += 1
+    
+    # OpenAI Translation Statistics Section
+    openai_translation_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_openai_translation", "🔄 OpenAI Translation Statistics"))
+    openai_translation_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+    
+    # OpenAI Translation statistics labels and values
+    openai_translation_stats = [
+        ("api_usage_openai_total_translation_calls", "Total Translation Calls:"),
+        ("api_usage_openai_total_words_translated", "Total Words Translated:"),
+        ("api_usage_openai_median_duration_translation", "Median Duration:"),
+        ("api_usage_openai_words_per_minute", "Average Words per Minute:"),
+        ("api_usage_openai_avg_cost_per_word", "Average Cost per Word:"),
+        ("api_usage_openai_avg_cost_per_call", "Average Cost per Call:"),
+        ("api_usage_openai_avg_cost_per_minute", "Average Cost per Minute:"),
+        ("api_usage_openai_avg_cost_per_hour", "Average Cost per Hour:"),
+        ("api_usage_openai_total_translation_cost", "Total Translation Cost:")
+    ]
+    
+    app.openai_translation_stat_labels = {}
+    app.openai_translation_stat_vars = {}
+    
+    for i, (label_key, fallback_text) in enumerate(openai_translation_stats):
+        # Create label
+        label = ttk.Label(openai_translation_section, text=app.ui_lang.get_label(label_key, fallback_text))
+        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
+        app.openai_translation_stat_labels[label_key] = label
+        
+        # Create value variable and display
+        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
+        value_label = ttk.Label(openai_translation_section, textvariable=var, foreground="blue")
+        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
+        app.openai_translation_stat_vars[label_key] = var
     
     current_row += 1
     
