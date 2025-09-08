@@ -35,6 +35,7 @@ debug_images/
 googletrans_cache*.txt
 deepl_cache*.txt
 gemini_cache*.txt
+openai_cache*.txt
 *_log*.txt
 
 # API Keys and sensitive information
