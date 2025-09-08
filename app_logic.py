@@ -2795,6 +2795,10 @@ class GameChangingTranslator:
         if not model_name:
             return False
         
+        # Check if it's the OpenAI API provider identifier
+        if model_name == 'openai_api':
+            return True
+        
         # Check if it's in our OpenAI translation models
         openai_models = self.openai_models_manager.get_translation_model_names()
         if model_name in openai_models:
