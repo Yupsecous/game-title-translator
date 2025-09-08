@@ -20,6 +20,7 @@ Game-Changing Translator follows a modular design with the following key compone
    - `ConfigurationHandler` - Manages loading and saving of application settings
    - `DisplayManager` - Handles UI updates for overlays and debug information
    - `GeminiModelsManager` - Manages Gemini model configurations from CSV file
+   - `OpenAIModelsManager` - Manages OpenAI model configurations from CSV file
    - `HotkeyHandler` - Manages keyboard shortcuts
    - `StatisticsHandler` - API usage statistics parsing, cost monitoring, and export functionality
    - `TranslationHandler` - Coordinates translation with different providers and unified cache
@@ -82,6 +83,7 @@ ocr-translator/
 │   ├── configuration_handler.py   # Settings and configuration
 │   ├── display_manager.py         # Display and UI updates
 │   ├── gemini_models_manager.py   # Gemini model configuration management
+│   ├── openai_models_manager.py   # OpenAI model configuration management
 │   ├── hotkey_handler.py          # Keyboard shortcuts
 │   ├── statistics_handler.py      # API usage statistics and cost monitoring
 │   ├── translation_handler.py     # Translation coordination
@@ -118,6 +120,9 @@ ocr-translator/
     ├── gemini_trans_source.csv    # Source language codes for Gemini API
     ├── gemini_trans_target.csv    # Target language codes for Gemini API
     ├── gemini_models.csv          # Gemini model configurations (names, API names, costs, availability)
+    ├── openai_trans_source.csv    # Source language codes for OpenAI API
+    ├── openai_trans_target.csv    # Target language codes for OpenAI API
+    ├── openai_models.csv          # OpenAI model configurations (names, API names, costs, availability)
     ├── MarianMT_select_models.csv # Available MarianMT translation models
     ├── MarianMT_models_short_list.csv # Preferred/recommended MarianMT models
     ├── language_display_names.csv # Localized language display names
@@ -132,9 +137,12 @@ ocr-translator/
 ├── deepl_cache.txt                # Cached translations from DeepL API
 ├── googletrans_cache.txt          # Cached translations from Google Translate API
 ├── gemini_cache.txt               # Cached translations from Gemini API
+├── openai_cache.txt               # Cached translations from OpenAI API
 ├── Gemini_API_call_logs.txt       # Detailed Gemini API call logging with cost tracking
+├── OpenAI_API_call_logs.txt       # Detailed OpenAI API call logging with cost tracking
 ├── API_OCR_short_log.txt          # Short log for Gemini OCR API usage statistics
 ├── API_TRA_short_log.txt          # Short log for Gemini Translation API usage statistics
+├── OpenAI_API_TRA_short_log.txt   # Short log for OpenAI Translation API usage statistics
 ├── marian_models_cache/           # Directory for cached MarianMT models
 └── translator_debug.log           # Application debug log file
 ```
@@ -429,6 +437,54 @@ Gemini 2.0 Flash-Lite,gemini-2.0-flash-lite-001,0.075,0.3,no,yes
 - ✅ **Dynamic Configuration**: No code changes needed to add/remove models
 - ✅ **Accurate Cost Tracking**: Costs automatically reflect selected models
 - ✅ **Easy Maintenance**: Model information centralized in single CSV file
+
+### Dynamic OpenAI Models Configuration
+
+The application features a dynamic OpenAI model management system that allows flexible configuration of models for translation operations through CSV-based configuration.
+
+#### OpenAI Models Manager (`handlers/openai_models_manager.py`)
+
+The OpenAIModelsManager class provides centralized management of OpenAI model configurations:
+
+**Core Features:**
+- **CSV-based configuration** - All model information loaded from `resources/openai_models.csv`
+- **Translation-focused models** - Models are specifically configured for translation operations (OCR is not supported for OpenAI)
+- **Dynamic cost management** - Token costs automatically updated based on selected models
+- **Real-time model switching** - Models can be changed without application restart
+- **Advanced model support** - Supports different OpenAI model types including GPT-4.1 and GPT-5 models
+
+**Configuration File Format (`openai_models.csv`):**
+```csv
+Model Name,API Name,Input Cost per 1M,Output Cost per 1M,Translation,OCR
+GPT 5 Nano,gpt-5-nano,0.05,0.4,yes,no
+GPT 4.1 Mini,gpt-4.1-mini,0.25,2.0,yes,no
+GPT 4.1 Nano,gpt-4.1-nano,0.15,0.6,yes,no
+```
+
+**Key Methods:**
+- `get_translation_model_names()` - Returns models available for translation
+- `get_model_costs(api_name)` - Retrieves cost information for a specific model
+- `get_api_name_by_display_name(display_name)` - Converts display names to API names
+- `is_valid_translation_model(display_name)` - Check if display name is a valid translation model
+- `reload_models()` - Refreshes model list from CSV file
+
+**Integration Points:**
+- **GUI Dropdowns**: Translation model dropdowns are populated from CSV data
+- **Cost Updates**: Token costs in configuration are updated when models change  
+- **API Calls**: Translation operations use the appropriate selected model with context window support
+- **Settings Persistence**: Model selections are saved to configuration file
+
+**OpenAI Model Types Support:**
+- **GPT-5 Models**: Use the Responses API with configurable reasoning effort and verbosity settings
+- **GPT-4.1 Models**: Use the Chat Completions API with temperature=0 for non-thinking mode
+- **Context Window**: Configurable context window (0-2 previous subtitles) for narrative coherence
+- **Comprehensive Logging**: Detailed API call logging with token usage and cost tracking
+
+**Benefits:**
+- ✅ **Translation-Focused**: Optimized specifically for translation tasks with context awareness
+- ✅ **Advanced Model Support**: Supports latest OpenAI models including GPT-5 series
+- ✅ **Dynamic Configuration**: No code changes needed to add/remove models
+- ✅ **Accurate Cost Tracking**: Costs automatically reflect selected models and usage patterns
 
 ### Multi-Language UI Support
 
