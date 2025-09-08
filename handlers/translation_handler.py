@@ -2872,6 +2872,69 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         return "\n".join(content_lines)
 
+    def _build_openai_context_window_content_for_log(self, current_text, source_lang_name, target_lang_name):
+        """Build context window content for OpenAI API call logging (matches Gemini format exactly)."""
+        if not hasattr(self, 'openai_context_window'):
+            self.openai_context_window = []
+        
+        context_size = self.app.openai_context_window_var.get()
+        
+        # Build instruction line based on actual context window content
+        actual_context_count = len(self.openai_context_window)
+        
+        if actual_context_count == 0:
+            instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 1:
+            instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 2:
+            if actual_context_count == 1:
+                instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+            else:
+                instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 3:
+            target_position = min(actual_context_count + 1, 4)  # Max "fourth subtitle"
+            ordinal = self._get_ordinal_number(target_position)
+            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 4:
+            target_position = min(actual_context_count + 1, 5)  # Max "fifth subtitle"
+            ordinal = self._get_ordinal_number(target_position)
+            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        elif context_size == 5:
+            target_position = min(actual_context_count + 1, 6)  # Max "sixth subtitle"
+            ordinal = self._get_ordinal_number(target_position)
+            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+        
+        # Build the context content (same format as Gemini)
+        content_lines = [instruction_line, ""]
+        
+        # Add previous context in the same grouped format as Gemini
+        source_lines = []
+        target_lines = []
+        
+        # Add context pairs if available
+        if self.openai_context_window:
+            # Get last N context pairs
+            context_pairs = self.openai_context_window[-context_size:] if context_size > 0 else []
+            
+            # Collect all source lines first, then all target lines
+            for original, translated in context_pairs:
+                source_lines.append(f"{source_lang_name.upper()}: {original}")
+                target_lines.append(f"{target_lang_name.upper()}: {translated}")
+        
+        # Add current source text
+        source_lines.append(f"{source_lang_name.upper()}: {current_text}")
+        
+        # Combine: all sources first, blank line, then all targets (no new target)
+        if source_lines and target_lines:
+            all_lines = source_lines + [""] + target_lines + [""] + [f"{target_lang_name.upper()}:"]
+        elif source_lines:
+            all_lines = source_lines + [""] + [f"{target_lang_name.upper()}:"]
+        else:
+            all_lines = [f"{target_lang_name.upper()}:"]
+        
+        content_lines.extend(all_lines)
+        return "\n".join(content_lines)
+
     def _update_openai_sliding_window(self, original_text, translated_text):
         """Update OpenAI sliding context window with new translation pair."""
         if not hasattr(self, 'openai_context_window'):
@@ -2892,7 +2955,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     def _log_complete_openai_translation_call(self, messages, translation_result, call_duration, 
                                             input_tokens, output_tokens, original_text, 
                                             source_lang, target_lang, model_name, model_source):
-        """Log complete OpenAI translation call with atomic logging to prevent interleaved entries."""
+        """Log complete OpenAI translation call with identical structure to Gemini."""
         log_debug(f"OpenAI logging check: enabled={self.app.openai_api_log_enabled_var.get()}")
         if not self.app.openai_api_log_enabled_var.get():
             log_debug("OpenAI API logging is disabled, skipping log entry")
@@ -2900,45 +2963,72 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         
         try:
             with self._log_lock:  # Atomic logging to prevent interleaved logs
-                # --- 1. Get current timestamp ---
-                call_start_time = datetime.now()
-                call_end_time = call_start_time + timedelta(seconds=call_duration)
+                # Calculate correct start and end times based on call duration
+                call_end_time = self._get_precise_timestamp()
+                call_start_time = self._calculate_start_time(call_end_time, call_duration)
                 
-                # --- 2. Format messages for logging ---
-                formatted_messages = self._format_openai_messages_for_log(messages)
+                # --- 1. Calculate current call translated word count from original text ---
+                current_translated_words = len(original_text.split())
                 
-                # --- 3. Calculate costs ---
-                costs = self._calculate_openai_costs(input_tokens, output_tokens, model_name)
-                total_call_cost = costs['total_cost']
-                
-                # --- 4. Update cumulative session totals ---
-                # Read current session totals from short log
+                # --- 2. Get cumulative totals BEFORE this call ---
                 session_words, session_input, session_output, session_cost = self._get_openai_session_totals()
                 
-                # Add current call to session totals
-                new_total_words = session_words + len(original_text.split())
+                # --- 3. Get model-specific costs and calculate for current call ---
+                if hasattr(self.app, 'openai_models_manager') and self.app.openai_models_manager:
+                    model_costs = self.app.openai_models_manager.get_model_costs(model_name)
+                    INPUT_COST_PER_MILLION = model_costs['input_cost']
+                    OUTPUT_COST_PER_MILLION = model_costs['output_cost']
+                else:
+                    # Fallback costs (GPT-4o-mini pricing)
+                    INPUT_COST_PER_MILLION = 0.15
+                    OUTPUT_COST_PER_MILLION = 0.6
+                
+                call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
+                call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
+                total_call_cost = call_input_cost + call_output_cost
+                
+                # --- 4. Calculate new cumulative totals using simple addition ---
+                new_total_translated_words = session_words + current_translated_words
                 new_total_input = session_input + input_tokens
                 new_total_output = session_output + output_tokens
                 new_total_cost = session_cost + total_call_cost
                 
-                # --- 5. Build complete log entry ---
-                log_entry = f"""=== OPENAI API CALL LOG ===
-Timestamp: {call_start_time.strftime('%Y-%m-%d %H:%M:%S')}
+                # --- 5. Build the actual message content that was sent (same format as Gemini) ---
+                source_lang_name = self._get_language_display_name(source_lang, 'openai')
+                target_lang_name = self._get_language_display_name(target_lang, 'openai')
+                message_content = self._build_openai_context_window_content_for_log(original_text, source_lang_name, target_lang_name)
+                
+                # --- 6. Calculate detailed message stats (same as Gemini) ---
+                words_in_message = len(message_content.split())
+                chars_in_message = len(message_content)
+                lines_in_message = len(message_content.split('\n'))
+                
+                # Format cost display with smart decimal precision (same as Gemini)
+                input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
+                output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
+                
+                # --- 7. Format the complete log entry with IDENTICAL header to Gemini ---
+                log_entry = f"""
+=== OPENAI TRANSLATION API CALL ===
+Timestamp: {call_start_time}
 Language Pair: {source_lang} -> {target_lang}
 Original Text: {original_text}
 
 CALL DETAILS:
-- Message Length: {len(formatted_messages)} characters
-- Word Count: {len(original_text.split())} words
-- Line Count: {len(original_text.splitlines())} lines
+- Message Length: {chars_in_message} characters
+- Word Count: {words_in_message} words
+- Line Count: {lines_in_message} lines
 
 COMPLETE MESSAGE CONTENT SENT TO OPENAI:
 ---BEGIN MESSAGE---
-{formatted_messages}
+{message_content}
 ---END MESSAGE---
 
+
 RESPONSE RECEIVED:
-Timestamp: {call_end_time.strftime('%Y-%m-%d %H:%M:%S')}
+Model: {model_name} ({model_source})
+Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
+Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
 
 ---BEGIN RESPONSE---
@@ -2946,15 +3036,15 @@ Call Duration: {call_duration:.3f} seconds
 ---END RESPONSE---
 
 TOKEN & COST ANALYSIS (CURRENT CALL):
-- Translated Words: {len(translation_result.split())}
+- Translated Words: {current_translated_words}
 - Exact Input Tokens: {input_tokens}
 - Exact Output Tokens: {output_tokens}
-- Input Cost: ${costs['input_cost']:.8f}
-- Output Cost: ${costs['output_cost']:.8f}
+- Input Cost: ${call_input_cost:.8f}
+- Output Cost: ${call_output_cost:.8f}
 - Total Cost for this Call: ${total_call_cost:.8f}
 
 CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
-- Total Translated Words (so far): {new_total_words}
+- Total Translated Words (so far): {new_total_translated_words}
 - Total Input Tokens (so far): {new_total_input}
 - Total Output Tokens (so far): {new_total_output}
 - Cumulative Log Cost: ${new_total_cost:.8f}
@@ -2963,47 +3053,21 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 
 """
                 
-                # --- 6. Write to main log file ---
+                # --- 8. Write to main log file ---
                 with open(self.openai_log_file, 'a', encoding='utf-8') as f:
                     f.write(log_entry)
                 
-                # --- 7. Write to short translation log ---
-                self._write_short_openai_translation_log(call_start_time, call_end_time, call_duration,
+                # --- 9. Write to short translation log (using Gemini-style format) ---
+                self._write_short_openai_translation_log(call_start_time, call_end_time, call_duration, 
                                                input_tokens, output_tokens, total_call_cost,
-                                               new_total_input, new_total_output,
-                                               new_total_cost,
+                                               new_total_input, new_total_output, 
+                                               new_total_cost, 
                                                original_text, translation_result, source_lang, target_lang, model_name, model_source)
                 
                 log_debug(f"Complete OpenAI translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
                 
         except Exception as e:
             log_debug(f"Error logging complete OpenAI translation call: {e}\n{traceback.format_exc()}")
-
-    def _format_openai_messages_for_log(self, messages):
-        """Format OpenAI messages array for logging."""
-        formatted_lines = []
-        for msg in messages:
-            role = msg.get('role', 'unknown')
-            content = msg.get('content', '')
-            formatted_lines.append(f"[{role.upper()}]: {content}")
-        return "\n".join(formatted_lines)
-
-    def _calculate_openai_costs(self, input_tokens, output_tokens, model_name):
-        """Calculate OpenAI API costs based on token usage."""
-        if hasattr(self.app, 'openai_models_manager') and self.app.openai_models_manager:
-            costs = self.app.openai_models_manager.get_model_costs(model_name)
-        else:
-            # Fallback costs (GPT-4o-mini pricing)
-            costs = {'input_cost': 0.15, 'output_cost': 0.6}
-        
-        input_cost = (input_tokens / 1_000_000) * costs['input_cost']
-        output_cost = (output_tokens / 1_000_000) * costs['output_cost']
-        
-        return {
-            'input_cost': input_cost,
-            'output_cost': output_cost,
-            'total_cost': input_cost + output_cost
-        }
 
     def _get_openai_session_totals(self):
         """Get current session totals from OpenAI short log."""
@@ -3012,18 +3076,34 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
         try:
             if os.path.exists(self.openai_tra_short_log_file):
                 with open(self.openai_tra_short_log_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        if line.startswith('#') or not line.strip():
-                            continue
-                        parts = line.strip().split(',')
-                        if len(parts) >= 6:
-                            try:
-                                words += int(parts[1])
-                                input_tokens += int(parts[2])
-                                output_tokens += int(parts[3])
-                                cost += float(parts[4])
-                            except ValueError:
-                                continue
+                    content = f.read()
+                    
+                    # Parse the Gemini-style format instead of CSV format
+                    import re
+                    # Find all "Tokens: In=X, Out=Y | Cost: $Z" lines
+                    token_pattern = r"Tokens: In=(\d+), Out=(\d+) \| Cost: \$([0-9.]+)"
+                    matches = re.findall(token_pattern, content)
+                    
+                    for match in matches:
+                        input_tokens += int(match[0])
+                        output_tokens += int(match[1])
+                        cost += float(match[2])
+                    
+                    # Count words from result lines
+                    result_pattern = r"^([A-Z]+): (.+)$"
+                    lines = content.split('\n')
+                    for line in lines:
+                        if '--' not in line:  # Skip separator lines
+                            match = re.match(result_pattern, line.strip())
+                            if match:
+                                lang_code = match.group(1)
+                                text_content = match.group(2)
+                                # Count words from source language lines only (not target)
+                                # This is a simple heuristic - could be improved with language detection
+                                if len(text_content.split()) > 0:
+                                    words += len(text_content.split())
+                                    break  # Only count once per result block
+                                    
         except Exception as e:
             log_debug(f"Error reading OpenAI session totals: {e}")
         
@@ -3033,19 +3113,50 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                                           input_tokens, output_tokens, total_call_cost,
                                           cumulative_input, cumulative_output, cumulative_cost,
                                           original_text, translation_result, source_lang, target_lang, model_name, model_source):
-        """Write condensed OpenAI translation log entry for statistics processing."""
+        """Write concise OpenAI translation call log entry in IDENTICAL format to Gemini."""
+        if not self.app.openai_api_log_enabled_var.get():
+            return
+            
         try:
-            timestamp = call_start_time.strftime('%Y-%m-%d %H:%M:%S')
-            word_count = len(original_text.split())
+            # Get language display names (same as Gemini)
+            source_lang_name = self._get_language_display_name(source_lang, 'openai').upper()
+            target_lang_name = self._get_language_display_name(target_lang, 'openai').upper()
             
-            # Format: timestamp,words,input_tokens,output_tokens,cost,duration
-            log_line = f"{timestamp},{word_count},{input_tokens},{output_tokens},{total_call_cost:.8f},{call_duration:.3f}\n"
+            # Get model costs from CSV for display (same as Gemini)
+            cost_line = ""
+            try:
+                if hasattr(self.app, 'openai_models_manager') and self.app.openai_models_manager:
+                    model_costs = self.app.openai_models_manager.get_model_costs(model_name)
+                    input_cost = model_costs['input_cost']
+                    output_cost = model_costs['output_cost']
+                    
+                    # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals (same as Gemini)
+                    input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
+                    output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
+                    
+                    cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
+            except Exception:
+                pass
             
+            # IDENTICAL format to Gemini short log
+            log_entry = f"""===== TRANSLATION CALL =======
+Model: {model_name} ({model_source})
+{cost_line}Start: {call_start_time}
+End: {call_end_time}
+Duration: {call_duration:.3f}s
+Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${total_call_cost:.8f}
+Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
+Result:
+--------------------------------------------------
+{source_lang_name}: {original_text}
+{target_lang_name}: {translation_result}
+--------------------------------------------------
+
+"""
             with open(self.openai_tra_short_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_line)
-                
+                f.write(log_entry)
         except Exception as e:
-            log_debug(f"Error writing OpenAI short translation log: {e}")
+            log_debug(f"Error writing short OpenAI translation log: {e}")
 
     def _get_ordinal_number(self, num):
         """Convert number to ordinal string (e.g., 1 -> 'first', 2 -> 'second')."""
