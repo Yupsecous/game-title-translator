@@ -2514,6 +2514,28 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     # OpenAI Translation Methods
     # ===============================
 
+    def _format_openai_input_for_responses_api(self, messages):
+        """Format OpenAI messages for the Responses API input parameter."""
+        if not messages:
+            return ""
+        
+        # For GPT 5 models using Responses API, we need to combine system and user messages
+        # into a single input string
+        formatted_parts = []
+        
+        for message in messages:
+            role = message.get('role', '')
+            content = message.get('content', '')
+            
+            if role == 'system':
+                # System messages become instructions
+                formatted_parts.append(content)
+            elif role == 'user':
+                # User messages become the main content
+                formatted_parts.append(content)
+        
+        return '\n\n'.join(formatted_parts)
+
     def _openai_translate(self, text_to_translate_oai, source_lang_oai, target_lang_oai):
         """OpenAI API call with context window support."""
         log_debug(f"OpenAI translate request for: {text_to_translate_oai}")
@@ -2585,12 +2607,42 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 # Fallback to config if no specific model selected
                 translation_model_api_name = self.app.config['Settings'].get('openai_model_name', 'gpt-4o-mini')
             
-            response = self.openai_client.chat.completions.create(
-                model=translation_model_api_name,
-                messages=messages,
-                temperature=0.0,
-                max_tokens=2000
-            )
+            # Check if this is a GPT 5 model and handle accordingly
+            if translation_model_api_name.startswith('gpt-5'):
+                # GPT 5 models use the Responses API
+                if translation_model_api_name == 'gpt-5-nano':
+                    # GPT 5 Nano: Use minimal reasoning and low verbosity
+                    log_debug("Using GPT 5 Nano with minimal reasoning and low verbosity")
+                    response = self.openai_client.responses.create(
+                        model=translation_model_api_name,
+                        input=self._format_openai_input_for_responses_api(messages),
+                        reasoning={'effort': 'minimal'},
+                        text={'verbosity': 'low'}
+                    )
+                else:
+                    # Other GPT 5 models: Use default reasoning
+                    log_debug(f"Using GPT 5 model {translation_model_api_name} with default settings")
+                    response = self.openai_client.responses.create(
+                        model=translation_model_api_name,
+                        input=self._format_openai_input_for_responses_api(messages)
+                    )
+            elif translation_model_api_name in ['gpt-4.1-mini', 'gpt-4.1-nano']:
+                # GPT 4.1 Mini and Nano: Use temperature=0 for non-thinking mode
+                log_debug(f"Using {translation_model_api_name} with temperature=0 (non-thinking mode)")
+                response = self.openai_client.chat.completions.create(
+                    model=translation_model_api_name,
+                    messages=messages,
+                    temperature=0.0,
+                    max_tokens=2000
+                )
+            else:
+                # Other models: Use default Chat Completions API with temperature=0
+                response = self.openai_client.chat.completions.create(
+                    model=translation_model_api_name,
+                    messages=messages,
+                    temperature=0.0,
+                    max_tokens=2000
+                )
             call_duration = time.time() - api_call_start_time
             log_debug(f"OpenAI API call took {call_duration:.3f}s")
             
@@ -2620,7 +2672,13 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             except (AttributeError, KeyError):
                 log_debug("Could not find usage metadata in OpenAI response. Using requested model name as fallback.")
 
-            translation_result = response.choices[0].message.content.strip()
+            # Handle different response structures for different APIs
+            if translation_model_api_name.startswith('gpt-5'):
+                # GPT 5 models use Responses API
+                translation_result = response.output_text.strip() if hasattr(response, 'output_text') else response.text.strip()
+            else:
+                # GPT 4.1 and other models use Chat Completions API
+                translation_result = response.choices[0].message.content.strip()
             
             # Handle multiple lines - only keep the last line
             if '\n' in translation_result:
