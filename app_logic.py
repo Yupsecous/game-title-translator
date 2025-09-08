@@ -299,7 +299,7 @@ class GameChangingTranslator:
         # OpenAI API variables
         self.openai_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'openai_file_cache', fallback=True))
         self.openai_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('openai_context_window', '2')))
-        self.openai_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'openai_api_log_enabled', fallback=False))
+        self.openai_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'openai_api_log_enabled', fallback=True))
         self.openai_api_key_var = tk.StringVar(value=self.config['Settings'].get('openai_api_key', ''))
         
         # Separate Gemini model selection for OCR and Translation

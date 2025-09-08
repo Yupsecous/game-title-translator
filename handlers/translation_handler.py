@@ -2661,16 +2661,35 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             model_name = translation_model_api_name  # Fallback to the model we requested
             model_source = "fallback"  # Track whether we got it from API or fallback
             try:
-                if response.usage:
-                    input_tokens = response.usage.prompt_tokens
-                    output_tokens = response.usage.completion_tokens
-                    log_debug(f"OpenAI usage metadata found: In={input_tokens}, Out={output_tokens}")
+                # Handle different response structures for different APIs
+                if translation_model_api_name.startswith('gpt-5'):
+                    # GPT 5 models use Responses API - check for usage in different locations
+                    if hasattr(response, 'usage') and response.usage:
+                        input_tokens = getattr(response.usage, 'prompt_tokens', 0) or getattr(response.usage, 'input_tokens', 0)
+                        output_tokens = getattr(response.usage, 'completion_tokens', 0) or getattr(response.usage, 'output_tokens', 0)
+                    elif hasattr(response, 'input_tokens') and hasattr(response, 'output_tokens'):
+                        input_tokens = response.input_tokens
+                        output_tokens = response.output_tokens
+                    log_debug(f"OpenAI GPT-5 usage metadata: In={input_tokens}, Out={output_tokens}")
+                else:
+                    # GPT 4.1 and other models use Chat Completions API
+                    if hasattr(response, 'usage') and response.usage:
+                        input_tokens = response.usage.prompt_tokens
+                        output_tokens = response.usage.completion_tokens
+                    log_debug(f"OpenAI Chat Completions usage metadata: In={input_tokens}, Out={output_tokens}")
+                
                 # Model name is already known from our request
                 model_name = translation_model_api_name
                 model_source = "api_request"
                 log_debug(f"OpenAI model used: {model_name} (source: {model_source})")
-            except (AttributeError, KeyError):
-                log_debug("Could not find usage metadata in OpenAI response. Using requested model name as fallback.")
+            except (AttributeError, KeyError) as e:
+                log_debug(f"Could not find usage metadata in OpenAI response: {e}. Using requested model name as fallback.")
+                # For GPT-5 models, estimate tokens if not available
+                if translation_model_api_name.startswith('gpt-5'):
+                    input_tokens = len(str(messages).split()) * 1.3  # Rough estimate
+                    output_tokens = len(translation_result.split()) * 1.3  # Rough estimate
+                    log_debug(f"OpenAI GPT-5 estimated tokens: In={int(input_tokens)}, Out={int(output_tokens)}")
+                    input_tokens, output_tokens = int(input_tokens), int(output_tokens)
 
             # Handle different response structures for different APIs
             if translation_model_api_name.startswith('gpt-5'):
@@ -2874,7 +2893,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                                             input_tokens, output_tokens, original_text, 
                                             source_lang, target_lang, model_name, model_source):
         """Log complete OpenAI translation call with atomic logging to prevent interleaved entries."""
-        if not self.app.config['Settings'].getboolean('enable_openai_api_log', fallback=False):
+        log_debug(f"OpenAI logging check: enabled={self.app.openai_api_log_enabled_var.get()}")
+        if not self.app.openai_api_log_enabled_var.get():
+            log_debug("OpenAI API logging is disabled, skipping log entry")
             return
         
         try:
