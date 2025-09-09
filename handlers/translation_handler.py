@@ -147,6 +147,9 @@ class TranslationHandler:
         # Note: Log file initialization is now handled by individual LLM providers
         # Each provider initializes its own log files with proper headers and session management
         
+        # Initialize session counters by reading existing logs (for legacy OCR system)
+        self._initialize_session_counters()
+        
         # Initialize OCR cumulative totals cache for performance
         self._ocr_cache_initialized = False
         self._cached_ocr_input_tokens = 0
@@ -390,6 +393,31 @@ class TranslationHandler:
     # Note: Legacy log initialization methods removed - now handled by individual LLM providers
 
     # Note: Legacy log initialization methods removed - now handled by individual LLM providers
+
+    def _initialize_session_counters(self):
+        """Initialize OCR session counter by reading existing logs (legacy OCR system only)."""
+        try:
+            # Read OCR log to find highest OCR session number
+            highest_ocr_session = 0
+            if os.path.exists(self.ocr_short_log_file):
+                with open(self.ocr_short_log_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith("SESSION ") and (" STARTED " in line or " ENDED " in line):
+                            try:
+                                # Extract session number from "SESSION X STARTED" or "SESSION X ENDED"
+                                session_num = int(line.split()[1])
+                                highest_ocr_session = max(highest_ocr_session, session_num)
+                            except (IndexError, ValueError):
+                                continue
+            
+            # Set counter to highest found + 1 (for next session)
+            self.ocr_session_counter = highest_ocr_session + 1
+            
+            log_debug(f"Initialized legacy OCR session counter: {self.ocr_session_counter}")
+            
+        except Exception as e:
+            log_debug(f"Error initializing OCR session counter: {e}, using default")
+            self.ocr_session_counter = 1
 
     def _increment_pending_ocr_calls(self):
         """Increment the count of pending OCR calls."""
