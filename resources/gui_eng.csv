@@ -163,7 +163,7 @@ api_usage_export_csv_btn,Export to CSV
 api_usage_export_text_btn,Export to Text
 api_usage_copy_btn,Copy
 api_usage_no_data,No data available
-api_usage_info_note,"ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared. Estimated cost tracking is provided for reference purposes only. You are responsible for monitoring your own API usage and costs through Google's billing dashboard."
+api_usage_info_note,"ℹ️ Note: These statistics are based on GEMINI_API_OCR_short_log.txt and GEMINI_API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared. Estimated cost tracking is provided for reference purposes only. You are responsible for monitoring your own API usage and costs through Google's billing dashboard."
 check_for_updates_btn,Check for Updates
 check_for_updates_on_startup,Check for updates on startup
 check_updates_title,Checking for Updates

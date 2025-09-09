@@ -115,7 +115,7 @@ resources/
 
 ### **Runtime Data** (Generated)
 - **Cache Files**: `deepl_cache.txt`, `googletrans_cache.txt`, `gemini_cache.txt`
-- **API Logs**: `Gemini_API_call_logs.txt`, `API_OCR_short_log.txt`, `API_TRA_short_log.txt`
+- **API Logs**: `Gemini_API_call_logs.txt`, `GEMINI_API_OCR_short_log.txt`, `GEMINI_API_TRA_short_log.txt`
 - **Debug**: `translator_debug.log`, `debug_images/`
 - **Models**: `marian_models_cache/`
 

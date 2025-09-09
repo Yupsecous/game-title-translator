@@ -140,8 +140,8 @@ class TranslationHandler:
         self.openai_log_file = os.path.join(base_dir, "OpenAI_API_call_logs.txt")
         
         # Initialize short log file paths
-        self.ocr_short_log_file = os.path.join(base_dir, "API_OCR_short_log.txt")
-        self.tra_short_log_file = os.path.join(base_dir, "API_TRA_short_log.txt")
+        self.ocr_short_log_file = os.path.join(base_dir, "GEMINI_API_OCR_short_log.txt")
+        self.tra_short_log_file = os.path.join(base_dir, "GEMINI_API_TRA_short_log.txt")
         self.openai_tra_short_log_file = os.path.join(base_dir, "OpenAI_API_TRA_short_log.txt")
         
         # Initialize Gemini API call log file
@@ -598,6 +598,7 @@ Purpose: Concise OpenAI translation call results and statistics
         with self._api_calls_lock:
             return self._pending_ocr_calls > 0 or self._pending_translation_calls > 0
 
+    # OCR session management (legacy - kept for OCR functionality)
     def start_ocr_session(self):
         """Start a new OCR session with numbered identifier."""
         if not self.current_ocr_session_active:
@@ -631,39 +632,6 @@ Purpose: Concise OpenAI translation call results and statistics
                 return False
         return True  # Already inactive
 
-    def start_translation_session(self):
-        """Start a new translation session with numbered identifier."""
-        if not self.current_translation_session_active:
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"\nSESSION {self.translation_session_counter} STARTED {timestamp}\n")
-                self.current_translation_session_active = True
-                log_debug(f"Translation Session {self.translation_session_counter} started")
-            except Exception as e:
-                log_debug(f"Error starting translation session: {e}")
-
-    def end_translation_session(self):
-        """End the current translation session only if no pending translation calls."""
-        if self.current_translation_session_active:
-            # Wait for any pending translation calls to complete before ending session
-            if self._pending_translation_calls > 0:
-                log_debug(f"Translation session end delayed: {self._pending_translation_calls} pending calls")
-                return False  # Session not ended yet
-            
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp}\n")
-                self.current_translation_session_active = False
-                self.translation_session_counter += 1
-                log_debug(f"Translation Session {self.translation_session_counter - 1} ended")
-                return True  # Session ended successfully
-            except Exception as e:
-                log_debug(f"Error ending translation session: {e}")
-                return False
-        return True  # Already inactive
-
     def try_end_sessions_when_ready(self):
         """Try to end sessions if they're marked for ending and no pending calls remain."""
         sessions_ended = []
@@ -673,12 +641,6 @@ Purpose: Concise OpenAI translation call results and statistics
             if self.end_ocr_session():
                 self._ocr_session_should_end = False
                 sessions_ended.append("OCR")
-        
-        # Try to end translation session if it should be ended
-        if hasattr(self, '_translation_session_should_end') and self._translation_session_should_end:
-            if self.end_translation_session():
-                self._translation_session_should_end = False
-                sessions_ended.append("Translation")
         
         if sessions_ended:
             log_debug(f"Successfully ended pending sessions: {', '.join(sessions_ended)}")
@@ -698,21 +660,23 @@ Purpose: Concise OpenAI translation call results and statistics
                 return False
         return True
 
-    def request_end_translation_session(self):
-        """Request to end translation session - will end when no pending calls remain."""
-        if self.current_translation_session_active:
-            if self._pending_translation_calls == 0:
-                # Can end immediately
-                return self.end_translation_session()
-            else:
-                # Mark for ending when calls complete
-                self._translation_session_should_end = True
-                log_debug(f"Translation session end requested, waiting for {self._pending_translation_calls} pending calls")
-                return False
-        return True
-
+    # Legacy force_end method updated to work with providers
     def force_end_sessions_on_app_close(self):
-        """Force end both sessions when application is closing, even if there are pending calls."""
+        """Force end sessions when application is closing for all providers."""
+        # End sessions for LLM providers
+        if 'gemini' in self.providers:
+            try:
+                self.providers['gemini'].end_translation_session()
+            except Exception as e:
+                log_debug(f"Error force ending Gemini session: {e}")
+        
+        if 'openai' in self.providers:
+            try:
+                self.providers['openai'].end_translation_session()
+            except Exception as e:
+                log_debug(f"Error force ending OpenAI session: {e}")
+        
+        # Keep the existing legacy OCR session management
         timestamp = self._get_precise_timestamp()
         
         # Force end OCR session
@@ -724,16 +688,6 @@ Purpose: Concise OpenAI translation call results and statistics
                 log_debug(f"OCR Session {self.ocr_session_counter} force ended (app closing)")
             except Exception as e:
                 log_debug(f"Error force ending OCR session: {e}")
-        
-        # Force end translation session
-        if self.current_translation_session_active:
-            try:
-                with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp} (FORCED - APP CLOSING)\n")
-                self.current_translation_session_active = False
-                log_debug(f"Translation Session {self.translation_session_counter} force ended (app closing)")
-            except Exception as e:
-                log_debug(f"Error force ending translation session: {e}")
         
         # Reset pending call counters
         with self._api_calls_lock:
@@ -766,18 +720,18 @@ Purpose: Concise OpenAI translation call results and statistics
             self.providers['gemini']._force_client_refresh()
             self.providers['gemini']._clear_context()
     
+    # Session management methods - delegate to providers but maintain compatibility
     def start_translation_session(self):
-        """Start translation session for all LLM providers."""
+        """Start translation session for LLM providers."""
+        log_debug("Starting translation session via providers")
         if 'gemini' in self.providers:
             self.providers['gemini'].start_translation_session()
         if 'openai' in self.providers:
             self.providers['openai'].start_translation_session()
-        # Also update the legacy session state for backward compatibility
-        if not self.current_translation_session_active:
-            self.current_translation_session_active = True
     
     def end_translation_session(self):
-        """End translation session for all LLM providers."""
+        """End translation session for LLM providers."""
+        log_debug("Ending translation session via providers")
         ended_count = 0
         if 'gemini' in self.providers:
             if self.providers['gemini'].end_translation_session():
@@ -785,57 +739,19 @@ Purpose: Concise OpenAI translation call results and statistics
         if 'openai' in self.providers:
             if self.providers['openai'].end_translation_session():
                 ended_count += 1
-        
-        # Also update the legacy session state for backward compatibility
-        if self.current_translation_session_active and ended_count > 0:
-            self.current_translation_session_active = False
-            self.translation_session_counter += 1
-        
         return ended_count > 0
     
     def request_end_translation_session(self):
-        """Request to end translation session for all LLM providers."""
-        # For LLM providers, sessions are managed independently
-        # Legacy session management is handled by existing code
-        return self.end_translation_session()
-    
-    def force_end_sessions_on_app_close(self):
-        """Force end sessions when application is closing for all providers."""
-        # End sessions for LLM providers
+        """Request to end translation session for LLM providers."""
+        log_debug("Requesting translation session end via providers")
+        request_count = 0
         if 'gemini' in self.providers:
-            try:
-                self.providers['gemini'].end_translation_session()
-            except Exception as e:
-                log_debug(f"Error force ending Gemini session: {e}")
-        
+            if self.providers['gemini'].request_end_translation_session():
+                request_count += 1
         if 'openai' in self.providers:
-            try:
-                self.providers['openai'].end_translation_session()
-            except Exception as e:
-                log_debug(f"Error force ending OpenAI session: {e}")
-        
-        # Keep the existing legacy session management for OCR sessions
-        timestamp = self._get_precise_timestamp()
-        
-        # Force end OCR session
-        if self.current_ocr_session_active:
-            try:
-                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp} (FORCED - APP CLOSING)\n")
-                self.current_ocr_session_active = False
-                log_debug(f"OCR Session {self.ocr_session_counter} force ended (app closing)")
-            except Exception as e:
-                log_debug(f"Error force ending OCR session: {e}")
-        
-        # Force end legacy translation session state
-        if self.current_translation_session_active:
-            self.current_translation_session_active = False
-            log_debug(f"Translation session state force ended (app closing)")
-        
-        # Reset pending call counters
-        with self._api_calls_lock:
-            self._pending_ocr_calls = 0
-            self._pending_translation_calls = 0
+            if self.providers['openai'].request_end_translation_session():
+                request_count += 1
+        return request_count > 0
     
     def _update_sliding_window(self, source_text, target_text):
         """DEPRECATED: Context windows now handled by individual providers."""

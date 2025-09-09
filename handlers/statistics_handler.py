@@ -18,8 +18,8 @@ class StatisticsHandler:
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        self.ocr_log_file = os.path.join(base_dir, "API_OCR_short_log.txt")
-        self.translation_log_file = os.path.join(base_dir, "API_TRA_short_log.txt")
+        self.ocr_log_file = os.path.join(base_dir, "GEMINI_API_OCR_short_log.txt")
+        self.translation_log_file = os.path.join(base_dir, "GEMINI_API_TRA_short_log.txt")
         self.openai_translation_log_file = os.path.join(base_dir, "OpenAI_API_TRA_short_log.txt")
         
         log_debug(f"Statistics handler initialized - OCR log: {self.ocr_log_file}, Translation log: {self.translation_log_file}, OpenAI log: {self.openai_translation_log_file}")

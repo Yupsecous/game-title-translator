@@ -99,6 +99,9 @@ class AbstractLLMProvider(ABC):
         # Initialize log files
         self._initialize_log_files()
         
+        # Initialize session counters by reading existing logs (like backup version)
+        self._initialize_session_counters()
+        
         # Cache for cumulative totals (performance optimization)
         self._translation_cache_initialized = False
         self._cached_translation_words = 0
@@ -175,6 +178,32 @@ Purpose: Concise {self.provider_name} translation call results and statistics
 
         except Exception as e:
             log_debug(f"Error initializing {self.provider_name} API logs: {e}")
+    
+    def _initialize_session_counters(self):
+        """Initialize session counters by reading existing logs to find the highest session number."""
+        try:
+            # Read Translation log to find highest translation session number
+            highest_translation_session = 0
+            if os.path.exists(self.short_log_file):
+                with open(self.short_log_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith("SESSION ") and " STARTED " in line:
+                            try:
+                                # Extract session number from "SESSION X STARTED"
+                                session_num = int(line.split()[1])
+                                highest_translation_session = max(highest_translation_session, session_num)
+                            except (IndexError, ValueError):
+                                continue
+            
+            # Set counter to highest found + 1 (for next session)
+            self.translation_session_counter = highest_translation_session + 1
+            
+            log_debug(f"Initialized {self.provider_name} session counter: Translation={self.translation_session_counter}")
+            
+        except Exception as e:
+            log_debug(f"Error initializing {self.provider_name} session counters: {e}, using defaults")
+            # Fall back to 1 if there's any error
+            self.translation_session_counter = 1
     
     # === SESSION MANAGEMENT (IDENTICAL ACROSS PROVIDERS) ===
     

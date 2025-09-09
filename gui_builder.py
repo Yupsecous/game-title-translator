@@ -1409,7 +1409,7 @@ def create_api_usage_tab(app):
     # Create informational note about data source using proper localization
     app.api_usage_info_label = ttk.Label(info_frame, 
                                         text=app.ui_lang.get_label("api_usage_info_note", 
-                                            "ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared."),
+                                            "ℹ️ Note: These statistics are based on GEMINI_API_OCR_short_log.txt and GEMINI_API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared."),
                                         foreground="gray", 
                                         justify=tk.LEFT, wraplength=600)
     app.api_usage_info_label.pack(anchor="w", fill="x", padx=5, pady=2)
