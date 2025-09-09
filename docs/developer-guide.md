@@ -140,8 +140,8 @@ ocr-translator/
 ├── openai_cache.txt               # Cached translations from OpenAI API
 ├── Gemini_API_call_logs.txt       # Detailed Gemini API call logging with cost tracking
 ├── OpenAI_API_call_logs.txt       # Detailed OpenAI API call logging with cost tracking
-├── API_OCR_short_log.txt          # Short log for Gemini OCR API usage statistics
-├── API_TRA_short_log.txt          # Short log for Gemini Translation API usage statistics
+├── GEMINI_API_OCR_short_log.txt   # Short log for Gemini OCR API usage statistics
+├── GEMINI_API_TRA_short_log.txt   # Short log for Gemini Translation API usage statistics
 ├── OpenAI_API_TRA_short_log.txt   # Short log for OpenAI Translation API usage statistics
 ├── marian_models_cache/           # Directory for cached MarianMT models
 └── translator_debug.log           # Application debug log file
@@ -237,8 +237,8 @@ The GUI includes a dedicated "API Usage" tab that displays:
 The system maintains multiple log levels for different use cases:
 
 **Short Log Files (Statistics Processing):**
-- **`API_OCR_short_log.txt`** - Condensed log for OCR API calls with timing and cost data
-- **`API_TRA_short_log.txt`** - Condensed log for Translation API calls with timing and cost data
+- **`GEMINI_API_OCR_short_log.txt`** - Condensed log for OCR API calls with timing and cost data
+- **`GEMINI_API_TRA_short_log.txt`** - Condensed log for Translation API calls with timing and cost data
 
 **Detailed Log Files (Full Analysis):**
 - **`Gemini_API_call_logs.txt`** - Complete request/response data with token analysis
