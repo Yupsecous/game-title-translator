@@ -135,6 +135,47 @@ th,gemini,Thai,tajski
 tr,gemini,Turkish,turecki
 uk,gemini,Ukrainian,ukraiński
 vi,gemini,Vietnamese,wietnamski
+ar,openai,Arabic,arabski
+bg,openai,Bulgarian,bułgarski
+zh-CN,openai,Chinese (Simplified),chiński (uproszczony)
+zh-TW,openai,Chinese (Traditional),chiński (tradycyjny)
+hr,openai,Croatian,chorwacki
+cs,openai,Czech,czeski
+da,openai,Danish,duński
+nl,openai,Dutch,holenderski
+en,openai,English,angielski
+et,openai,Estonian,estoński
+fi,openai,Finnish,fiński
+fr,openai,French,francuski
+de,openai,German,niemiecki
+el,openai,Greek,grecki
+he,openai,Hebrew,hebrajski
+hi,openai,Hindi,hindi
+hu,openai,Hungarian,węgierski
+is,openai,Icelandic,islandzki
+id,openai,Indonesian,indonezyjski
+it,openai,Italian,włoski
+ja,openai,Japanese,japoński
+ko,openai,Korean,koreański
+lv,openai,Latvian,łotewski
+lt,openai,Lithuanian,litewski
+no,openai,Norwegian,norweski
+fa,openai,Persian,perski
+pl,openai,Polish,polski
+pt-BR,openai,Portuguese (Brazil),portugalski (brazylijski)
+pt-PT,openai,Portuguese (Portugal),portugalski (portugalski)
+ro,openai,Romanian,rumuński
+ru,openai,Russian,rosyjski
+sr,openai,Serbian,serbski
+sk,openai,Slovak,słowacki
+sl,openai,Slovenian,słoweński
+es,openai,Spanish,hiszpański
+sw,openai,Swahili,suahili
+sv,openai,Swedish,szwedzki
+th,openai,Thai,tajski
+tr,openai,Turkish,turecki
+uk,openai,Ukrainian,ukraiński
+vi,openai,Vietnamese,wietnamski
 Albanian,marianmt,Albanian,albański
 Arabic,marianmt,Arabic,arabski
 Belarusian,marianmt,Belarusian,białoruski
