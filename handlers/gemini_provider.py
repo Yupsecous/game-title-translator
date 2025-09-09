@@ -1,14 +1,12 @@
 # handlers/gemini_provider.py
-"""
-Gemini provider implementation for unified LLM architecture.
-Inherits all common functionality from AbstractLLMProvider and implements only Gemini-specific API calls.
-"""
 
 import time
-from logger import log_debug
-from handlers.llm_provider_base import AbstractLLMProvider
+import sys
 
-# Pre-load Gemini libraries at module level for performance
+from logger import log_debug
+from .llm_provider_base import AbstractLLMProvider
+
+# Pre-load heavy libraries at module level for compiled version performance
 try:
     # NEW: Google Gen AI library (migrated from google.generativeai)
     from google import genai
@@ -28,99 +26,150 @@ except ImportError:
 
 
 class GeminiProvider(AbstractLLMProvider):
-    """
-    Gemini provider implementation using unified LLM architecture.
-    
-    Inherits all common functionality:
-    - Comprehensive API logging with identical format
-    - Advanced cost tracking with real-time calculation  
-    - Smart context windows with sliding window algorithm
-    - Robust session management with circuit breaker protection
-    - Thread-safe operations with atomic logging
-    
-    Implements only Gemini-specific:
-    - API call mechanism using genai.Client
-    - Response parsing for Gemini response format
-    - Model configuration for Gemini models
-    """
+    """Gemini-specific implementation of LLM translation provider."""
     
     def __init__(self, app):
-        """Initialize Gemini provider with unified architecture."""
         super().__init__(app, "gemini")
         
-        # Gemini-specific client variables
-        self.gemini_client = None
-        self.gemini_generation_config = None
+        # Gemini-specific attributes
+        self.generation_config = None
         
-        log_debug("Gemini provider initialized with unified architecture")
+        log_debug("Gemini provider initialized")
     
-    # === GEMINI-SPECIFIC API CALL IMPLEMENTATION ===
+    # === ABSTRACT METHOD IMPLEMENTATIONS ===
     
-    def _make_api_call(self, message_content, model_config):
-        """Gemini-specific API call using genai.Client."""
-        
-        if not hasattr(self, 'gemini_client') or self.gemini_client is None:
-            raise Exception("Gemini client not initialized")
-        
+    def _get_api_key(self):
+        """Get Gemini API key."""
+        return self.app.gemini_api_key_var.get().strip()
+    
+    def _check_provider_availability(self):
+        """Check if Gemini libraries are available."""
+        return GENAI_AVAILABLE
+    
+    def _get_context_window_size(self):
+        """Get Gemini context window size setting."""
+        return self.app.gemini_context_window_var.get()
+    
+    def _initialize_client(self, api_key, source_lang, target_lang):
+        """Initialize Gemini client session."""
+        if not GENAI_AVAILABLE:
+            log_debug("Google Gen AI libraries not available for Gemini session")
+            self.client = None
+            return
+            
+        # Force refresh if needed
+        if hasattr(self, 'client') and self._should_refresh_client():
+            self._force_client_refresh()
+            
+        try:
+            # NEW: Client-based approach
+            self.client = genai.Client(api_key=api_key)
+            
+            # Store session creation time for tracking
+            self.client_created_time = time.time()
+            self.api_call_count = 0
+            
+            # Get configuration values
+            model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
+            
+            # Store config for later use in API calls
+            try:
+                # Try to use thinking_config for models that support it (Gemini 2.5 series)
+                self.generation_config = types.GenerateContentConfig(
+                    temperature=model_temperature,
+                    max_output_tokens=1024,
+                    candidate_count=1,
+                    top_p=0.95,
+                    top_k=40,
+                    response_mime_type="text/plain",
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),  # Use non-thinking mode for speed/cost
+                    safety_settings=[
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HARASSMENT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HATE_SPEECH', 
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                            threshold='BLOCK_NONE'
+                        )
+                    ]
+                )
+                log_debug("Gemini session initialized with thinking_budget=0 for non-thinking mode")
+            except (AttributeError, TypeError) as e:
+                # Fallback for models that don't support thinking_config
+                log_debug(f"Model doesn't support thinking_config, using fallback config: {e}")
+                self.generation_config = types.GenerateContentConfig(
+                    temperature=model_temperature,
+                    max_output_tokens=1024,
+                    candidate_count=1,
+                    top_p=0.95,
+                    top_k=40,
+                    response_mime_type="text/plain",
+                    safety_settings=[
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HARASSMENT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_HATE_SPEECH', 
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                            threshold='BLOCK_NONE'
+                        ),
+                        types.SafetySetting(
+                            category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                            threshold='BLOCK_NONE'
+                        )
+                    ]
+                )
+            
+            # Store session tracking
+            self.session_api_key = api_key
+            
+            log_debug(f"Gemini client initialized for stateless calls (no chat session)")
+            
+        except Exception as e:
+            log_debug(f"Failed to initialize Gemini client: {e}")
+            self.client = None
+    
+    def _get_model_config(self):
+        """Get Gemini model configuration for API calls."""
         # Get the appropriate model for translation
         translation_model_api_name = self.app.get_current_gemini_model_for_translation()
         if not translation_model_api_name:
             # Fallback to config if no specific model selected
             translation_model_api_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite')
         
-        # Make the API call
-        response = self.gemini_client.models.generate_content(
-            model=translation_model_api_name,
+        return {
+            'api_name': translation_model_api_name,
+            'config': self.generation_config
+        }
+    
+    def _make_api_call(self, message_content, model_config):
+        """Make Gemini-specific API call."""
+        if not hasattr(self, 'client') or self.client is None:
+            raise Exception("Gemini client not initialized")
+        
+        response = self.client.models.generate_content(
+            model=model_config['api_name'],
             contents=message_content,
-            config=self.gemini_generation_config
+            config=model_config['config']
         )
         
         return response
     
-    def _initialize_client(self, api_key):
-        """Gemini-specific client initialization."""
-        
-        try:
-            # Initialize Gemini client with API key
-            self.gemini_client = genai.Client(api_key=api_key)
-            
-            # Create generation config with Gemini-specific parameters
-            self.gemini_generation_config = types.GenerateContentConfig(
-                temperature=float(self.app.config['Settings'].get('gemini_model_temp', '0.0')),
-                max_output_tokens=1024,
-            )
-            
-            # Add thinking_config for models that support it
-            try:
-                translation_model_api_name = self.app.get_current_gemini_model_for_translation()
-                if translation_model_api_name and self.app.gemini_models_manager:
-                    model_config = self.app.gemini_models_manager.get_model_by_api_name(translation_model_api_name)
-                    if model_config and 'thinking_budget' in model_config.get('special_config', ''):
-                        self.gemini_generation_config.thinking_config = types.ThinkingConfig(
-                            thinking_budget=0  # Conservative budget for translation
-                        )
-            except Exception as e:
-                log_debug(f"Could not configure thinking_config: {e}")
-            
-            # Set session variables
-            self.session_api_key = api_key
-            self.client_created_time = time.time()
-            self.api_call_count = 0
-            
-            # Assign to unified client variable
-            self.client = self.gemini_client
-            
-            log_debug("Gemini client initialized successfully")
-            
-        except Exception as e:
-            log_debug(f"Error initializing Gemini client: {e}")
-            self.gemini_client = None
-            self.client = None
-            raise
-    
     def _parse_response(self, response):
-        """Gemini-specific response parsing."""
-        
+        """Parse Gemini response and extract relevant information."""
         # Extract exact token counts from API response metadata
         input_tokens, output_tokens = 0, 0
         model_name = "unknown"
@@ -131,7 +180,6 @@ class GeminiProvider(AbstractLLMProvider):
                 input_tokens = response.usage_metadata.prompt_token_count
                 output_tokens = response.usage_metadata.candidates_token_count
                 log_debug(f"Gemini usage metadata found: In={input_tokens}, Out={output_tokens}")
-            
             # Try to extract model name from response metadata
             if hasattr(response, 'model_version') and response.model_version:
                 model_name = response.model_version
@@ -139,20 +187,13 @@ class GeminiProvider(AbstractLLMProvider):
             elif hasattr(response, '_response') and hasattr(response._response, 'model_version'):
                 model_name = response._response.model_version
                 model_source = "api_response"
-            else:
-                # Fallback to requested model name
-                model_name = self.app.get_current_gemini_model_for_translation() or "gemini-2.5-flash-lite"
-                model_source = "fallback"
-            
             log_debug(f"Gemini model used: {model_name} (source: {model_source})")
-        
         except (AttributeError, KeyError):
-            log_debug("Could not find usage_metadata or model info in Gemini response. Using fallback values.")
-            # Use fallback model name
-            model_name = self.app.get_current_gemini_model_for_translation() or "gemini-2.5-flash-lite"
-            model_source = "fallback"
-        
-        # Extract translation text
+            log_debug("Could not find usage_metadata or model info in Gemini response. Using requested model name as fallback.")
+            # Fall back to requested model name
+            model_config = self._get_model_config()
+            model_name = model_config['api_name']
+
         translation_result = response.text.strip()
         
         # Handle multiple lines - only keep the last line
@@ -165,125 +206,50 @@ class GeminiProvider(AbstractLLMProvider):
             else:
                 translation_result = lines[-1].strip() if lines else ""
         
-        # Strip language prefixes from the result using unified method
-        translation_result = self._strip_language_prefixes(translation_result)
+        # Strip language prefixes from the result
+        translation_result = self._clean_language_prefixes(translation_result)
         
         return translation_result, input_tokens, output_tokens, model_name, model_source
     
-    def _strip_language_prefixes(self, text):
-        """Strip language prefixes from translation result."""
-        
-        if not self.current_target_lang:
-            return text
-        
+    def _clean_language_prefixes(self, text):
+        """Remove language prefixes from Gemini response."""
         # Get target language display name
-        target_lang_name = self._get_language_display_name(self.current_target_lang, 'gemini')
-        target_lang_upper = target_lang_name.upper()
-        
-        # Check for uppercase language name with colon and space
-        if text.startswith(f"{target_lang_upper}: "):
-            text = text[len(f"{target_lang_upper}: "):].strip()
-        # Check for uppercase language name with colon only
-        elif text.startswith(f"{target_lang_upper}:"):
-            text = text[len(f"{target_lang_upper}:"):].strip()
-        # Also check for the old format (lowercase language code) just in case
-        elif text.startswith(f"{self.current_target_lang}: "):
-            text = text[len(f"{self.current_target_lang}: "):].strip()
-        elif text.startswith(f"{self.current_target_lang}:"):
-            text = text[len(f"{self.current_target_lang}:"):].strip()
+        if hasattr(self, 'current_target_lang'):
+            target_lang_name = self._get_language_display_name(self.current_target_lang)
+            target_lang_upper = target_lang_name.upper()
+            target_lang_code = self.current_target_lang
+            
+            # Check for uppercase language name with colon and space
+            if text.startswith(f"{target_lang_upper}: "):
+                return text[len(f"{target_lang_upper}: "):].strip()
+            # Check for uppercase language name with colon only
+            elif text.startswith(f"{target_lang_upper}:"):
+                return text[len(f"{target_lang_upper}:"):].strip()
+            # Also check for the old format (lowercase language code) just in case
+            elif text.startswith(f"{target_lang_code}: "):
+                return text[len(f"{target_lang_code}: "):].strip()
+            elif text.startswith(f"{target_lang_code}:"):
+                return text[len(f"{target_lang_code}:"):].strip()
         
         return text
     
-    def _get_model_config(self):
-        """Gemini-specific model configuration."""
-        
-        config = {
-            'api_name': self.app.get_current_gemini_model_for_translation() or 'gemini-2.5-flash-lite',
-            'temperature': float(self.app.config['Settings'].get('gemini_model_temp', '0.0')),
-            'max_output_tokens': 1024
-        }
-        
-        # Add model-specific parameters
+    def _get_model_costs(self, model_name):
+        """Get Gemini model-specific costs."""
         try:
-            if self.app.gemini_models_manager:
-                model_info = self.app.gemini_models_manager.get_model_by_api_name(config['api_name'])
-                if model_info and 'special_config' in model_info:
-                    config['special_config'] = model_info['special_config']
-        except:
-            pass
-        
-        return config
-    
-    # === GEMINI-SPECIFIC ABSTRACT METHOD IMPLEMENTATIONS ===
-    
-    def _get_api_key(self):
-        """Get Gemini API key from app configuration."""
-        return self.app.gemini_api_key_var.get().strip()
-    
-    def _check_library_availability(self):
-        """Check if Gemini libraries are available."""
-        return GENAI_AVAILABLE
-    
-    def _get_context_window_size(self):
-        """Get Gemini context window size setting."""
-        return self.app.gemini_context_window_var.get()
-    
-    def _get_model_costs(self):
-        """Get Gemini model costs from model manager."""
-        try:
-            translation_model_api_name = self.app.get_current_gemini_model_for_translation()
-            if translation_model_api_name and self.app.gemini_models_manager:
-                return self.app.gemini_models_manager.get_model_costs(translation_model_api_name)
-        except:
-            pass
+            if hasattr(self.app, 'gemini_models_manager') and self.app.gemini_models_manager:
+                model_costs = self.app.gemini_models_manager.get_model_costs(model_name)
+                return model_costs['input_cost'], model_costs['output_cost']
+        except Exception as e:
+            log_debug(f"Error getting Gemini model costs for {model_name}: {e}")
         
         # Fallback to default Gemini 2.5 Flash-Lite costs
-        return {
-            'input_cost': 0.1,
-            'output_cost': 0.4
-        }
+        return 0.1, 0.4
     
     def _is_logging_enabled(self):
-        """Check if Gemini API logging is enabled."""
+        """Check if Gemini logging is enabled."""
         return self.app.gemini_api_log_enabled_var.get()
-    
-    def _initialize_session(self, source_lang, target_lang):
-        """Initialize Gemini session with client setup."""
-        
-        api_key = self._get_api_key()
-        if not api_key:
-            raise Exception("Gemini API key missing")
-        
-        # Initialize the Gemini client
-        self._initialize_client(api_key)
-        
-        # Clear context if language pair changed
-        if (hasattr(self, 'current_source_lang') and hasattr(self, 'current_target_lang') and
-            (self.current_source_lang != source_lang or self.current_target_lang != target_lang)):
-            self._clear_context()
-        
-        log_debug(f"Gemini session initialized for {source_lang} -> {target_lang}")
     
     def _should_suppress_error(self, error_str):
         """Check if Gemini error should be suppressed from display."""
-        
         # Suppress 503 errors from being displayed in translation window
-        if "503 UNAVAILABLE" in error_str:
-            return True
-        
-        return False
-    
-    # === GEMINI-SPECIFIC UTILITY METHODS ===
-    
-    def update_context_window(self, source_text, translated_text):
-        """Update context window and call parent method for consistency."""
-        self._update_sliding_window(source_text, translated_text)
-    
-    def clear_context_window(self):
-        """Clear context window using parent method for consistency.""" 
-        self._clear_context()
-    
-    def force_client_refresh(self):
-        """Force refresh Gemini client using parent method for consistency."""
-        self._force_client_refresh()
-        self.gemini_client = None
+        return "503 UNAVAILABLE" in error_str
