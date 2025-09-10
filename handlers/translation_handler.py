@@ -864,6 +864,71 @@ Result:
         placeholders = ["source text will appear here", "translation will appear here", "translation...", "ocr source", "source text", "loading...", "translating...", "", "translation", "...", "translation error:"]
         return text_lower in placeholders or text_lower.startswith("translation error:")
 
+    def clear_cache(self):
+        """Clear the unified translation cache."""
+        self.unified_cache.clear_all()
+        log_debug("Cleared unified translation cache")
+
+    def update_marian_active_model(self, model_name_uam, source_lang_uam=None, target_lang_uam=None):
+        if self.app.marian_translator is None:
+            self.initialize_marian_translator()
+            if self.app.marian_translator is None:
+                log_debug("Cannot update MarianMT model - translator not initialized and init failed.")
+                return False
+        
+        try:
+            final_source_lang = source_lang_uam if source_lang_uam else self.app.marian_source_lang
+            final_target_lang = target_lang_uam if target_lang_uam else self.app.marian_target_lang
+
+            if not final_source_lang or not final_target_lang:
+                log_debug(f"Cannot update MarianMT model '{model_name_uam}': source/target language not determined.")
+                return False
+            
+            log_debug(f"Attempting to make MarianMT model active: {model_name_uam} for {final_source_lang}->{final_target_lang}")
+
+            if hasattr(self.app.marian_translator, '_unload_current_model'):
+                self.app.marian_translator._unload_current_model()
+            
+            if hasattr(self.app.marian_translator, 'direct_pairs'):
+                self.app.marian_translator.direct_pairs[(final_source_lang, final_target_lang)] = model_name_uam
+            
+            self.unified_cache.clear_provider('marianmt')
+
+            if hasattr(self.app.marian_translator, '_try_load_direct_model'):
+                load_success = self.app.marian_translator._try_load_direct_model(final_source_lang, final_target_lang)
+                if load_success:
+                    log_debug(f"Successfully loaded MarianMT model for {final_source_lang}->{final_target_lang}")
+                    return True
+                else:
+                    log_debug(f"Failed to load MarianMT model for {final_source_lang}->{final_target_lang}")
+                    return False
+            return False
+        except Exception as e_umam:
+            log_debug(f"Error updating MarianMT active model: {e_umam}")
+            return False
+
+    def update_marian_beam_value(self):
+        if self.app.marian_translator is not None:
+            try:
+                beam_value_clamped = max(1, min(50, self.app.num_beams_var.get()))
+                if beam_value_clamped != self.app.num_beams_var.get():
+                    self.app.num_beams_var.set(beam_value_clamped)
+                self.app.marian_translator.num_beams = beam_value_clamped
+                log_debug(f"Updated MarianMT beam search value in translator to: {beam_value_clamped}")
+            except Exception as e_umbv:
+                log_debug(f"Error updating MarianMT beam value: {e_umbv}")
+
+    def calculate_text_similarity(self, text1_sim, text2_sim):
+        if not text1_sim or not text2_sim: return 0.0
+        if len(text1_sim) < 10 or len(text2_sim) < 10: 
+            return 1.0 if text1_sim == text2_sim else 0.0
+        
+        words1_set = set(text1_sim.lower().split())
+        words2_set = set(text2_sim.lower().split())
+        intersection_len = len(words1_set.intersection(words2_set))
+        union_len = len(words1_set.union(words2_set))
+        return intersection_len / union_len if union_len > 0 else 0.0
+
     def initialize_marian_translator(self):
         if self.app.marian_translator is not None: return
         if not hasattr(self.app, 'MARIANMT_AVAILABLE') or not self.app.MARIANMT_AVAILABLE: return
