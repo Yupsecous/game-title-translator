@@ -2936,8 +2936,22 @@ For more information, see the user manual."""
                     new_display_name = self.translation_model_names.get(current_model_code, list(self.translation_model_names.values())[0])
                     self.translation_model_display_var.set(new_display_name)
                     log_debug(f"Language change: Set translation model to fallback: {new_display_name}")
+            elif current_model_code == 'openai_api':
+                # For OpenAI translation, read the specific model from config
+                saved_openai_translation_model = self.config['Settings'].get('openai_translation_model', '')
+                if saved_openai_translation_model and self.OPENAI_API_AVAILABLE and saved_openai_translation_model in self.openai_models_manager.get_translation_model_names():
+                    self.translation_model_display_var.set(saved_openai_translation_model)
+                    log_debug(f"Language change: Set translation model from config: {saved_openai_translation_model}")
+                elif self.OPENAI_API_AVAILABLE and self.openai_models_manager.get_translation_model_names():
+                    self.translation_model_display_var.set(self.openai_models_manager.get_translation_model_names()[0])
+                    log_debug(f"Language change: Set translation model to first OpenAI: {self.openai_models_manager.get_translation_model_names()[0]}")
+                else:
+                    # Fallback to generic name
+                    new_display_name = self.translation_model_names.get(current_model_code, list(self.translation_model_names.values())[0])
+                    self.translation_model_display_var.set(new_display_name)
+                    log_debug(f"Language change: Set translation model to fallback: {new_display_name}")
             else:
-                # For non-Gemini models, use the localized name
+                # For other models, use the localized name
                 new_display_name = self.translation_model_names.get(current_model_code, list(self.translation_model_names.values())[0])
                 self.translation_model_display_var.set(new_display_name)
                 log_debug(f"Language change: Set translation model to localized name: {new_display_name}")
