@@ -1,112 +1,48 @@
-# handlers/translation_handler.py
+﻿# handlers/translation_handler.py
 import re
 import os
 import gc
 import sys
 import time
 import html
-import hashlib # Not used here directly, but good for consistency
 import traceback
 import threading
 from datetime import datetime, timedelta
-# Removed lru_cache import - replaced with unified cache
 
 from logger import log_debug
-# from translation_utils import get_lang_code_for_translation_api # Replaced by direct use of API codes
-from marian_mt_translator import MarianMTTranslator # Already imported
+from marian_mt_translator import MarianMTTranslator
 from unified_translation_cache import UnifiedTranslationCache
 
 # Import the new LLM provider classes
-from .llm_provider_base import NetworkCircuitBreaker
+from .llm_provider_base import NetworkCircuitBreaker # Used by legacy OCR
 from .gemini_provider import GeminiProvider
 from .openai_provider import OpenAIProvider
 
-# Pre-load heavy libraries at module level for compiled version performance
-try:
-    # NEW: Google Gen AI library (migrated from google.generativeai)
-    from google import genai
-    from google.genai import types
-    GENAI_AVAILABLE = True
-    log_debug("Pre-loaded Google Gen AI libraries (new library)")
-except ImportError:
-    # Fallback to old library if new one not available
-    try:
-        import google.generativeai as genai
-        from google.generativeai.types import HarmCategory, HarmBlockThreshold
-        GENAI_AVAILABLE = True
-        log_debug("Pre-loaded Google Generative AI libraries (legacy fallback)")
-    except ImportError:
-        GENAI_AVAILABLE = False
-        log_debug("Google Generative AI libraries not available")
-
+# Import other dependencies
 try:
     import requests
-    import urllib.parse
     REQUESTS_AVAILABLE = True
     log_debug("Pre-loaded requests library")
 except ImportError:
     REQUESTS_AVAILABLE = False
     log_debug("Requests library not available")
 
+# Import legacy Gemini dependencies for OCR
 try:
-    import openai
-    OPENAI_AVAILABLE = True
-    log_debug("Pre-loaded OpenAI library")
+    from google import genai
+    from google.genai import types
+    GENAI_AVAILABLE = True
 except ImportError:
-    OPENAI_AVAILABLE = False
-    log_debug("OpenAI library not available")
+    try:
+        import google.generativeai as genai
+        GENAI_AVAILABLE = True
+    except ImportError:
+        GENAI_AVAILABLE = False
 
-class NetworkCircuitBreaker:
-    """Circuit breaker to detect and handle network degradation."""
-    
-    def __init__(self):
-        self.failure_count = 0
-        self.slow_call_count = 0
-        self.last_reset = time.time()
-        self.is_open = False
-        self.total_calls = 0
-    
-    def record_call(self, duration, success):
-        """Record API call result and determine if circuit should open."""
-        self.total_calls += 1
-        
-        # Reset counters every 5 minutes
-        current_time = time.time()
-        if current_time - self.last_reset > 300:  # 5 minutes
-            log_debug(f"Circuit breaker stats reset. Previous period: {self.failure_count} failures, {self.slow_call_count} slow calls, {self.total_calls} total")
-            self.failure_count = 0
-            self.slow_call_count = 0
-            self.total_calls = 0
-            self.is_open = False
-            self.last_reset = current_time
-        
-        if not success:
-            self.failure_count += 1
-            log_debug(f"Circuit breaker: API failure recorded ({self.failure_count}/5)")
-        elif duration > 3.0:  # Slow call threshold
-            self.slow_call_count += 1
-            log_debug(f"Circuit breaker: Slow call recorded ({duration:.2f}s, {self.slow_call_count}/10)")
-        
-        # Open circuit if too many failures or slow calls
-        if self.failure_count >= 5:
-            self.is_open = True
-            log_debug("Circuit breaker OPEN due to failure threshold - forcing client refresh")
-            return True
-        elif self.slow_call_count >= 10:
-            self.is_open = True
-            log_debug("Circuit breaker OPEN due to slow call threshold - forcing client refresh")
-            return True
-        
-        return False
-    
-    def should_force_refresh(self):
-        """Check if circuit is open and client should be refreshed."""
-        return self.is_open
 
 class TranslationHandler:
     def __init__(self, app):
         self.app = app
-        # Initialize unified translation cache (replaces all individual LRU caches)
         self.unified_cache = UnifiedTranslationCache(max_size=1000)
         
         # Initialize LLM providers using the new architecture
@@ -115,208 +51,213 @@ class TranslationHandler:
             'openai': OpenAIProvider(app)
         }
         
-        # Add thread lock for atomic logging to prevent interleaved logs
         self._log_lock = threading.Lock()
-        
-        # Initialize session counters - will be set by reading existing logs
-        self.ocr_session_counter = 1
-        self.translation_session_counter = 1
-        self.current_ocr_session_active = False
-        self.current_translation_session_active = False
-        
-        # Track pending API calls to ensure session ends only after all calls complete
-        self._pending_ocr_calls = 0
-        self._pending_translation_calls = 0
         self._api_calls_lock = threading.Lock()
         
-        # Initialize Gemini API call log file path
+        # --- LEGACY OCR SESSION & LOGIC (Kept for now) ---
+        self.ocr_session_counter = 1
+        self.current_ocr_session_active = False
+        self._pending_ocr_calls = 0
+        self._ocr_session_should_end = False
+        
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             base_dir = os.path.dirname(sys.executable)
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            
         self.gemini_log_file = os.path.join(base_dir, "Gemini_API_call_logs.txt")
-        
-        # Initialize OpenAI API call log file path
-        self.openai_log_file = os.path.join(base_dir, "OpenAI_API_call_logs.txt")
-        
-        # Initialize short log file paths
         self.ocr_short_log_file = os.path.join(base_dir, "GEMINI_API_OCR_short_log.txt")
-        self.tra_short_log_file = os.path.join(base_dir, "GEMINI_API_TRA_short_log.txt")
-        self.openai_tra_short_log_file = os.path.join(base_dir, "OpenAI_API_TRA_short_log.txt")
+        self._initialize_legacy_ocr_session_counter()
         
-        # Note: Log file initialization is now handled by individual LLM providers
-        # Each provider initializes its own log files with proper headers and session management
-        
-        # Initialize session counters by reading existing logs (for legacy OCR system)
-        self._initialize_session_counters()
-        
-        # Initialize OCR cumulative totals cache for performance
         self._ocr_cache_initialized = False
         self._cached_ocr_input_tokens = 0
         self._cached_ocr_output_tokens = 0
         self._cached_ocr_cost = 0.0
+
+        self.gemini_client = None
+        self.gemini_session_api_key = None
+        self.client_created_time = 0
+        self.api_call_count = 0
         
-        # Initialize translation cumulative totals cache for performance
-        self._translation_cache_initialized = False
-        self._cached_translation_words = 0
-        self._cached_translation_input_tokens = 0
-        self._cached_translation_output_tokens = 0
-        
-        # Initialize translation cumulative costs cache for performance
-        self._costs_cache_initialized = False
-        self._cached_input_cost = 0.0
-        self._cached_output_cost = 0.0
-        
-        # Initialize OpenAI client variables (for backward compatibility with existing OCR methods)
-        self.openai_client = None
-        self.openai_session_api_key = None
-        self.openai_current_source_lang = None
-        self.openai_current_target_lang = None
-        self.openai_context_window = []
-        self.openai_client_created_time = 0
-        self.openai_api_call_count = 0
+        self.ocr_circuit_breaker = NetworkCircuitBreaker()
         
         log_debug("Translation handler initialized with unified cache and LLM providers")
-    
-    def _should_refresh_client(self):
-        """Check if client should be refreshed to prevent stale connections."""
-        if not hasattr(self, 'client_created_time'):
-            self.client_created_time = time.time()
-            return False
-        
-        current_time = time.time()
-        
-        # Refresh client every 30 minutes to prevent stale connections
-        if current_time - self.client_created_time > 1800:  # 30 minutes
-            log_debug("Refreshing Gemini client due to age (30 minutes)")
-            return True
-        
-        # Refresh after every 100 API calls to prevent connection accumulation
-        if not hasattr(self, 'api_call_count'):
-            self.api_call_count = 0
-        
-        if self.api_call_count > 100:
-            log_debug("Refreshing Gemini client after 100 API calls")
-            return True
-        
-        return False
 
-    def _force_client_refresh(self):
-        """Force refresh of Gemini client and reset counters."""
-        self.gemini_client = None
-        self.client_created_time = time.time()
-        self.api_call_count = 0
-        log_debug("Gemini client forcefully refreshed")
-    
+    def _get_active_llm_provider(self):
+        selected_model = self.app.translation_model_var.get()
+        if selected_model == 'gemini_api':
+            return self.providers.get('gemini')
+        elif self.app.is_openai_model(selected_model):
+            return self.providers.get('openai')
+        return None
+
+    # === LLM SESSION MANAGEMENT ===
+    def start_translation_session(self):
+        provider = self._get_active_llm_provider()
+        if provider:
+            provider.start_translation_session()
+
+    def request_end_translation_session(self):
+        provider = self._get_active_llm_provider()
+        if provider:
+            return provider.request_end_translation_session()
+        return True
+
+    def force_end_sessions_on_app_close(self):
+        for provider in self.providers.values():
+            try:
+                provider.end_translation_session()
+            except Exception as e:
+                log_debug(f"Error force ending {provider.provider_name} session: {e}")
+        self.end_ocr_session(force=True)
+
+    # === UNIFIED TRANSLATE METHOD ===
+    def translate_text_with_timeout(self, text_content, timeout_seconds=10.0, ocr_batch_number=None):
+        result = [None]
+        exception = [None]
+        
+        def translation_worker():
+            try:
+                result[0] = self.translate_text(text_content, ocr_batch_number)
+            except Exception as e:
+                exception[0] = e
+        
+        thread = threading.Thread(target=translation_worker, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout_seconds)
+        
+        if thread.is_alive():
+            log_debug(f"Translation timed out for {timeout_seconds}s for: '{text_content}' (message suppressed)")
+            return None
+        
+        if exception[0]:
+            log_debug(f"Translation exception: {exception[0]}")
+            return f"Translation error: {str(exception[0])}"
+        
+        return result[0]
+
+    def translate_text(self, text_content_main, ocr_batch_number=None):
+        cleaned_text_main = text_content_main.strip() if text_content_main else ""
+        if not cleaned_text_main or self.is_placeholder_text(cleaned_text_main):
+            return None
+
+        translation_start_monotonic = time.monotonic()
+        selected_model = self.app.translation_model_var.get()
+        log_debug(f"Translate request for \"{cleaned_text_main}\" using {selected_model}")
+        
+        source_lang, target_lang, extra_params = None, None, {}
+        
+        # Setup provider-specific parameters
+        if selected_model == 'marianmt':
+            source_lang, target_lang = self.app.marian_source_lang, self.app.marian_target_lang
+            extra_params = {"beam_size": self.app.num_beams_var.get()}
+        elif selected_model == 'google_api':
+            source_lang, target_lang = self.app.google_source_lang, self.app.google_target_lang
+        elif selected_model == 'deepl_api':
+            if not self.app.DEEPL_API_AVAILABLE: return "DeepL API libraries not available."
+            if not self.app.deepl_api_key_var.get().strip(): return "DeepL API key missing."
+            if self.app.deepl_api_client is None:
+                try:
+                    import deepl
+                    self.app.deepl_api_client = deepl.Translator(self.app.deepl_api_key_var.get().strip())
+                except Exception as e:
+                    return f"DeepL Client init error: {e}"
+            source_lang, target_lang = self.app.deepl_source_lang, self.app.deepl_target_lang
+            extra_params = {"model_type": self.app.deepl_model_type_var.get()}
+        elif selected_model == 'gemini_api':
+            # *** FIX: Get language codes correctly from the app instance ***
+            source_lang, target_lang = self.app.gemini_source_lang, self.app.gemini_target_lang
+            provider = self.providers['gemini']
+            extra_params = {"context_window": provider._get_context_window_size()}
+        elif self.app.is_openai_model(selected_model):
+            # *** FIX: Get language codes correctly from the app instance ***
+            source_lang, target_lang = self.app.openai_source_lang, self.app.openai_target_lang
+            provider = self.providers['openai']
+            extra_params = {"context_window": provider._get_context_window_size()}
+        else:
+            return f"Error: Unknown translation model '{selected_model}'"
+
+        # 1. Check Unified Cache
+        cached_result = self.unified_cache.get(cleaned_text_main, source_lang, target_lang, selected_model, **extra_params)
+        if cached_result:
+            log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
+            provider = self._get_active_llm_provider()
+            if provider and not self._is_error_message(cached_result):
+                provider._update_sliding_window(cleaned_text_main, cached_result)
+            return self._format_dialog_text(cached_result)
+
+        # 2. Check File Cache (can be added here if needed)
+
+        # 3. All Caches Miss - Perform API Call
+        log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API.")
+        translated_api_text = None
+        
+        if selected_model == 'marianmt':
+            translated_api_text = self._marian_translate(cleaned_text_main, source_lang, target_lang, extra_params['beam_size'])
+        elif selected_model == 'google_api':
+            translated_api_text = self._google_translate(cleaned_text_main, source_lang, target_lang)
+        elif selected_model == 'deepl_api':
+            translated_api_text = self._deepl_translate(cleaned_text_main, source_lang, target_lang)
+        elif selected_model == 'gemini_api':
+            provider = self.providers['gemini']
+            translated_api_text = provider.translate(cleaned_text_main, source_lang, target_lang, ocr_batch_number)
+        elif self.app.is_openai_model(selected_model):
+            provider = self.providers['openai']
+            translated_api_text = provider.translate(cleaned_text_main, source_lang, target_lang, ocr_batch_number)
+        
+        # 4. Store successful translation
+        if translated_api_text and not self._is_error_message(translated_api_text):
+            self.unified_cache.store(cleaned_text_main, source_lang, target_lang, selected_model, translated_api_text, **extra_params)
+        
+        log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s")
+        return self._format_dialog_text(translated_api_text)
+
+    # === NON-LLM PROVIDER METHODS (UNCHANGED) ===
     def _google_translate(self, text_to_translate_gt, source_lang_gt, target_lang_gt):
-        """Google Translate API call using REST API with API key."""
         log_debug(f"Google Translate API call for: {text_to_translate_gt}")
-        
         api_key_google = self.app.google_api_key_var.get().strip()
-        if not api_key_google:
-            return "Google Translate API key missing"
-        
-        if not REQUESTS_AVAILABLE:
-            return "Requests library not available for Google Translate"
-        
+        if not api_key_google: return "Google Translate API key missing"
+        if not REQUESTS_AVAILABLE: return "Requests library not available for Google Translate"
         try:
-            api_call_start_time = time.time()
-            
-            # Google Translate REST API endpoint
             url = "https://translation.googleapis.com/language/translate/v2"
-            
-            # Prepare request parameters
-            params = {
-                'key': api_key_google,
-                'q': text_to_translate_gt,
-                'target': target_lang_gt,
-                'format': 'text'
-            }
-            
-            # Add source language if not auto-detect
-            if source_lang_gt and source_lang_gt.lower() != 'auto':
-                params['source'] = source_lang_gt
-            
-            # Make the API request
+            params = {'key': api_key_google, 'q': text_to_translate_gt, 'target': target_lang_gt, 'format': 'text'}
+            if source_lang_gt and source_lang_gt.lower() != 'auto': params['source'] = source_lang_gt
             response = requests.post(url, data=params, timeout=10)
             response.raise_for_status()
-            
             result = response.json()
-            log_debug(f"Google Translate API call took {time.time() - api_call_start_time:.2f}s.")
-
             if result and 'data' in result and 'translations' in result['data']:
-                translated_text_gt = result['data']['translations'][0]['translatedText']
-                # Unescape HTML entities
-                translated_text_gt = html.unescape(translated_text_gt)
-                return translated_text_gt
-            else:
-                return f"Google Translate API returned unexpected result: {result}"
-                
+                return html.unescape(result['data']['translations'][0]['translatedText'])
+            return f"Google Translate API returned unexpected result: {result}"
         except requests.exceptions.RequestException as e_req:
             return f"Google Translate API request error: {str(e_req)}"
         except Exception as e_cgt:
             return f"Google Translate API error: {type(e_cgt).__name__} - {str(e_cgt)}"
 
     def _deepl_translate(self, text_to_translate_dl, source_lang_dl, target_lang_dl):
-        """DeepL API call with automatic fallback from quality_optimized to latency_optimized."""
         model_type = self.app.deepl_model_type_var.get()
         log_debug(f"DeepL API call for: {text_to_translate_dl} using model_type={model_type}")
-        
-        if not self.app.deepl_api_client:
-            return "DeepL API client not initialized"
-        
+        if not self.app.deepl_api_client: return "DeepL API client not initialized"
         try:
-            api_call_start_time_dl = time.time()
             deepl_source_param = source_lang_dl if source_lang_dl and source_lang_dl.lower() != 'auto' else None
-            
-            # First attempt with selected model type
             try:
                 result_dl = self.app.deepl_api_client.translate_text(
-                    text_to_translate_dl,
-                    target_lang=target_lang_dl, 
-                    source_lang=deepl_source_param,
-                    model_type=model_type
+                    text_to_translate_dl, target_lang=target_lang_dl, source_lang=deepl_source_param, model_type=model_type
                 )
-                log_debug(f"DeepL API call took {time.time() - api_call_start_time_dl:.2f}s using {model_type}")
-                
                 if result_dl and hasattr(result_dl, 'text') and result_dl.text:
-                    translated_text = result_dl.text
-                    return translated_text
-                else:
-                    return "DeepL API returned empty or invalid result"
-                    
+                    return result_dl.text
+                return "DeepL API returned empty or invalid result"
             except Exception as quality_error:
-                # Check if this is a language pair not supported by quality_optimized models
                 if (model_type == "quality_optimized" and 
-                    ("language pair" in str(quality_error).lower() or 
-                     "not supported" in str(quality_error).lower() or
-                     "unsupported" in str(quality_error).lower())):
-                    
-                    log_debug(f"DeepL quality_optimized failed for language pair {source_lang_dl}->{target_lang_dl}, falling back to latency_optimized: {quality_error}")
-                    
-                    # Automatic fallback to latency_optimized
-                    try:
-                        fallback_start_time = time.time()
-                        result_dl_fallback = self.app.deepl_api_client.translate_text(
-                            text_to_translate_dl,
-                            target_lang=target_lang_dl, 
-                            source_lang=deepl_source_param,
-                            model_type="latency_optimized"
-                        )
-                        log_debug(f"DeepL fallback API call took {time.time() - fallback_start_time:.2f}s using latency_optimized")
-                        
-                        if result_dl_fallback and hasattr(result_dl_fallback, 'text') and result_dl_fallback.text:
-                            translated_text = result_dl_fallback.text
-                            return translated_text
-                        else:
-                            return "DeepL API fallback returned empty or invalid result"
-                            
-                    except Exception as fallback_error:
-                        return f"DeepL API fallback error: {type(fallback_error).__name__} - {str(fallback_error)}"
+                    ("language pair" in str(quality_error).lower() or "not supported" in str(quality_error).lower() or "unsupported" in str(quality_error).lower())):
+                    log_debug(f"DeepL quality_optimized failed, falling back to latency_optimized: {quality_error}")
+                    result_dl_fallback = self.app.deepl_api_client.translate_text(
+                        text_to_translate_dl, target_lang=target_lang_dl, source_lang=deepl_source_param, model_type="latency_optimized"
+                    )
+                    if result_dl_fallback and hasattr(result_dl_fallback, 'text') and result_dl_fallback.text:
+                        return result_dl_fallback.text
+                    return "DeepL API fallback returned empty or invalid result"
                 else:
-                    # Re-raise the original error if it's not a language pair issue
                     raise quality_error
-                    
         except Exception as e_cdl:
             return f"DeepL API error: {type(e_cdl).__name__} - {str(e_cdl)}"
 
@@ -336,10 +277,7 @@ class TranslationHandler:
             return None
         
         try:
-            # API endpoint for Free users (works for both Free and Pro)
             url = "https://api-free.deepl.com/v2/usage"
-            
-            # Headers with authentication
             headers = {
                 "Authorization": f"DeepL-Auth-Key {api_key}",
                 "User-Agent": "OCR-Translator/1.1.0"
@@ -348,7 +286,6 @@ class TranslationHandler:
             log_debug("Checking DeepL API usage...")
             response = requests.get(url, headers=headers, timeout=10)
             
-            # Check if request was successful
             if response.status_code == 200:
                 usage_data = response.json()
                 log_debug(f"DeepL usage retrieved: {usage_data}")
@@ -371,90 +308,47 @@ class TranslationHandler:
             return None
 
     def _marian_translate(self, text_to_translate_mm, source_lang_mm, target_lang_mm, beam_value_mm):
-        """MarianMT translation call (no longer cached here - handled by unified cache)."""
         log_debug(f"MarianMT translation call for: {text_to_translate_mm} (beam={beam_value_mm})")
-        if self.app.marian_translator is None:
-            return "MarianMT translator not initialized"
-        
+        if self.app.marian_translator is None: return "MarianMT translator not initialized"
         text_to_translate_cleaned = re.sub(r'\s+', ' ', text_to_translate_mm).strip()
         if not text_to_translate_cleaned: return ""
-        
         try:
-            api_call_start_time_mm = time.monotonic()
-            # Ensure the MarianMTTranslator instance has the correct beam value
             self.app.marian_translator.num_beams = beam_value_mm
-            
             result_mm = self.app.marian_translator.translate(text_to_translate_cleaned, source_lang_mm, target_lang_mm)
-            log_debug(f"MarianMT translation took {time.monotonic() - api_call_start_time_mm:.3f}s.")
             return result_mm
         except Exception as e_cmm:
             return f"MarianMT translation error: {type(e_cmm).__name__} - {str(e_cmm)}"
 
-    # Note: Legacy log initialization methods removed - now handled by individual LLM providers
-
-    # Note: Legacy log initialization methods removed - now handled by individual LLM providers
-
-    def _initialize_session_counters(self):
-        """Initialize OCR session counter by reading existing logs (legacy OCR system only)."""
+    # === LEGACY OCR METHODS (RESTORED FROM BACKUP) ===
+    def _initialize_legacy_ocr_session_counter(self):
         try:
-            # Read OCR log to find highest OCR session number
             highest_ocr_session = 0
             if os.path.exists(self.ocr_short_log_file):
                 with open(self.ocr_short_log_file, 'r', encoding='utf-8') as f:
                     for line in f:
                         if line.startswith("SESSION ") and (" STARTED " in line or " ENDED " in line):
                             try:
-                                # Extract session number from "SESSION X STARTED" or "SESSION X ENDED"
                                 session_num = int(line.split()[1])
                                 highest_ocr_session = max(highest_ocr_session, session_num)
                             except (IndexError, ValueError):
                                 continue
-            
-            # Set counter to highest found + 1 (for next session)
             self.ocr_session_counter = highest_ocr_session + 1
-            
             log_debug(f"Initialized legacy OCR session counter: {self.ocr_session_counter}")
-            
         except Exception as e:
             log_debug(f"Error initializing OCR session counter: {e}, using default")
             self.ocr_session_counter = 1
 
     def _increment_pending_ocr_calls(self):
-        """Increment the count of pending OCR calls."""
         with self._api_calls_lock:
             self._pending_ocr_calls += 1
 
     def _decrement_pending_ocr_calls(self):
-        """Decrement the count of pending OCR calls and try to end session if ready."""
         with self._api_calls_lock:
             self._pending_ocr_calls = max(0, self._pending_ocr_calls - 1)
-            # Try to end session if it was requested and no pending calls remain
-            if self._pending_ocr_calls == 0 and hasattr(self, '_ocr_session_should_end') and self._ocr_session_should_end:
-                # Schedule session end outside the lock to avoid potential deadlock
-                self.try_end_sessions_when_ready()
+            if self._pending_ocr_calls == 0 and self._ocr_session_should_end:
+                self.end_ocr_session()
 
-    def _increment_pending_translation_calls(self):
-        """Increment the count of pending translation calls."""
-        with self._api_calls_lock:
-            self._pending_translation_calls += 1
-
-    def _decrement_pending_translation_calls(self):
-        """Decrement the count of pending translation calls and try to end session if ready."""
-        with self._api_calls_lock:
-            self._pending_translation_calls = max(0, self._pending_translation_calls - 1)
-            # Try to end session if it was requested and no pending calls remain
-            if self._pending_translation_calls == 0 and hasattr(self, '_translation_session_should_end') and self._translation_session_should_end:
-                # Schedule session end outside the lock to avoid potential deadlock
-                self.try_end_sessions_when_ready()
-
-    def _has_pending_calls(self):
-        """Check if there are any pending API calls."""
-        with self._api_calls_lock:
-            return self._pending_ocr_calls > 0 or self._pending_translation_calls > 0
-
-    # OCR session management (legacy - kept for OCR functionality)
     def start_ocr_session(self):
-        """Start a new OCR session with numbered identifier."""
         if not self.current_ocr_session_active:
             timestamp = self._get_precise_timestamp()
             try:
@@ -465,1171 +359,127 @@ class TranslationHandler:
             except Exception as e:
                 log_debug(f"Error starting OCR session: {e}")
 
-    def end_ocr_session(self):
-        """End the current OCR session only if no pending OCR calls."""
+    def end_ocr_session(self, force=False):
         if self.current_ocr_session_active:
-            # Wait for any pending OCR calls to complete before ending session
-            if self._pending_ocr_calls > 0:
+            if self._pending_ocr_calls > 0 and not force:
                 log_debug(f"OCR session end delayed: {self._pending_ocr_calls} pending calls")
-                return False  # Session not ended yet
-            
+                self._ocr_session_should_end = True
+                return False
             timestamp = self._get_precise_timestamp()
             try:
+                end_reason = "(FORCED - APP CLOSING)" if force else ""
                 with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp}\n")
+                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp} {end_reason}\n".strip() + "\n")
                 self.current_ocr_session_active = False
+                self._ocr_session_should_end = False
                 self.ocr_session_counter += 1
                 log_debug(f"OCR Session {self.ocr_session_counter - 1} ended")
-                return True  # Session ended successfully
+                return True
             except Exception as e:
                 log_debug(f"Error ending OCR session: {e}")
                 return False
-        return True  # Already inactive
-
-    def try_end_sessions_when_ready(self):
-        """Try to end sessions if they're marked for ending and no pending calls remain."""
-        sessions_ended = []
-        
-        # Try to end OCR session if it should be ended
-        if hasattr(self, '_ocr_session_should_end') and self._ocr_session_should_end:
-            if self.end_ocr_session():
-                self._ocr_session_should_end = False
-                sessions_ended.append("OCR")
-        
-        if sessions_ended:
-            log_debug(f"Successfully ended pending sessions: {', '.join(sessions_ended)}")
-        
-        return len(sessions_ended) > 0
+        return True
 
     def request_end_ocr_session(self):
-        """Request to end OCR session - will end when no pending calls remain."""
         if self.current_ocr_session_active:
             if self._pending_ocr_calls == 0:
-                # Can end immediately
                 return self.end_ocr_session()
             else:
-                # Mark for ending when calls complete
                 self._ocr_session_should_end = True
                 log_debug(f"OCR session end requested, waiting for {self._pending_ocr_calls} pending calls")
                 return False
         return True
 
-    # Legacy force_end method updated to work with providers
-    def force_end_sessions_on_app_close(self):
-        """Force end sessions when application is closing for all providers."""
-        # End sessions for LLM providers
-        if 'gemini' in self.providers:
-            try:
-                self.providers['gemini'].end_translation_session()
-            except Exception as e:
-                log_debug(f"Error force ending Gemini session: {e}")
-        
-        if 'openai' in self.providers:
-            try:
-                self.providers['openai'].end_translation_session()
-            except Exception as e:
-                log_debug(f"Error force ending OpenAI session: {e}")
-        
-        # Keep the existing legacy OCR session management
-        timestamp = self._get_precise_timestamp()
-        
-        # Force end OCR session
-        if self.current_ocr_session_active:
-            try:
-                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp} (FORCED - APP CLOSING)\n")
-                self.current_ocr_session_active = False
-                log_debug(f"OCR Session {self.ocr_session_counter} force ended (app closing)")
-            except Exception as e:
-                log_debug(f"Error force ending OCR session: {e}")
-        
-        # Reset pending call counters
-        with self._api_calls_lock:
-            self._pending_ocr_calls = 0
-            self._pending_translation_calls = 0
-
-    # ===============================
-    # DEPRECATED LLM METHODS
-    # These are now handled by LLM provider classes
-    # ===============================
-    
-    def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
-        """DEPRECATED: Use GeminiProvider instead."""
-        log_debug("WARNING: _gemini_translate is deprecated, using GeminiProvider instead")
-        provider = self.providers['gemini']
-        return provider.translate(text_to_translate_gm, source_lang_gm, target_lang_gm)
-    
-    def _openai_translate(self, text_to_translate_oai, source_lang_oai, target_lang_oai):
-        """DEPRECATED: Use OpenAIProvider instead."""
-        log_debug("WARNING: _openai_translate is deprecated, using OpenAIProvider instead")
-        provider = self.providers['openai']
-        return provider.translate(text_to_translate_oai, source_lang_oai, target_lang_oai)
-    
-    # Keep methods that might be called from UI or other components for backward compatibility
-    def force_gemini_session_reset(self, reason="Manual reset"):
-        """Force a complete Gemini session reset - delegates to provider."""
-        log_debug(f"Forcing Gemini session reset via provider - Reason: {reason}")
-        if 'gemini' in self.providers:
-            # Reset the provider's client
-            self.providers['gemini']._force_client_refresh()
-            self.providers['gemini']._clear_context()
-    
-    # Session management methods - delegate to providers but maintain compatibility
-    def start_translation_session(self):
-        """Start translation session for LLM providers."""
-        log_debug("Starting translation session via providers")
-        if 'gemini' in self.providers:
-            self.providers['gemini'].start_translation_session()
-        if 'openai' in self.providers:
-            self.providers['openai'].start_translation_session()
-    
-    def end_translation_session(self):
-        """End translation session for LLM providers."""
-        log_debug("Ending translation session via providers")
-        ended_count = 0
-        if 'gemini' in self.providers:
-            if self.providers['gemini'].end_translation_session():
-                ended_count += 1
-        if 'openai' in self.providers:
-            if self.providers['openai'].end_translation_session():
-                ended_count += 1
-        return ended_count > 0
-    
-    def request_end_translation_session(self):
-        """Request to end translation session for LLM providers."""
-        log_debug("Requesting translation session end via providers")
-        request_count = 0
-        if 'gemini' in self.providers:
-            if self.providers['gemini'].request_end_translation_session():
-                request_count += 1
-        if 'openai' in self.providers:
-            if self.providers['openai'].request_end_translation_session():
-                request_count += 1
-        return request_count > 0
-    
-    def _update_sliding_window(self, source_text, target_text):
-        """DEPRECATED: Context windows now handled by individual providers."""
-        log_debug("WARNING: _update_sliding_window is deprecated, context handled by providers")
-        # This method may still be called by existing code, but functionality 
-        # is now handled automatically by the provider classes during translation
-        pass
-    
-    def _update_openai_sliding_window(self, original_text, translated_text):
-        """DEPRECATED: Context windows now handled by individual providers."""
-        log_debug("WARNING: _update_openai_sliding_window is deprecated, context handled by providers")
-        # This method may still be called by existing code, but functionality 
-        # is now handled automatically by the provider classes during translation
-        pass
-
-    def _get_cumulative_totals(self):
-        """Get cumulative translation totals using efficient memory cache."""
-        # Use cache if initialized
-        if self._translation_cache_initialized:
-            return self._cached_translation_words, self._cached_translation_input_tokens, self._cached_translation_output_tokens
-        
-        # Initialize cache by reading log file once
-        total_translated_words = 0
-        total_input = 0
-        total_output = 0
-        
-        if not os.path.exists(self.gemini_log_file):
-            # Initialize cache with zeros
-            self._cached_translation_words = 0
-            self._cached_translation_input_tokens = 0
-            self._cached_translation_output_tokens = 0
-            self._translation_cache_initialized = True
-            log_debug("Translation cache initialized with zeros (no log file)")
-            return 0, 0, 0
-        
-        # Define regex to find the exact counts (accounting for "- " prefix and "(so far)" format)
-        translated_words_regex = re.compile(r"^\s*-\s*Total Translated Words \(so far\):\s*(\d+)")
-        input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(so far\):\s*(\d+)")
-        output_token_regex = re.compile(r"^\s*-\s*Total Output Tokens \(so far\):\s*(\d+)")
-        
-        try:
-            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    translated_words_match = translated_words_regex.match(line)
-                    if translated_words_match:
-                        total_translated_words = int(translated_words_match.group(1))
-                        continue
-                    
-                    input_match = input_token_regex.match(line)
-                    if input_match:
-                        total_input = int(input_match.group(1))
-                        continue # Move to next line
-                    
-                    output_match = output_token_regex.match(line)
-                    if output_match:
-                        total_output = int(output_match.group(1))
-            
-            # Initialize cache with values from file
-            self._cached_translation_words = total_translated_words
-            self._cached_translation_input_tokens = total_input
-            self._cached_translation_output_tokens = total_output
-            self._translation_cache_initialized = True
-            
-            log_debug(f"Translation cache initialized: {total_translated_words} words, {total_input} input, {total_output} output")
-                        
-        except (IOError, ValueError) as e:
-            log_debug(f"Error reading or parsing cumulative totals from log file: {e}")
-            # Initialize cache with zeros on error
-            self._cached_translation_words = 0
-            self._cached_translation_input_tokens = 0
-            self._cached_translation_output_tokens = 0
-            self._translation_cache_initialized = True
-            return 0, 0, 0
-            
-        return total_translated_words, total_input, total_output
-
-    def _get_cumulative_costs(self):
-        """Get cumulative translation costs using efficient memory cache."""
-        # Use cache if initialized
-        if self._costs_cache_initialized:
-            return self._cached_input_cost, self._cached_output_cost
-        
-        # Initialize cache by reading log file once
-        total_input_cost = 0.0
-        total_output_cost = 0.0
-        
-        if not os.path.exists(self.gemini_log_file):
-            # Initialize cache with zeros
-            self._cached_input_cost = 0.0
-            self._cached_output_cost = 0.0
-            self._costs_cache_initialized = True
-            log_debug("Costs cache initialized with zeros (no log file)")
-            return 0.0, 0.0
-        
-        # Define regex to find cumulative cost totals
-        input_cost_regex = re.compile(r"^\s*-\s*Total Input Cost \(so far\):\s*\$([0-9]*\.?[0-9]+)")
-        output_cost_regex = re.compile(r"^\s*-\s*Total Output Cost \(so far\):\s*\$([0-9]*\.?[0-9]+)")
-        
-        try:
-            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    input_cost_match = input_cost_regex.match(line)
-                    if input_cost_match:
-                        total_input_cost = float(input_cost_match.group(1))
-                        continue
-                    
-                    output_cost_match = output_cost_regex.match(line)
-                    if output_cost_match:
-                        total_output_cost = float(output_cost_match.group(1))
-            
-            # Initialize cache with values from file
-            self._cached_input_cost = total_input_cost
-            self._cached_output_cost = total_output_cost
-            self._costs_cache_initialized = True
-            
-            log_debug(f"Costs cache initialized: ${total_input_cost:.8f} input, ${total_output_cost:.8f} output")
-                        
-        except (IOError, ValueError) as e:
-            log_debug(f"Error reading cumulative costs from log file: {e}")
-            # Initialize cache with zeros on error
-            self._cached_input_cost = 0.0
-            self._cached_output_cost = 0.0
-            self._costs_cache_initialized = True
-            return 0.0, 0.0
-            
-        return total_input_cost, total_output_cost
-
-    def _get_precise_timestamp(self):
-        """Get timestamp with millisecond precision."""
-        now = datetime.now()
-        return now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Remove last 3 digits for milliseconds
-
-    def _calculate_start_time(self, end_time_str, duration_seconds):
-        """Calculate start time based on end time and duration."""
-        try:
-            # Parse the end time string
-            end_time = datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S.%f")
-            # Subtract the duration to get start time
-            start_time = end_time - timedelta(seconds=duration_seconds)
-            # Format back to string
-            return start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        except Exception as e:
-            log_debug(f"Error calculating start time: {e}")
-            # Fallback to end time if calculation fails
-            return end_time_str
-
-    def _get_cumulative_totals_ocr(self):
-        """Get cumulative totals for OCR calls using efficient memory cache."""
-        # Use cache if initialized
-        if self._ocr_cache_initialized:
-            return self._cached_ocr_input_tokens, self._cached_ocr_output_tokens, self._cached_ocr_cost
-        
-        # Initialize cache by reading log file once
-        total_input = 0
-        total_output = 0
-        total_cost = 0.0
-        
-        if not os.path.exists(self.gemini_log_file):
-            # Initialize cache with zeros
-            self._cached_ocr_input_tokens = 0
-            self._cached_ocr_output_tokens = 0
-            self._cached_ocr_cost = 0.0
-            self._ocr_cache_initialized = True
-            return 0, 0, 0.0
-        
-        # Regex to find OCR cumulative totals
-        input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(OCR, so far\):\s*(\d+)")
-        output_token_regex = re.compile(r"^\s*-\s*Total Output Tokens \(OCR, so far\):\s*(\d+)")
-        cost_regex = re.compile(r"^\s*-\s*Total OCR Cost \(so far\):\s*\$([0-9.]+)")
-        
-        try:
-            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    input_match = input_token_regex.match(line)
-                    if input_match:
-                        total_input = int(input_match.group(1))
-                        continue
-                    
-                    output_match = output_token_regex.match(line)
-                    if output_match:
-                        total_output = int(output_match.group(1))
-                        continue
-                        
-                    cost_match = cost_regex.match(line)
-                    if cost_match:
-                        total_cost = float(cost_match.group(1))
-            
-            # Initialize cache with values from file
-            self._cached_ocr_input_tokens = total_input
-            self._cached_ocr_output_tokens = total_output
-            self._cached_ocr_cost = total_cost
-            self._ocr_cache_initialized = True
-            
-            log_debug(f"OCR cache initialized: {total_input} input, {total_output} output, ${total_cost:.8f}")
-                        
-        except (IOError, ValueError) as e:
-            log_debug(f"Error reading OCR cumulative totals: {e}")
-            # Initialize cache with zeros on error
-            self._cached_ocr_input_tokens = 0
-            self._cached_ocr_output_tokens = 0
-            self._cached_ocr_cost = 0.0
-            self._ocr_cache_initialized = True
-            return 0, 0, 0.0
-            
-        return total_input, total_output, total_cost
-
-    def _update_ocr_cache(self, input_tokens, output_tokens, cost):
-        """Update OCR cache with new values for performance."""
-        if not self._ocr_cache_initialized:
-            # If cache not initialized, initialize it first
-            self._get_cumulative_totals_ocr()
-        
-        # Increment cached values
-        self._cached_ocr_input_tokens += input_tokens
-        self._cached_ocr_output_tokens += output_tokens
-        self._cached_ocr_cost += cost
-
-    def _update_translation_cache(self, words, input_tokens, output_tokens):
-        """Update translation cache with new values for performance."""
-        if not self._translation_cache_initialized:
-            # If cache not initialized, initialize it first
-            self._get_cumulative_totals()
-        
-        # Increment cached values
-        self._cached_translation_words += words
-        self._cached_translation_input_tokens += input_tokens
-        self._cached_translation_output_tokens += output_tokens
-
-    def _update_costs_cache(self, input_cost, output_cost):
-        """Update costs cache with new values for performance."""
-        if not self._costs_cache_initialized:
-            # If cache not initialized, initialize it first
-            self._get_cumulative_costs()
-        
-        # Increment cached values
-        self._cached_input_cost += input_cost
-        self._cached_output_cost += output_cost
-
-    def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result, model_name, model_source):
-        """Write concise OCR call log entry."""
-        if not self.app.gemini_api_log_enabled_var.get():
-            return
-            
-        try:
-            # Get model costs from CSV for display
-            cost_line = ""
-            try:
-                ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
-                if ocr_model_api_name:
-                    model_costs = self.app.gemini_models_manager.get_model_costs(ocr_model_api_name)
-                    input_cost = model_costs['input_cost']
-                    output_cost = model_costs['output_cost']
-                    
-                    # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals
-                    input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
-                    output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
-                    
-                    cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
-            except Exception:
-                pass
-            
-            log_entry = f"""========= OCR CALL ===========
-Model: {model_name} ({model_source})
-{cost_line}Start: {call_start_time}
-End: {call_end_time}
-Duration: {call_duration:.3f}s
-Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
-Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
-Result:
---------------------------------------------------
-{parsed_result}
---------------------------------------------------
-
-"""
-            with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_entry)
-        except Exception as e:
-            log_debug(f"Error writing short OCR log: {e}")
-
-    def _write_short_translation_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, original_text, translated_text, source_lang, target_lang, model_name, model_source):
-        """Write concise translation call log entry."""
-        if not self.app.gemini_api_log_enabled_var.get():
-            return
-            
-        try:
-            # Get language display names
-            source_lang_name = self._get_language_display_name(source_lang, 'gemini').upper()
-            target_lang_name = self._get_language_display_name(target_lang, 'gemini').upper()
-            
-            # Get model costs from CSV for display
-            cost_line = ""
-            try:
-                translation_model_api_name = self.app.get_current_gemini_model_for_translation()
-                if translation_model_api_name:
-                    model_costs = self.app.gemini_models_manager.get_model_costs(translation_model_api_name)
-                    input_cost = model_costs['input_cost']
-                    output_cost = model_costs['output_cost']
-                    
-                    # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals
-                    input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
-                    output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
-                    
-                    cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
-            except Exception:
-                pass
-            
-            log_entry = f"""===== TRANSLATION CALL =======
-Model: {model_name} ({model_source})
-{cost_line}Start: {call_start_time}
-End: {call_end_time}
-Duration: {call_duration:.3f}s
-Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
-Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
-Result:
---------------------------------------------------
-{source_lang_name}: {original_text}
-{target_lang_name}: {translated_text}
---------------------------------------------------
-
-"""
-            with open(self.tra_short_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_entry)
-        except Exception as e:
-            log_debug(f"Error writing short translation log: {e}")
-
-    def _log_complete_gemini_translation_call(self, message_content, response_text, call_duration, input_tokens, output_tokens, original_text, source_lang, target_lang, model_name, model_source):
-        """Log complete Gemini translation API call with atomic writing (request + response + stats)."""
-        # Check if API logging is enabled
-        if not self.app.gemini_api_log_enabled_var.get():
-            return
-            
-        try:
-            with self._log_lock:  # Ensure atomic logging to prevent interleaved logs
-                # Calculate correct start and end times based on call duration
-                call_end_time = self._get_precise_timestamp()
-                call_start_time = self._calculate_start_time(call_end_time, call_duration)
-                
-                # --- 1. Calculate current call translated word count from original text ---
-                current_translated_words = len(original_text.split())
-                
-                # --- 2. Get cumulative totals BEFORE this call ---
-                prev_total_translated_words, prev_total_input, prev_total_output = self._get_cumulative_totals()
-
-                # --- 3. Get model-specific costs and calculate for current call ---
-                translation_model_api_name = self.app.get_current_gemini_model_for_translation()
-                if translation_model_api_name:
-                    model_costs = self.app.gemini_models_manager.get_model_costs(translation_model_api_name)
-                    INPUT_COST_PER_MILLION = model_costs['input_cost']
-                    OUTPUT_COST_PER_MILLION = model_costs['output_cost']
-                else:
-                    # Fallback to default Gemini 2.5 Flash-Lite costs
-                    INPUT_COST_PER_MILLION = 0.1
-                    OUTPUT_COST_PER_MILLION = 0.4
-                
-                call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
-                call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
-                total_call_cost = call_input_cost + call_output_cost
-                
-                # --- 4. Calculate new cumulative totals using simple addition (preserves historical accuracy) ---
-                new_total_translated_words = prev_total_translated_words + current_translated_words
-                new_total_input = prev_total_input + input_tokens
-                new_total_output = prev_total_output + output_tokens
-                
-                # Update translation cache with new values for performance
-                self._update_translation_cache(current_translated_words, input_tokens, output_tokens)
-                
-                # Get previous cumulative costs and use simple addition (NOT recalculation)
-                prev_total_input_cost, prev_total_output_cost = self._get_cumulative_costs()
-                total_input_cost = prev_total_input_cost + call_input_cost
-                total_output_cost = prev_total_output_cost + call_output_cost
-                
-                # Update costs cache with new values for performance
-                self._update_costs_cache(call_input_cost, call_output_cost)
-                
-                # --- 5. Calculate detailed message stats ---
-                words_in_message = len(message_content.split())
-                chars_in_message = len(message_content)
-                lines_in_message = len(message_content.split('\n'))
-                
-                # Format cost display with smart decimal precision
-                input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
-                output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
-                
-                # --- 6. Format the complete log entry with fixed header ---
-                log_entry = f"""
-=== GEMINI TRANSLATION API CALL ===
-Timestamp: {call_start_time}
-Language Pair: {source_lang} -> {target_lang}
-Original Text: {original_text}
-
-CALL DETAILS:
-- Message Length: {chars_in_message} characters
-- Word Count: {words_in_message} words
-- Line Count: {lines_in_message} lines
-
-COMPLETE MESSAGE CONTENT SENT TO GEMINI:
----BEGIN MESSAGE---
-{message_content}
----END MESSAGE---
-
-
-RESPONSE RECEIVED:
-Model: {model_name} ({model_source})
-Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
-Timestamp: {call_end_time}
-Call Duration: {call_duration:.3f} seconds
-
----BEGIN RESPONSE---
-{response_text}
----END RESPONSE---
-
-TOKEN & COST ANALYSIS (CURRENT CALL):
-- Translated Words: {current_translated_words}
-- Exact Input Tokens: {input_tokens}
-- Exact Output Tokens: {output_tokens}
-- Input Cost: ${call_input_cost:.8f}
-- Output Cost: ${call_output_cost:.8f}
-- Total Cost for this Call: ${total_call_cost:.8f}
-
-CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
-- Total Translated Words (so far): {new_total_translated_words}
-- Total Input Tokens (so far): {new_total_input}
-- Total Output Tokens (so far): {new_total_output}
-- Total Input Cost (so far): ${total_input_cost:.8f}
-- Total Output Cost (so far): ${total_output_cost:.8f}
-- Cumulative Log Cost: ${(total_input_cost + total_output_cost):.8f}
-
-========================================
-
-"""
-                
-                # --- 7. Write to main log file ---
-                with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                    f.write(log_entry)
-                
-                # --- 8. Write to short translation log ---
-                self._write_short_translation_log(call_start_time, call_end_time, call_duration, 
-                                                input_tokens, output_tokens, total_call_cost,
-                                                new_total_input, new_total_output, 
-                                                total_input_cost + total_output_cost, 
-                                                original_text, response_text, source_lang, target_lang, model_name, model_source)
-                
-                log_debug(f"Complete Gemini translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
-                    
-        except Exception as e:
-            log_debug(f"Error logging complete Gemini translation call: {e}\n{traceback.format_exc()}")
-
-    def _log_gemini_response(self, response_text, call_duration, input_tokens, output_tokens, original_text):
-        """Deprecated - replaced by _log_complete_gemini_translation_call for atomic logging."""
-        log_debug("Warning: _log_gemini_response is deprecated, use _log_complete_gemini_translation_call instead")
-        pass
-
-    def _gemini_translate(self, text_to_translate_gm, source_lang_gm, target_lang_gm):
-        """DEPRECATED: Now handled by GeminiProvider - kept for backward compatibility."""
-        log_debug("WARNING: _gemini_translate is deprecated, using GeminiProvider instead")
-        provider = self.providers['gemini']
-        return provider.translate(text_to_translate_gm, source_lang_gm, target_lang_gm)
-
-    def _initialize_gemini_session(self, source_lang, target_lang):
-        """Initialize new Gemini client session without system instructions."""
-        if not GENAI_AVAILABLE:
-            log_debug("Google Gen AI libraries not available for Gemini session")
-            self.gemini_client = None
-            return
-            
-        # Force refresh if needed
-        if hasattr(self, 'gemini_client') and self._should_refresh_client():
-            self._force_client_refresh()
-            
-        try:
-            # NEW: Client-based approach
-            self.gemini_client = genai.Client(
-                api_key=self.app.gemini_api_key_var.get().strip()
-            )
-            
-            # Store session creation time for tracking
-            self.client_created_time = time.time()
-            self.api_call_count = 0
-            
-            # Get configuration values
-            model_temperature = float(self.app.config['Settings'].get('gemini_model_temp', '0.0'))
-            
-            # Store config for later use in API calls
-            try:
-                # Try to use thinking_config for models that support it (Gemini 2.5 series)
-                self.gemini_generation_config = types.GenerateContentConfig(
-                    temperature=model_temperature,
-                    max_output_tokens=1024,
-                    candidate_count=1,
-                    top_p=0.95,
-                    top_k=40,
-                    response_mime_type="text/plain",
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),  # Use non-thinking mode for speed/cost
-                    safety_settings=[
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_HARASSMENT',
-                            threshold='BLOCK_NONE'
-                        ),
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_HATE_SPEECH', 
-                            threshold='BLOCK_NONE'
-                        ),
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                            threshold='BLOCK_NONE'
-                        ),
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_DANGEROUS_CONTENT',
-                            threshold='BLOCK_NONE'
-                        )
-                    ]
-                )
-                log_debug("Gemini session initialized with thinking_budget=0 for non-thinking mode")
-            except (AttributeError, TypeError) as e:
-                # Fallback for models that don't support thinking_config
-                log_debug(f"Model doesn't support thinking_config, using fallback config: {e}")
-                self.gemini_generation_config = types.GenerateContentConfig(
-                    temperature=model_temperature,
-                    max_output_tokens=1024,
-                    candidate_count=1,
-                    top_p=0.95,
-                    top_k=40,
-                    response_mime_type="text/plain",
-                    safety_settings=[
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_HARASSMENT',
-                            threshold='BLOCK_NONE'
-                        ),
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_HATE_SPEECH', 
-                            threshold='BLOCK_NONE'
-                        ),
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                            threshold='BLOCK_NONE'
-                        ),
-                        types.SafetySetting(
-                            category='HARM_CATEGORY_DANGEROUS_CONTENT',
-                            threshold='BLOCK_NONE'
-                        )
-                    ]
-                )
-            
-            # Initialize sliding window memory and session tracking
-            self.gemini_context_window = []
-            self.gemini_session_api_key = self.app.gemini_api_key_var.get().strip()
-            
-            # Initialize language tracking for context clearing
-            self.gemini_current_source_lang = source_lang
-            self.gemini_current_target_lang = target_lang
-            
-            log_debug(f"Gemini client initialized for stateless calls (no chat session)")
-            
-        except Exception as e:
-            log_debug(f"Failed to initialize Gemini client: {e}")
-            self.gemini_client = None
-
-    def _reset_gemini_session(self):
-        """Reset Gemini client and context completely."""
-        try:
-            # Clear all session-related attributes
-            session_attrs = [
-                'gemini_client',  # NEW: Updated to use client instead of model
-                'gemini_generation_config',  # NEW: Added config clearing
-                'gemini_model_name',  # NEW: Added model name clearing
-                'gemini_context_window', 
-                'gemini_session_api_key',
-                'gemini_current_source_lang',
-                'gemini_current_target_lang'
-            ]
-            
-            for attr in session_attrs:
-                if hasattr(self, attr):
-                    setattr(self, attr, None)
-                    log_debug(f"Reset Gemini attribute: {attr}")
-            
-            # Initialize empty context window
-            self.gemini_context_window = []
-            
-            log_debug("Gemini client reset completed - all state cleared")
-        except Exception as e:
-            log_debug(f"Error resetting Gemini client: {e}")
-        # Always ensure client is None to force reinitialization
-        self.gemini_client = None
-
-    def force_gemini_session_reset(self, reason="Manual reset"):
-        """Force a complete session reset when actually necessary (API key changes, etc.)."""
-        log_debug(f"Forcing Gemini session reset - Reason: {reason}")
-        self._reset_gemini_session()
-        
-    def _clear_gemini_context(self):
-        """Clear Gemini context window after language changes."""
-        try:
-            self.gemini_context_window = []
-            log_debug("Gemini context cleared")
-        except Exception as e:
-            log_debug(f"Error clearing Gemini context: {e}")
-        
-    def should_reset_session(self, api_key):
-        """Check if session needs to be reset due to API key change."""
-        if not hasattr(self, 'gemini_client'):
-            return True
-        return self.gemini_session_api_key != api_key
-    
-    def _build_context_window(self, new_source_text=None, source_lang_code=None):
-        """Build context window from previous translations with grouped format."""
-        if not hasattr(self, 'gemini_context_window'):
-            self.gemini_context_window = []
-        
-        context_size = self.app.gemini_context_window_var.get()
-        if context_size == 0:
-            return ""
-        
-        source_lines = []
-        target_lines = []
-        
-        # Add context pairs if available
-        if context_size > 0 and self.gemini_context_window:
-            # Get last N context pairs
-            context_pairs = self.gemini_context_window[-context_size:]
-            
-            # Collect all source lines first, then all target lines
-            for source_text, target_text, source_lang, target_lang in context_pairs:
-                # Get display names and convert to uppercase
-                source_display = self._get_language_display_name(source_lang, 'gemini').upper()
-                target_display = self._get_language_display_name(target_lang, 'gemini').upper()
-                source_lines.append(f"{source_display}: {source_text}")
-                target_lines.append(f"{target_display}: {target_text}")
-        
-        # Add new source text if provided
-        if new_source_text and source_lang_code:
-            source_display = self._get_language_display_name(source_lang_code, 'gemini').upper()
-            source_lines.append(f"{source_display}: {new_source_text}")
-        
-        # Combine: all sources first, blank line, then all targets (no new target)
-        if source_lines and target_lines:
-            all_lines = source_lines + [""] + target_lines
-        elif source_lines:
-            all_lines = source_lines
-        else:
-            all_lines = []
-        return "\n".join(all_lines) if all_lines else ""
-
-    def _update_sliding_window(self, source_text, target_text):
-        """Update sliding window with new translation pair including language codes."""
-        if not hasattr(self, 'gemini_context_window'):
-            self.gemini_context_window = []
-        
-        # Get current language codes
-        source_lang = getattr(self, 'gemini_current_source_lang', 'en')
-        target_lang = getattr(self, 'gemini_current_target_lang', 'pl')
-        
-        # Check for duplicates according to specific rules:
-        # Rule 2: If translation is identical to previous translation, cache but don't add to context
-        # Rule 3: Only check last vs current (penultimate vs current)
-        if self.gemini_context_window:
-            last_source, last_target, _, _ = self.gemini_context_window[-1]
-            
-            # Rule 2: If translation is identical to previous, skip context update (but keep in cache)
-            if target_text == last_target:
-                log_debug(f"Skipping context window update - duplicate target text: '{target_text}'")
-                return
-            
-            # Additional check: if source is also identical, skip (though this should be caught at OCR level)
-            if source_text == last_source:
-                log_debug(f"Skipping context window update - duplicate source text: '{source_text}'")
-                return
-        
-        # Add new pair with language codes
-        self.gemini_context_window.append((source_text, target_text, source_lang, target_lang))
-        
-        # Keep only last 5 pairs (more than the max context window setting)
-        self.gemini_context_window = self.gemini_context_window[-5:]
-
-    def _get_ordinal_number(self, number):
-        """Convert number to ordinal string (1->first, 2->second, etc.)."""
-        ordinals = {
-            1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth",
-            6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth"
-        }
-        return ordinals.get(number, f"{number}th")
-
-    def _get_language_display_name(self, lang_code, provider):
-        """Get display name for language code using the language manager."""
-        try:
-            # Use the language manager's existing functionality
-            display_name = self.app.language_manager.get_localized_language_name(lang_code, provider, 'english')
-            
-            # If not found, try fallback logic
-            if display_name == lang_code:
-                # Special case for 'auto'
-                if lang_code.lower() == 'auto':
-                    return 'Auto'
-                # Fallback to title case
-                return lang_code.title()
-            
-            return display_name
-        except Exception as e:
-            log_debug(f"Error getting language display name for {lang_code}/{provider}: {e}")
-            # Special case for 'auto'
-            if lang_code.lower() == 'auto':
-                return 'Auto'
-            return lang_code.title()
-    
-    def _get_next_ocr_image_number(self):
-        """Get the next sequential number for OCR image saving."""
-        try:
-            # Get the base directory (same as where the script runs from)
-            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-                base_dir = os.path.dirname(sys.executable)
-            else:
-                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            
-            ocr_images_dir = os.path.join(base_dir, "OCR_images")
-            
-            # Ensure the directory exists
-            os.makedirs(ocr_images_dir, exist_ok=True)
-            
-            # Get all existing files in the directory
-            if os.path.exists(ocr_images_dir):
-                existing_files = os.listdir(ocr_images_dir)
-                # Filter for .webp files and extract numbers
-                numbers = []
-                for filename in existing_files:
-                    if filename.endswith('.webp'):
-                        try:
-                            # Extract number from filename like "0001.webp"
-                            number_str = filename.split('.')[0]
-                            if number_str.isdigit():
-                                numbers.append(int(number_str))
-                        except (ValueError, IndexError):
-                            continue
-                
-                # Get the next number
-                if numbers:
-                    next_number = max(numbers) + 1
-                else:
-                    next_number = 1
-            else:
-                next_number = 1
-            
-            return next_number, ocr_images_dir
-        except Exception as e:
-            log_debug(f"Error getting next OCR image number: {e}")
-            return 1, None
-    
-    def _save_ocr_image(self, webp_image_data):
-        """Save the OCR image to the OCR_images folder with sequential numbering."""
-        try:
-            # Debug: Check what we received
-            log_debug(f"_save_ocr_image called with data type: {type(webp_image_data)}")
-            
-            if webp_image_data is None:
-                log_debug("webp_image_data is None, cannot save image")
-                return
-            
-            if isinstance(webp_image_data, str):
-                log_debug(f"webp_image_data is string with length: {len(webp_image_data)}")
-                # If it's a string, it might be base64 encoded
-                try:
-                    import base64
-                    webp_image_data = base64.b64decode(webp_image_data)
-                    log_debug(f"Decoded base64 data, new length: {len(webp_image_data)}")
-                except Exception as decode_error:
-                    log_debug(f"Failed to decode base64 data: {decode_error}")
-                    return
-            elif isinstance(webp_image_data, bytes):
-                log_debug(f"webp_image_data is bytes with length: {len(webp_image_data)}")
-            else:
-                log_debug(f"webp_image_data is unexpected type: {type(webp_image_data)}")
-                return
-            
-            if len(webp_image_data) == 0:
-                log_debug("webp_image_data is empty, cannot save image")
-                return
-            
-            next_number, ocr_images_dir = self._get_next_ocr_image_number()
-            
-            if ocr_images_dir is None:
-                log_debug("Could not determine OCR images directory, skipping image save")
-                return
-            
-            # Format the filename with 4-digit zero-padding
-            filename = f"{next_number:04d}.webp"
-            filepath = os.path.join(ocr_images_dir, filename)
-            
-            # Save the image data
-            with open(filepath, 'wb') as f:
-                bytes_written = f.write(webp_image_data)
-                log_debug(f"Wrote {bytes_written} bytes to {filepath}")
-            
-            # Verify the file was written correctly
-            if os.path.exists(filepath):
-                file_size = os.path.getsize(filepath)
-                log_debug(f"Successfully saved OCR image to: {filepath} (size: {file_size} bytes)")
-            else:
-                log_debug(f"File was not created: {filepath}")
-            
-        except Exception as e:
-            log_debug(f"Error saving OCR image: {e}")
-            import traceback
-            log_debug(f"Full traceback: {traceback.format_exc()}")
-            # Don't let image saving errors stop the OCR process
-            pass
-
-    # ==================== GEMINI OCR METHODS (Phase 2) ====================
-    
     def _gemini_ocr_only(self, webp_image_data, source_lang, batch_number=None):
-        """Simple OCR-only call to Gemini API with circuit breaker protection."""
         log_debug(f"Gemini OCR request for source language: {source_lang}")
+        if self.ocr_circuit_breaker.should_force_refresh():
+            log_debug("Circuit breaker forcing legacy OCR client refresh due to network issues")
+            self.gemini_client = None
+            self.ocr_circuit_breaker = NetworkCircuitBreaker()
         
-        # Initialize circuit breaker if needed
-        if not hasattr(self, 'circuit_breaker'):
-            self.circuit_breaker = NetworkCircuitBreaker()
-        
-        # Check circuit breaker and force refresh if needed
-        if self.circuit_breaker.should_force_refresh():
-            log_debug("Circuit breaker forcing client refresh due to network issues")
-            self._force_client_refresh()
-            self.circuit_breaker = NetworkCircuitBreaker()  # Reset circuit breaker
-        
-        # Track pending call
         self._increment_pending_ocr_calls()
-        
         try:
             api_key_gemini = self.app.gemini_api_key_var.get().strip()
-            if not api_key_gemini:
-                return "<ERROR>: Gemini API key missing"
-            if not GENAI_AVAILABLE:
-                return "<e>: Google Generative AI libraries not available"
+            if not api_key_gemini: return "<ERROR>: Gemini API key missing"
+            if not GENAI_AVAILABLE: return "<e>: Google Generative AI libraries not available"
+
+            if self.gemini_client is None or self.gemini_session_api_key != api_key_gemini:
+                log_debug("Creating new Gemini client for legacy OCR")
+                self.gemini_client = genai.Client(api_key=api_key_gemini)
+                self.gemini_session_api_key = api_key_gemini
             
-            # Initialize Gemini client if needed (same pattern as translation)
-            needs_new_session = (
-                not hasattr(self, 'gemini_client') or 
-                self.gemini_client is None or
-                self.should_reset_session(api_key_gemini)  # API key changed
-            )
+            if self.gemini_client is None: return "<e>: Gemini client initialization failed"
             
-            if needs_new_session:
-                if hasattr(self, 'gemini_session_api_key') and self.gemini_session_api_key != api_key_gemini:
-                    log_debug("Creating new Gemini client for OCR (API key changed)")
-                else:
-                    log_debug("Creating new Gemini client for OCR (no existing client)")
-                self._initialize_gemini_session(source_lang, 'en')  # Use English as dummy target for OCR
+            ocr_model_api_name = self.app.get_current_gemini_model_for_ocr() or 'gemini-2.5-flash-lite'
             
-            if self.gemini_client is None:
-                return "<e>: Gemini client initialization failed"
-            
-            client = self.gemini_client
-            
-            # Get model configuration for OCR calls
-            ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
-            if not ocr_model_api_name:
-                # Fallback to config if no specific model selected
-                ocr_model_api_name = self.app.config['Settings'].get('gemini_model_name', 'gemini-2.5-flash-lite')
-            
-            # Optimal configuration for OCR tasks with MEDIA_RESOLUTION_MEDIUM (PRIMARY GOAL!)
             ocr_config = types.GenerateContentConfig(
-                temperature=0.0,
-                max_output_tokens=512,
-                candidate_count=1,
-                top_p=1.0,
-                top_k=40,
-                response_mime_type="text/plain",
-                media_resolution="MEDIA_RESOLUTION_MEDIUM",  # 🎯 PRIMARY GOAL ACHIEVED!
-                safety_settings=[
-                    types.SafetySetting(category='HARM_CATEGORY_HARASSMENT', threshold='BLOCK_NONE'),
-                    types.SafetySetting(category='HARM_CATEGORY_HATE_SPEECH', threshold='BLOCK_NONE'),
-                    types.SafetySetting(category='HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold='BLOCK_NONE'),
-                    types.SafetySetting(category='HARM_CATEGORY_DANGEROUS_CONTENT', threshold='BLOCK_NONE')
-                ]
+                temperature=0.0, max_output_tokens=512, media_resolution="MEDIA_RESOLUTION_MEDIUM",
+                safety_settings=[types.SafetySetting(category=c, threshold='BLOCK_NONE') for c in ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']]
             )
             
-            # Create model for OCR calls
-            # Removed - using client-based approach now
+            prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.\n2. If there is no text in the image, return only: <EMPTY>."""
             
-            # Get language display name for prompt
-            source_lang_name = self._get_language_display_name(source_lang, 'gemini')
-            
-            # Create OCR prompt with error correction - use exact prompt requested
-            prompt = f"""1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.
-2. If there is no text in the image, return only: <EMPTY>."""
-#             prompt = f"""1. Transcribe the subtitles from the image but ignore any other text. Transcribe the subtitles exactly as they appear but replace line breaks with spaces. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all subtitles in the image. Don't return anything else.
-# 2. If there are no subtitles in the image, return only: <EMPTY>."""
-            
-            log_debug(f"Making Gemini OCR API call for language: {source_lang_name}")
-            
-            # Save the image before sending to API
-            # self._save_ocr_image(webp_image_data)
-            
-            # Make the API call and track timing
             api_call_start_time = time.time()
-            response = client.models.generate_content(
+            response = self.gemini_client.models.generate_content(
                 model=ocr_model_api_name,
-                contents=[
-                    types.Part.from_bytes(data=webp_image_data, mime_type='image/webp'),
-                    prompt
-                ],
+                contents=[types.Part.from_bytes(data=webp_image_data, mime_type='image/webp'), prompt],
                 config=ocr_config
             )
             call_duration = time.time() - api_call_start_time
             
-            # Record successful call with circuit breaker
-            needs_refresh = self.circuit_breaker.record_call(call_duration, True)
-            if needs_refresh:
-                # Schedule client refresh for next call
-                self.gemini_client = None
+            self.ocr_circuit_breaker.record_call(call_duration, True)
             
-            # Increment API call counter for periodic refresh
-            if hasattr(self, 'api_call_count'):
-                self.api_call_count += 1
-            
-            # Extract the response text
             ocr_result = response.text.strip() if response.text else "<EMPTY>"
-            
-            # Parse the response according to the expected format
-            if "<EMPTY>" in ocr_result:
+            parsed_text = ocr_result.replace('```text\n', '').replace('```', '').replace('\n', ' ').strip()
+            if not parsed_text or "<EMPTY>" in parsed_text:
                 parsed_text = "<EMPTY>"
-            elif ocr_result.startswith(f"{source_lang_name.upper()}: "):
-                # Extract text after "LANGUAGE: " prefix (with space)
-                parsed_text = ocr_result[len(f"{source_lang_name.upper()}: "):].strip()
-                if not parsed_text:
-                    parsed_text = "<EMPTY>"
-            elif ocr_result.startswith(f"{source_lang_name.upper()}:"):
-                # Extract text after "LANGUAGE:" prefix (without space)
-                parsed_text = ocr_result[len(f"{source_lang_name.upper()}:"):].strip()
-                if not parsed_text:
-                    parsed_text = "<EMPTY>"
-            else:
-                # With the new format, just use the response directly
-                parsed_text = ocr_result
-                if not parsed_text:
-                    parsed_text = "<EMPTY>"
             
-            # Replace line breaks with spaces in the extracted text
-            if parsed_text != "<EMPTY>":
-                parsed_text = parsed_text.replace('```text\n', '')
-                parsed_text = parsed_text.replace('```\n', '')
-                parsed_text = parsed_text.replace('```text', '')
-                parsed_text = parsed_text.replace('```', '')
-                parsed_text = parsed_text.replace('\n', ' ').replace('\r', ' ')
-            
-            # Extract exact token counts from API response metadata
-            input_tokens, output_tokens = 0, 0
-            model_name = ocr_model_api_name  # Fallback to the model we requested
-            model_source = "fallback"  # Track whether we got it from API or fallback
+            input_tokens, output_tokens, model_name, model_source = 0, 0, ocr_model_api_name, "api_request"
             try:
                 if response.usage_metadata:
                     input_tokens = response.usage_metadata.prompt_token_count
                     output_tokens = response.usage_metadata.candidates_token_count
-                    log_debug(f"Gemini OCR usage metadata: In={input_tokens}, Out={output_tokens}")
-                # Try to extract model name from response metadata
-                if hasattr(response, 'model_version') and response.model_version:
-                    model_name = response.model_version
-                    model_source = "api_response"
-                elif hasattr(response, '_response') and hasattr(response._response, 'model_version'):
-                    model_name = response._response.model_version
-                    model_source = "api_response"
-                log_debug(f"Gemini OCR model used: {model_name} (source: {model_source})")
             except (AttributeError, KeyError):
-                log_debug("Could not find usage_metadata or model info in Gemini OCR response. Using requested model name as fallback.")
+                log_debug("Could not find usage_metadata in Gemini OCR response.")
             
-            # Log complete OCR call with request, response, and stats
-            self._log_complete_gemini_ocr_call(
-                prompt, len(webp_image_data), ocr_result, parsed_text, 
-                call_duration, input_tokens, output_tokens, source_lang, model_name, model_source
-            )
+            self._log_complete_gemini_ocr_call(prompt, len(webp_image_data), ocr_result, parsed_text, call_duration, input_tokens, output_tokens, source_lang, model_name, model_source)
             
-            batch_info = f", Batch {batch_number}" if batch_number is not None else ""
-            log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s){batch_info}")
+            log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s)")
             return parsed_text
             
         except Exception as e:
-            # Record failed call with circuit breaker
-            self.circuit_breaker.record_call(0, False)
+            self.ocr_circuit_breaker.record_call(0, False)
             log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
             return "<EMPTY>"
         finally:
-            # Always decrement pending call counter
             self._decrement_pending_ocr_calls()
-    
+
+    # *** FIX: RESTORED FULL, UNABRIDGED OCR LOGGING METHODS FROM BACKUP ***
     def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang, model_name, model_source):
-        """Log complete Gemini OCR API call with atomic writing and cumulative totals."""
-        # Check if API logging is enabled
-        if not self.app.gemini_api_log_enabled_var.get():
-            return
-            
+        if not self.app.gemini_api_log_enabled_var.get(): return
         try:
-            with self._log_lock:  # Ensure atomic logging to prevent interleaved logs
-                # Calculate correct start and end times based on call duration
+            with self._log_lock:
                 call_end_time = self._get_precise_timestamp()
                 call_start_time = self._calculate_start_time(call_end_time, call_duration)
                 
-                # Get model-specific costs for OCR operations
-                ocr_model_api_name = self.app.get_current_gemini_model_for_ocr()
-                if ocr_model_api_name:
-                    model_costs = self.app.gemini_models_manager.get_model_costs(ocr_model_api_name)
-                    INPUT_COST_PER_MILLION = model_costs['input_cost']
-                    OUTPUT_COST_PER_MILLION = model_costs['output_cost']
-                else:
-                    # Fallback to default Gemini 2.5 Flash-Lite costs
-                    INPUT_COST_PER_MILLION = 0.1
-                    OUTPUT_COST_PER_MILLION = 0.4
+                model_costs = self.app.gemini_models_manager.get_model_costs(model_name)
+                INPUT_COST_PER_MILLION = model_costs.get('input_cost', 0.1)
+                OUTPUT_COST_PER_MILLION = model_costs.get('output_cost', 0.4)
                 
                 call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
                 call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
                 total_call_cost = call_input_cost + call_output_cost
                 
-                # Get cumulative totals for OCR
                 prev_total_input, prev_total_output, prev_total_cost = self._get_cumulative_totals_ocr()
-                
-                # Calculate new cumulative totals
                 new_total_input = prev_total_input + input_tokens
                 new_total_output = prev_total_output + output_tokens
                 new_total_cost = prev_total_cost + total_call_cost
                 
-                # Update cache with new values for performance
                 self._update_ocr_cache(input_tokens, output_tokens, total_call_cost)
                 
-                # Format cost display with smart decimal precision
                 input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
                 output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
                 
-                # Main log entry with fixed header
                 log_entry = f"""
 === GEMINI OCR API CALL ===
 Timestamp: {call_start_time}
@@ -1667,983 +517,118 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
 ========================================
 
 """
-                
-                # Write to main log file
-                with open(self.gemini_log_file, 'a', encoding='utf-8') as f:
-                    f.write(log_entry)
-                
-                # Write to short OCR log
-                self._write_short_ocr_log(call_start_time, call_end_time, call_duration, 
-                                        input_tokens, output_tokens, total_call_cost,
-                                        new_total_input, new_total_output, new_total_cost, parsed_response, model_name, model_source)
-                
-                log_debug(f"Complete Gemini OCR call logged: {input_tokens}+{output_tokens} tokens, {call_duration:.3f}s")
-                
+                with open(self.gemini_log_file, 'a', encoding='utf-8') as f: f.write(log_entry)
+                self._write_short_ocr_log(call_start_time, call_end_time, call_duration, input_tokens, output_tokens, total_call_cost, new_total_input, new_total_output, new_total_cost, parsed_response, model_name, model_source)
         except Exception as e:
             log_debug(f"Error logging complete Gemini OCR call: {e}")
 
-    # Remove old separate logging functions - replaced by complete logging above
-    def _log_gemini_ocr_call(self, image_size, source_lang, sequence_number):
-        """Deprecated - replaced by _log_complete_gemini_ocr_call."""
-        pass
-    
-    def _log_gemini_ocr_response(self, response_text, sequence_number, call_duration):
-        """Deprecated - replaced by _log_complete_gemini_ocr_call."""
-        pass
-
-    def translate_text_with_timeout(self, text_content, timeout_seconds=10.0, ocr_batch_number=None):
-        """Wrapper for translate_text with timeout support for async processing."""
-        import threading
-        import time
-        
-        result = [None]  # Use list to store result from thread
-        exception = [None]  # Store any exception
-        
-        def translation_worker():
-            try:
-                result[0] = self.translate_text(text_content, ocr_batch_number)
-            except Exception as e:
-                exception[0] = e
-        
-        # Start translation in separate thread
-        thread = threading.Thread(target=translation_worker, daemon=True)
-        thread.start()
-        
-        # Wait for completion with timeout
-        thread.join(timeout=timeout_seconds)
-        
-        if thread.is_alive():
-            # Translation timed out - don't return timeout message, just return None
-            log_debug(f"Translation timed out after {timeout_seconds}s for: '{text_content}' (message suppressed)")
-            return None
-        
-        if exception[0]:
-            # Translation had an exception
-            log_debug(f"Translation exception: {exception[0]}")
-            return f"Translation error: {str(exception[0])}"
-        
-        return result[0]
-
-    def translate_text(self, text_content_main, ocr_batch_number=None):
-        cleaned_text_main = text_content_main.strip() if text_content_main else ""
-        if not cleaned_text_main or len(cleaned_text_main) < 1: return None 
-        if self.is_placeholder_text(cleaned_text_main): return None
-
-        translation_start_monotonic = time.monotonic()
-        selected_translation_model = self.app.translation_model_var.get()
-        log_debug(f"Translate request for \"{cleaned_text_main}\" using {selected_translation_model}")
-        
-        # --- Start: Setup provider-specific parameters ---
-        source_lang, target_lang, extra_params = None, None, {}
-        beam_val = None
-        
-        if selected_translation_model == 'marianmt':
-            if not self.app.MARIANMT_AVAILABLE: return "MarianMT libraries not available."
-            if self.app.marian_translator is None:
-                self.initialize_marian_translator()
-                if self.app.marian_translator is None: return "MarianMT initialization failed."
-            
-            source_lang = self.app.marian_source_lang
-            target_lang = self.app.marian_target_lang
-            if not source_lang or not target_lang: return "MarianMT source/target language not determined. Select a model."
-            
-            beam_val = self.app.num_beams_var.get()
-            extra_params = {"beam_size": beam_val}
-        
-        elif selected_translation_model == 'google_api':
-            if not self.app.google_api_key_var.get().strip(): return "Google Translate API key missing."
-            source_lang = self.app.google_source_lang
-            target_lang = self.app.google_target_lang
-        
-        elif selected_translation_model == 'deepl_api':
-            if not self.app.DEEPL_API_AVAILABLE: return "DeepL API libraries not available."
-            if not self.app.deepl_api_key_var.get().strip(): return "DeepL API key missing."
-            if self.app.deepl_api_client is None:
-                try:
-                    import deepl
-                    self.app.deepl_api_client = deepl.Translator(self.app.deepl_api_key_var.get().strip())
-                except Exception as e: return f"DeepL Client init error: {e}"
-            source_lang = self.app.deepl_source_lang 
-            target_lang = self.app.deepl_target_lang
-            extra_params = {"model_type": self.app.deepl_model_type_var.get()}
-        
-        elif selected_translation_model == 'gemini_api':
-            if not self.app.GEMINI_API_AVAILABLE: return "Gemini API libraries not available."
-            if not self.app.gemini_api_key_var.get().strip(): return "Gemini API key missing."
-            
-            source_lang = self.app.gemini_source_lang
-            target_lang = self.app.gemini_target_lang
-            extra_params = {"context_window": self.app.gemini_context_window_var.get()}
-        
-        elif self.app.is_openai_model(selected_translation_model):
-            if not OPENAI_AVAILABLE: return "OpenAI libraries not available."
-            if not self.app.openai_api_key_var.get().strip(): return "OpenAI API key missing."
-            
-            source_lang = self.app.openai_source_lang
-            target_lang = self.app.openai_target_lang
-            extra_params = {"context_window": self.app.openai_context_window_var.get()}
-        
-        else:
-            return f"Error: Unknown translation model '{selected_translation_model}'"
-        # --- End: Setup ---
-
-        # 1. Check Unified Cache (In-Memory LRU)
-        cached_result = self.unified_cache.get(
-            cleaned_text_main, source_lang, target_lang, 
-            selected_translation_model, **extra_params
-        )
-        if cached_result:
-            batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
-            log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache{batch_info}")
-            
-            # ### FIX: Added cache synchronization logic here. ###
-            # If we found it in memory, ensure it's also saved to disk for future sessions.
-            if not self._is_error_message(cached_result):
-                if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
-                    cache_key = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
-                    if not self.app.cache_manager.check_file_cache('gemini', cache_key):
-                        log_debug(f"Syncing LRU cache hit to Gemini file cache for: {cleaned_text_main}")
-                        self.app.cache_manager.save_to_file_cache('gemini', cache_key, cached_result)
-                elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
-                    cache_key = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
-                    if not self.app.cache_manager.check_file_cache('google', cache_key):
-                        log_debug(f"Syncing LRU cache hit to Google file cache for: {cleaned_text_main}")
-                        self.app.cache_manager.save_to_file_cache('google', cache_key, cached_result)
-                elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
-                    model_type = extra_params.get('model_type', 'latency_optimized')
-                    cache_key = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
-                    if not self.app.cache_manager.check_file_cache('deepl', cache_key):
-                        log_debug(f"Syncing LRU cache hit to DeepL file cache for: {cleaned_text_main}")
-                        self.app.cache_manager.save_to_file_cache('deepl', cache_key, cached_result)
-                elif self.app.is_openai_model(selected_translation_model) and self.app.openai_file_cache_var.get():
-                    cache_key = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
-                    if not self.app.cache_manager.check_file_cache('openai', cache_key):
-                        log_debug(f"Syncing LRU cache hit to OpenAI file cache for: {cleaned_text_main}")
-                        self.app.cache_manager.save_to_file_cache('openai', cache_key, cached_result)
-
-            # Update provider context window if the translation was for an LLM provider
-            if selected_translation_model == 'gemini_api' and not self._is_error_message(cached_result):
-                # Note: Context is already updated by the provider during translation
-                pass
-            elif self.app.is_openai_model(selected_translation_model) and not self._is_error_message(cached_result):
-                # Note: Context is already updated by the provider during translation
-                pass
-            
-            # Apply dialog formatting before returning cached result
-            if cached_result and not self._is_error_message(cached_result):
-                cached_result = self._format_dialog_text(cached_result)
-            
-            return cached_result
-
-        # 2. Check File Cache
-        file_cache_hit = None
-        if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
-            key = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
-            file_cache_hit = self.app.cache_manager.check_file_cache('gemini', key)
-        elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
-            key = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
-            file_cache_hit = self.app.cache_manager.check_file_cache('google', key)
-        elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
-            model_type = extra_params.get('model_type', 'latency_optimized')
-            key = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
-            file_cache_hit = self.app.cache_manager.check_file_cache('deepl', key)
-        elif self.app.is_openai_model(selected_translation_model) and self.app.openai_file_cache_var.get():
-            key = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
-            file_cache_hit = self.app.cache_manager.check_file_cache('openai', key)
-        
-        if file_cache_hit:
-            batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
-            log_debug(f"Found \"{cleaned_text_main}\" in {selected_translation_model} file cache{batch_info}.")
-            self.unified_cache.store(
-                cleaned_text_main, source_lang, target_lang,
-                selected_translation_model, file_cache_hit, **extra_params
-            )
-            if selected_translation_model == 'gemini_api' and not self._is_error_message(file_cache_hit):
-                # For Gemini provider, update context window manually since it was from cache
-                self.providers['gemini']._update_sliding_window(cleaned_text_main, file_cache_hit)
-            elif self.app.is_openai_model(selected_translation_model) and not self._is_error_message(file_cache_hit):
-                # For OpenAI provider, update context window manually since it was from cache
-                self.providers['openai']._update_sliding_window(cleaned_text_main, file_cache_hit)
-            
-            # Apply dialog formatting before returning file cache result
-            if file_cache_hit and not self._is_error_message(file_cache_hit):
-                file_cache_hit = self._format_dialog_text(file_cache_hit)
-            
-            return file_cache_hit
-
-        # 3. All Caches Miss - Perform API Call  
-        batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
-        log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API{batch_info}.")
-        translated_api_text = None
-        if selected_translation_model == 'marianmt':
-            translated_api_text = self._marian_translate(cleaned_text_main, source_lang, target_lang, beam_val)
-        elif selected_translation_model == 'google_api':
-            translated_api_text = self._google_translate(cleaned_text_main, source_lang, target_lang)
-        elif selected_translation_model == 'deepl_api':
-            translated_api_text = self._deepl_translate(cleaned_text_main, source_lang, target_lang)
-        elif selected_translation_model == 'gemini_api':
-            # Use the new Gemini provider
-            provider = self.providers['gemini']
-            translated_api_text = provider.translate(cleaned_text_main, source_lang, target_lang, ocr_batch_number)
-        elif self.app.is_openai_model(selected_translation_model):
-            # Use the new OpenAI provider
-            provider = self.providers['openai']
-            translated_api_text = provider.translate(cleaned_text_main, source_lang, target_lang, ocr_batch_number)
-        
-        # 4. Store successful API translation in both caches and update context
-        if translated_api_text and not self._is_error_message(translated_api_text):
-            # Store in file cache (if enabled for the specific provider)
-            if selected_translation_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
-                cache_key_to_save = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
-                self.app.cache_manager.save_to_file_cache('gemini', cache_key_to_save, translated_api_text)
-            elif selected_translation_model == 'google_api' and self.app.google_file_cache_var.get():
-                cache_key_to_save = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
-                self.app.cache_manager.save_to_file_cache('google', cache_key_to_save, translated_api_text)
-            elif selected_translation_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
-                model_type = extra_params.get('model_type', 'latency_optimized')
-                cache_key_to_save = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
-                self.app.cache_manager.save_to_file_cache('deepl', cache_key_to_save, translated_api_text)
-            elif self.app.is_openai_model(selected_translation_model) and self.app.openai_file_cache_var.get():
-                cache_key_to_save = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
-                self.app.cache_manager.save_to_file_cache('openai', cache_key_to_save, translated_api_text)
-
-            # Store in unified cache
-            self.unified_cache.store(
-                cleaned_text_main, source_lang, target_lang,
-                selected_translation_model, translated_api_text, **extra_params
-            )
-            
-            # Note: Context window updates are now handled automatically by the LLM providers during translation
-            # No manual context updates needed here since providers handle their own context internally
-        
-        batch_info = f", Batch {ocr_batch_number}" if ocr_batch_number is not None else ""
-        log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s{batch_info}")
-        
-        # Apply dialog formatting before returning
-        if translated_api_text and not self._is_error_message(translated_api_text):
-            translated_api_text = self._format_dialog_text(translated_api_text)
-        
-        return translated_api_text
-
-    def _format_dialog_text(self, text):
-        """Format dialog text by adding line breaks before dashes that follow sentence-ending punctuation.
-        
-        This pre-processing ensures that dialog like:
-        "- How are you? - Fine. - Great."
-        
-        becomes:
-        "- How are you?
-        - Fine.
-        - Great."
-        
-        Args:
-            text (str): The translation text to format
-            
-        Returns:
-            str: The formatted text with proper dialog line breaks
-        """
-        # DEBUG: Always log when this function is called
-        log_debug(f"DIALOG_FORMAT_DEBUG: _format_dialog_text called with: {repr(text)}")
-        
-        if not text or not isinstance(text, str):
-            log_debug(f"DIALOG_FORMAT_DEBUG: Text is None or not string, returning: {repr(text)}")
-            return text
-        
-        # Check if the text starts with any dash (more robust - no space required)
-        dash_check = (text.startswith("-") or text.startswith("–") or text.startswith("—"))
-        log_debug(f"DIALOG_FORMAT_DEBUG: Text starts with dash: {dash_check}")
-        
-        if not dash_check:
-            log_debug(f"DIALOG_FORMAT_DEBUG: Text doesn't start with dash, returning unchanged")
-            return text
-        
-        log_debug(f"DIALOG_FORMAT_DEBUG: Text starts with dash, proceeding with formatting")
-        
-        # Apply the formatting transformations
-        formatted_text = text
-        
-        # Check for patterns before applying
-        patterns_found = []
-        patterns_to_check = [". -", ". –", ". —", "? -", "? –", "? —", "! -", "! –", "! —"]
-        for pattern in patterns_to_check:
-            if pattern in text:
-                patterns_found.append(pattern)
-        
-        log_debug(f"DIALOG_FORMAT_DEBUG: Patterns found: {patterns_found}")
-        
-        # New rule: Handle quoted dialogue format
-        dialogue_patterns = ['"-', '" "', '- "', '" - "']
-        has_dialogue_quotes = formatted_text.count('"') >= 4
-        has_dialogue_pattern = any(pattern in formatted_text for pattern in dialogue_patterns)
-
-        if has_dialogue_quotes and has_dialogue_pattern:
-            # Check if there are occurrences of '"-'
-            if '"-' in formatted_text:
-                # Replace '"-' with '-'
-                formatted_text = formatted_text.replace('"-', '-')
-            # Check if there are occurrences of '- "' (dash + space + quote)
-            elif '- "' in formatted_text:
-                # Replace '- "' with '-'
-                formatted_text = formatted_text.replace('- "', '-')
-            else:
-                # Replace odd occurrences of '"' with '-'
-                result = []
-                quote_count = 0
-                for char in formatted_text:
-                    if char == '"':
-                        quote_count += 1
-                        if quote_count % 2 == 1:  # Odd occurrence (1st, 3rd, 5th, etc.)
-                            result.append('-')
-                        else:  # Even occurrence (2nd, 4th, 6th, etc.)
-                            result.append('"')
-                    else:
-                        result.append(char)
-                formatted_text = ''.join(result)
-            
-            # Remove all remaining quotes
-            formatted_text = formatted_text.replace('"', '')
-
-        # Replace ". -" with ".\n-" (period + space + hyphen)
-        formatted_text = formatted_text.replace(". -", ".\n-")
-        formatted_text = formatted_text.replace(". –", ".\n–")
-        formatted_text = formatted_text.replace(". —", ".\n—")
-        
-        # Replace "? -" with "?\n-" (question mark + space + hyphen)
-        formatted_text = formatted_text.replace("? -", "?\n-")
-        formatted_text = formatted_text.replace("? –", "?\n–")
-        formatted_text = formatted_text.replace("? —", "?\n—")
-        
-        # Replace "! -" with "!\n-" (exclamation mark + space + hyphen)
-        formatted_text = formatted_text.replace("! -", "!\n-")
-        formatted_text = formatted_text.replace("! –", "!\n–")
-        formatted_text = formatted_text.replace("! —", "!\n—")
-        
-        if formatted_text != text:
-            log_debug(f"DIALOG_FORMAT_DEBUG: Dialog formatting applied!")
-            log_debug(f"DIALOG_FORMAT_DEBUG: Original: {repr(text)}")
-            log_debug(f"DIALOG_FORMAT_DEBUG: Formatted: {repr(formatted_text)}")
-        else:
-            log_debug(f"DIALOG_FORMAT_DEBUG: No changes made to text")
-        
-        return formatted_text
-    
-    def _is_error_message(self, text):
-        """Check if a translation result is an error message."""
-        if not isinstance(text, str):
-            return True
-        error_indicators = [
-            "error:", "api error", "not initialized", "missing", "failed",
-            "not available", "not supported", "invalid result", "empty result"
-        ]
-        text_lower = text.lower()
-        return any(indicator in text_lower for indicator in error_indicators)
-    
-    def _is_ocr_error_message(self, text):
-        """Check if text is an OCR error message that should be replaced with <EMPTY>."""
-        if not isinstance(text, str):
-            return False
-        
-        text_stripped = text.strip()
-        
-        # Check for various OCR error patterns
-        ocr_error_patterns = [
-            r'^<e>:.*',                    # Gemini OCR errors: <e>: Gemini OCR error: ...
-            r'^<ERROR>:.*',                # Alternative error format: <ERROR>: Gemini OCR error: ...
-            r'^.*OCR error.*',             # Any text containing "OCR error"
-            r'^.*Gemini OCR error.*',      # Specific Gemini OCR errors
-            r'^.*Tesseract.*error.*',      # Tesseract OCR errors
-            r'^.*recognition.*error.*',    # OCR recognition errors
-            r'^.*Unable to.*recognize.*',  # Recognition failure messages
-        ]
-        
-        # Check each pattern
-        for pattern in ocr_error_patterns:
-            try:
-                if re.match(pattern, text_stripped, re.IGNORECASE):
-                    return True
-            except re.error as e:
-                log_debug(f"Regex error in _is_ocr_error_message with pattern '{pattern}': {e}")
-                continue
-        
-        return False
-    
-    def clear_cache(self):
-        """Clear the unified translation cache."""
-        self.unified_cache.clear_all()
-        log_debug("Cleared unified translation cache")
-
-    def is_placeholder_text(self, text_content):
-        if not text_content: return True
-        text_lower_content = text_content.lower().strip()
-        
-        placeholders_list = [
-            "source text will appear here", "translation will appear here",
-            "translation...", "ocr source", "source text", "loading...",
-            "translating...", "", "translation", "...", "translation error:"
-        ]
-        if text_lower_content in placeholders_list or text_lower_content.startswith("translation error:"):
-            return True
-        
-        ui_patterns_list = [
-            r'^[_\-=<>/\s\.\\|\[\]\{\}]+$',
-            r'^ocr\s+source', r'^source\s+text', 
-            r'^translat(ion|ing)', r'appear\s+here$', 
-            r'[×✖️]',
-        ]
-        
-        for pattern_re in ui_patterns_list:
-            try:
-                if (pattern_re.startswith('^') and re.match(pattern_re, text_content, re.IGNORECASE)) or \
-                   (not pattern_re.startswith('^') and re.search(pattern_re, text_content, re.IGNORECASE)):
-                    log_debug(f"Filtered out UI pattern '{pattern_re}': '{text_content}'")
-                    return True
-            except re.error as e_re:
-                 log_debug(f"Regex error in is_placeholder_text with pattern '{pattern_re}': {e_re}")
-        
-        return False
-
-    def calculate_text_similarity(self, text1_sim, text2_sim):
-        if not text1_sim or not text2_sim: return 0.0
-        if len(text1_sim) < 10 or len(text2_sim) < 10: 
-            return 1.0 if text1_sim == text2_sim else 0.0
-        
-        words1_set = set(text1_sim.lower().split())
-        words2_set = set(text2_sim.lower().split())
-        intersection_len = len(words1_set.intersection(words2_set))
-        union_len = len(words1_set.union(words2_set))
-        return intersection_len / union_len if union_len > 0 else 0.0
-
-    def initialize_marian_translator(self):
-        if self.app.marian_translator is not None: return
-        if not self.app.MARIANMT_AVAILABLE:
-            log_debug("Attempted to initialize MarianMT, but library is not available.")
-            return
+    def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result, model_name, model_source):
+        if not self.app.gemini_api_log_enabled_var.get(): return
         try:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Main app dir
-            cache_dir_name = "marian_models_cache"
-            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-                 executable_dir = os.path.dirname(sys.executable)
-                 cache_dir = os.path.join(executable_dir, "_internal", cache_dir_name) # Bundled
-            else:
-                 cache_dir = os.path.join(base_dir, cache_dir_name) # Script run
-            os.makedirs(cache_dir, exist_ok=True)
-
-            if hasattr(MarianMTTranslator, 'torch') and MarianMTTranslator.torch:
-                torch_module = MarianMTTranslator.torch
-                if hasattr(torch_module, 'set_num_threads'):
-                    num_cores = max(1, os.cpu_count() - 1 if os.cpu_count() else 4)
-                    torch_module.set_num_threads(num_cores)
-                    if hasattr(torch_module, 'set_num_interop_threads'):
-                        interop_threads = max(1, min(4, os.cpu_count() // 2 if os.cpu_count() else 2))
-                        torch_module.set_num_interop_threads(interop_threads)
-            
-            current_beam_value = self.app.num_beams_var.get()
-            self.app.marian_translator = MarianMTTranslator(cache_dir=cache_dir, num_beams=current_beam_value)
-            log_debug(f"MarianMT translator initialized (cache: {cache_dir}, beams: {current_beam_value})")
-
-            if self.app.translation_model_var.get() == 'marianmt' and self.app.marian_model_var.get():
-                log_debug("MarianMT is active model, attempting to preload selected Marian model.")
-                self.app.ui_interaction_handler.on_marian_model_selection_changed(preload=True)
-        except ImportError as e_imt_imp:
-            log_debug(f"MarianMT initialization failed - missing dependencies: {e_imt_imp}")
-        except Exception as e_imt:
-            log_debug(f"Error initializing MarianMT translator: {e_imt}\n{traceback.format_exc()}")
-
-    def update_marian_active_model(self, model_name_uam, source_lang_uam=None, target_lang_uam=None):
-        if self.app.marian_translator is None:
-            self.initialize_marian_translator()
-            if self.app.marian_translator is None:
-                log_debug("Cannot update MarianMT model - translator not initialized and init failed.")
-                return False
-        
-        try:
-            final_source_lang = source_lang_uam if source_lang_uam else self.app.marian_source_lang
-            final_target_lang = target_lang_uam if target_lang_uam else self.app.marian_target_lang
-
-            if not final_source_lang or not final_target_lang:
-                log_debug(f"Cannot update MarianMT model '{model_name_uam}': source/target language not determined.")
-                return False
-            
-            log_debug(f"Attempting to make MarianMT model active: {model_name_uam} for {final_source_lang}->{final_target_lang}")
-
-            if hasattr(self.app.marian_translator, '_unload_current_model'):
-                self.app.marian_translator._unload_current_model()
-            
-            if hasattr(self.app.marian_translator, 'direct_pairs'):
-                self.app.marian_translator.direct_pairs[(final_source_lang, final_target_lang)] = model_name_uam
-            
-            self.unified_cache.clear_provider('marianmt')
-
-            if hasattr(self.app.marian_translator, '_try_load_direct_model'):
-                load_success = self.app.marian_translator._try_load_direct_model(final_source_lang, final_target_lang)
-                if load_success:
-                    log_debug(f"Successfully loaded MarianMT model for {final_source_lang}->{final_target_lang}")
-                    return True
-                else:
-                    log_debug(f"Failed to load MarianMT model for {final_source_lang}->{final_target_lang}")
-                    return False
-            return False
-        except Exception as e_umam:
-            log_debug(f"Error updating MarianMT active model: {e_umam}")
-            return False
-
-    def update_marian_beam_value(self):
-        if self.app.marian_translator is not None:
-            try:
-                beam_value_clamped = max(1, min(50, self.app.num_beams_var.get()))
-                if beam_value_clamped != self.app.num_beams_var.get():
-                    self.app.num_beams_var.set(beam_value_clamped)
-                self.app.marian_translator.num_beams = beam_value_clamped
-                log_debug(f"Updated MarianMT beam search value in translator to: {beam_value_clamped}")
-            except Exception as e_umbv:
-                log_debug(f"Error updating MarianMT beam value: {e_umbv}")
-
-    # ===============================
-    # OpenAI Translation Methods
-    # ===============================
-
-    def _format_openai_input_for_responses_api(self, messages):
-        """Format OpenAI messages for the Responses API input parameter."""
-        if not messages:
-            return ""
-        
-        # For GPT 5 models using Responses API, we need to combine system and user messages
-        # into a single input string
-        formatted_parts = []
-        
-        for message in messages:
-            role = message.get('role', '')
-            content = message.get('content', '')
-            
-            if role == 'system':
-                # System messages become instructions
-                formatted_parts.append(content)
-            elif role == 'user':
-                # User messages become the main content
-                formatted_parts.append(content)
-        
-        return '\n\n'.join(formatted_parts)
-
-    def _openai_translate(self, text_to_translate_oai, source_lang_oai, target_lang_oai):
-        """DEPRECATED: Now handled by OpenAIProvider - kept for backward compatibility."""
-        log_debug("WARNING: _openai_translate is deprecated, using OpenAIProvider instead")
-        provider = self.providers['openai']
-        return provider.translate(text_to_translate_oai, source_lang_oai, target_lang_oai)
-
-    def _initialize_openai_session(self, source_lang, target_lang):
-        """Initialize OpenAI client session."""
-        try:
-            api_key = self.app.openai_api_key_var.get().strip()
-            if not api_key:
-                log_debug("Cannot initialize OpenAI session: API key missing")
-                return False
-            
-            self.openai_client = openai.OpenAI(api_key=api_key)
-            self.openai_session_api_key = api_key
-            self.openai_client_created_time = time.time()
-            self.openai_api_call_count = 0
-            
-            # Clear context window on session initialization
-            self._clear_openai_context()
-            
-            log_debug(f"OpenAI client initialized for {source_lang}->{target_lang}")
-            return True
-            
-        except Exception as e:
-            log_debug(f"Error initializing OpenAI session: {e}")
-            self.openai_client = None
-            return False
-
-    def _should_reset_openai_session(self, current_api_key):
-        """Check if OpenAI session should be reset."""
-        if not hasattr(self, 'openai_session_api_key'):
-            return True
-        
-        # Reset if API key changed
-        if self.openai_session_api_key != current_api_key:
-            log_debug("OpenAI session reset: API key changed")
-            return True
-        
-        # Reset if client was created too long ago (30 minutes)
-        if hasattr(self, 'openai_client_created_time'):
-            current_time = time.time()
-            if current_time - self.openai_client_created_time > 1800:  # 30 minutes
-                log_debug("OpenAI session reset: 30 minute timeout")
-                return True
-        
-        # Reset after every 100 API calls
-        if hasattr(self, 'openai_api_call_count') and self.openai_api_call_count > 100:
-            log_debug("OpenAI session reset: 100 call limit")
-            return True
-        
-        return False
-
-    def _force_openai_client_refresh(self):
-        """Force refresh of OpenAI client."""
-        log_debug("Forcing OpenAI client refresh")
-        self.openai_client = None
-        self.openai_client_created_time = time.time()
-        self.openai_api_call_count = 0
-        log_debug("OpenAI client refresh completed")
-
-    def _clear_openai_context(self):
-        """Clear OpenAI context window."""
-        self.openai_context_window = []
-        log_debug("OpenAI context window cleared")
-
-    def _build_openai_context_messages(self, current_text, source_lang_name, target_lang_name, context_size):
-        """Build OpenAI messages array with context window support."""
-        if context_size == 0:
-            # No context, use simple format 
-            return [
-                {"role": "system", "content": f"Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only."},
-                {"role": "user", "content": current_text}
-            ]
-        else:
-            # Build context window for multi-line format
-            context_content = self._build_openai_context_window_content(current_text, source_lang_name, target_lang_name)
-            return [
-                {"role": "system", "content": f"Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only."},
-                {"role": "user", "content": context_content}
-            ]
-
-    def _build_openai_context_window_content(self, current_text, source_lang_name, target_lang_name):
-        """Build context window content for OpenAI API call."""
-        if not hasattr(self, 'openai_context_window'):
-            self.openai_context_window = []
-        
-        context_size = self.app.openai_context_window_var.get()
-        
-        # Build instruction line based on actual context window content
-        actual_context_count = len(self.openai_context_window)
-        
-        if actual_context_count == 0:
-            instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 1:
-            instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 2:
-            if actual_context_count == 1:
-                instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-            else:
-                instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 3:
-            target_position = min(actual_context_count + 1, 4)  # Max "fourth subtitle"
-            ordinal = self._get_ordinal_number(target_position)
-            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 4:
-            target_position = min(actual_context_count + 1, 5)  # Max "fifth subtitle"
-            ordinal = self._get_ordinal_number(target_position)
-            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 5:
-            target_position = min(actual_context_count + 1, 6)  # Max "sixth subtitle"
-            ordinal = self._get_ordinal_number(target_position)
-            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        
-        # Build the context content
-        content_lines = [instruction_line, ""]
-        
-        # Add previous context
-        for original, translated in self.openai_context_window:
-            content_lines.append(f"{source_lang_name.upper()}: {original}")
-            content_lines.append(f"{target_lang_name.upper()}: {translated}")
-            content_lines.append("")
-        
-        # Add current text to translate
-        content_lines.append(f"{source_lang_name.upper()}: {current_text}")
-        content_lines.append(f"{target_lang_name.upper()}:")
-        
-        return "\n".join(content_lines)
-
-    def _build_openai_context_window_content_for_log(self, current_text, source_lang_name, target_lang_name):
-        """Build context window content for OpenAI API call logging (matches Gemini format exactly)."""
-        if not hasattr(self, 'openai_context_window'):
-            self.openai_context_window = []
-        
-        context_size = self.app.openai_context_window_var.get()
-        
-        # Build instruction line based on actual context window content
-        actual_context_count = len(self.openai_context_window)
-        
-        if actual_context_count == 0:
-            instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 1:
-            instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 2:
-            if actual_context_count == 1:
-                instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-            else:
-                instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 3:
-            target_position = min(actual_context_count + 1, 4)  # Max "fourth subtitle"
-            ordinal = self._get_ordinal_number(target_position)
-            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 4:
-            target_position = min(actual_context_count + 1, 5)  # Max "fifth subtitle"
-            ordinal = self._get_ordinal_number(target_position)
-            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        elif context_size == 5:
-            target_position = min(actual_context_count + 1, 6)  # Max "sixth subtitle"
-            ordinal = self._get_ordinal_number(target_position)
-            instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
-        
-        # Build the context content (same format as Gemini)
-        content_lines = [instruction_line, ""]
-        
-        # Add previous context in the same grouped format as Gemini
-        source_lines = []
-        target_lines = []
-        
-        # Add context pairs if available
-        if self.openai_context_window:
-            # Get last N context pairs
-            context_pairs = self.openai_context_window[-context_size:] if context_size > 0 else []
-            
-            # Collect all source lines first, then all target lines
-            for original, translated in context_pairs:
-                source_lines.append(f"{source_lang_name.upper()}: {original}")
-                target_lines.append(f"{target_lang_name.upper()}: {translated}")
-        
-        # Add current source text
-        source_lines.append(f"{source_lang_name.upper()}: {current_text}")
-        
-        # Combine: all sources first, blank line, then all targets (no new target)
-        if source_lines and target_lines:
-            all_lines = source_lines + [""] + target_lines + [""] + [f"{target_lang_name.upper()}:"]
-        elif source_lines:
-            all_lines = source_lines + [""] + [f"{target_lang_name.upper()}:"]
-        else:
-            all_lines = [f"{target_lang_name.upper()}:"]
-        
-        content_lines.extend(all_lines)
-        return "\n".join(content_lines)
-
-    def _update_openai_sliding_window(self, original_text, translated_text):
-        """Update OpenAI sliding context window with new translation pair."""
-        if not hasattr(self, 'openai_context_window'):
-            self.openai_context_window = []
-        
-        context_size = self.app.openai_context_window_var.get()
-        
-        if context_size > 0:
-            # Add new pair to context window
-            self.openai_context_window.append((original_text, translated_text))
-            
-            # Keep only the most recent entries (up to context_size)
-            if len(self.openai_context_window) > context_size:
-                self.openai_context_window = self.openai_context_window[-context_size:]
-            
-            log_debug(f"OpenAI context window updated. Size: {len(self.openai_context_window)}/{context_size}")
-
-    def _log_complete_openai_translation_call(self, messages, translation_result, call_duration, 
-                                            input_tokens, output_tokens, original_text, 
-                                            source_lang, target_lang, model_name, model_source):
-        """Log complete OpenAI translation call with identical structure to Gemini."""
-        log_debug(f"OpenAI logging check: enabled={self.app.openai_api_log_enabled_var.get()}")
-        if not self.app.openai_api_log_enabled_var.get():
-            log_debug("OpenAI API logging is disabled, skipping log entry")
-            return
-        
-        try:
-            with self._log_lock:  # Atomic logging to prevent interleaved logs
-                # Calculate correct start and end times based on call duration
-                call_end_time = self._get_precise_timestamp()
-                call_start_time = self._calculate_start_time(call_end_time, call_duration)
-                
-                # --- 1. Calculate current call translated word count from original text ---
-                current_translated_words = len(original_text.split())
-                
-                # --- 2. Get cumulative totals BEFORE this call ---
-                session_words, session_input, session_output, session_cost = self._get_openai_session_totals()
-                
-                # --- 3. Get model-specific costs and calculate for current call ---
-                if hasattr(self.app, 'openai_models_manager') and self.app.openai_models_manager:
-                    model_costs = self.app.openai_models_manager.get_model_costs(model_name)
-                    INPUT_COST_PER_MILLION = model_costs['input_cost']
-                    OUTPUT_COST_PER_MILLION = model_costs['output_cost']
-                else:
-                    # Fallback costs (GPT-4o-mini pricing)
-                    INPUT_COST_PER_MILLION = 0.15
-                    OUTPUT_COST_PER_MILLION = 0.6
-                
-                call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
-                call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
-                total_call_cost = call_input_cost + call_output_cost
-                
-                # --- 4. Calculate new cumulative totals using simple addition ---
-                new_total_translated_words = session_words + current_translated_words
-                new_total_input = session_input + input_tokens
-                new_total_output = session_output + output_tokens
-                new_total_cost = session_cost + total_call_cost
-                
-                # --- 5. Build the actual message content that was sent (same format as Gemini) ---
-                source_lang_name = self._get_language_display_name(source_lang, 'openai')
-                target_lang_name = self._get_language_display_name(target_lang, 'openai')
-                message_content = self._build_openai_context_window_content_for_log(original_text, source_lang_name, target_lang_name)
-                
-                # --- 6. Calculate detailed message stats (same as Gemini) ---
-                words_in_message = len(message_content.split())
-                chars_in_message = len(message_content)
-                lines_in_message = len(message_content.split('\n'))
-                
-                # Format cost display with smart decimal precision (same as Gemini)
-                input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
-                output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
-                
-                # --- 7. Format the complete log entry with IDENTICAL header to Gemini ---
-                log_entry = f"""
-=== OPENAI TRANSLATION API CALL ===
-Timestamp: {call_start_time}
-Language Pair: {source_lang} -> {target_lang}
-Original Text: {original_text}
-
-CALL DETAILS:
-- Message Length: {chars_in_message} characters
-- Word Count: {words_in_message} words
-- Line Count: {lines_in_message} lines
-
-COMPLETE MESSAGE CONTENT SENT TO OPENAI:
----BEGIN MESSAGE---
-{message_content}
----END MESSAGE---
-
-
-RESPONSE RECEIVED:
-Model: {model_name} ({model_source})
-Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
-Timestamp: {call_end_time}
-Call Duration: {call_duration:.3f} seconds
-
----BEGIN RESPONSE---
-{translation_result}
----END RESPONSE---
-
-TOKEN & COST ANALYSIS (CURRENT CALL):
-- Translated Words: {current_translated_words}
-- Exact Input Tokens: {input_tokens}
-- Exact Output Tokens: {output_tokens}
-- Input Cost: ${call_input_cost:.8f}
-- Output Cost: ${call_output_cost:.8f}
-- Total Cost for this Call: ${total_call_cost:.8f}
-
-CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
-- Total Translated Words (so far): {new_total_translated_words}
-- Total Input Tokens (so far): {new_total_input}
-- Total Output Tokens (so far): {new_total_output}
-- Cumulative Log Cost: ${new_total_cost:.8f}
-
-========================================
-
-"""
-                
-                # --- 8. Write to main log file ---
-                with open(self.openai_log_file, 'a', encoding='utf-8') as f:
-                    f.write(log_entry)
-                
-                # --- 9. Write to short translation log (using Gemini-style format) ---
-                self._write_short_openai_translation_log(call_start_time, call_end_time, call_duration, 
-                                               input_tokens, output_tokens, total_call_cost,
-                                               new_total_input, new_total_output, 
-                                               new_total_cost, 
-                                               original_text, translation_result, source_lang, target_lang, model_name, model_source)
-                
-                log_debug(f"Complete OpenAI translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
-                
-        except Exception as e:
-            log_debug(f"Error logging complete OpenAI translation call: {e}\n{traceback.format_exc()}")
-
-    def _get_openai_session_totals(self):
-        """Get current session totals from OpenAI short log."""
-        words, input_tokens, output_tokens, cost = 0, 0, 0, 0.0
-        
-        try:
-            if os.path.exists(self.openai_tra_short_log_file):
-                with open(self.openai_tra_short_log_file, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    
-                    # Parse the Gemini-style format instead of CSV format
-                    import re
-                    # Find all "Tokens: In=X, Out=Y | Cost: $Z" lines
-                    token_pattern = r"Tokens: In=(\d+), Out=(\d+) \| Cost: \$([0-9.]+)"
-                    matches = re.findall(token_pattern, content)
-                    
-                    for match in matches:
-                        input_tokens += int(match[0])
-                        output_tokens += int(match[1])
-                        cost += float(match[2])
-                    
-                    # Count words from result lines
-                    result_pattern = r"^([A-Z]+): (.+)$"
-                    lines = content.split('\n')
-                    for line in lines:
-                        if '--' not in line:  # Skip separator lines
-                            match = re.match(result_pattern, line.strip())
-                            if match:
-                                lang_code = match.group(1)
-                                text_content = match.group(2)
-                                # Count words from source language lines only (not target)
-                                # This is a simple heuristic - could be improved with language detection
-                                if len(text_content.split()) > 0:
-                                    words += len(text_content.split())
-                                    break  # Only count once per result block
-                                    
-        except Exception as e:
-            log_debug(f"Error reading OpenAI session totals: {e}")
-        
-        return words, input_tokens, output_tokens, cost
-
-    def _write_short_openai_translation_log(self, call_start_time, call_end_time, call_duration,
-                                          input_tokens, output_tokens, total_call_cost,
-                                          cumulative_input, cumulative_output, cumulative_cost,
-                                          original_text, translation_result, source_lang, target_lang, model_name, model_source):
-        """Write concise OpenAI translation call log entry in IDENTICAL format to Gemini."""
-        if not self.app.openai_api_log_enabled_var.get():
-            return
-            
-        try:
-            # Get language display names (same as Gemini)
-            source_lang_name = self._get_language_display_name(source_lang, 'openai').upper()
-            target_lang_name = self._get_language_display_name(target_lang, 'openai').upper()
-            
-            # Get model costs from CSV for display (same as Gemini)
             cost_line = ""
             try:
-                if hasattr(self.app, 'openai_models_manager') and self.app.openai_models_manager:
-                    model_costs = self.app.openai_models_manager.get_model_costs(model_name)
-                    input_cost = model_costs['input_cost']
-                    output_cost = model_costs['output_cost']
-                    
-                    # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals (same as Gemini)
-                    input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
-                    output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
-                    
-                    cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
-            except Exception:
-                pass
+                model_costs = self.app.gemini_models_manager.get_model_costs(model_name)
+                input_cost, output_cost = model_costs['input_cost'], model_costs['output_cost']
+                input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
+                output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
+                cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
+            except Exception: pass
             
-            # IDENTICAL format to Gemini short log
-            log_entry = f"""===== TRANSLATION CALL =======
+            log_entry = f"""========= OCR CALL ===========
 Model: {model_name} ({model_source})
 {cost_line}Start: {call_start_time}
 End: {call_end_time}
 Duration: {call_duration:.3f}s
-Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${total_call_cost:.8f}
+Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
 Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
 Result:
 --------------------------------------------------
-{source_lang_name}: {original_text}
-{target_lang_name}: {translation_result}
+{parsed_result}
 --------------------------------------------------
 
 """
-            with open(self.openai_tra_short_log_file, 'a', encoding='utf-8') as f:
+            with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
                 f.write(log_entry)
         except Exception as e:
-            log_debug(f"Error writing short OpenAI translation log: {e}")
+            log_debug(f"Error writing short OCR log: {e}")
 
-    def _get_ordinal_number(self, num):
-        """Convert number to ordinal string (e.g., 1 -> 'first', 2 -> 'second')."""
-        ordinals = {
-            1: 'first', 2: 'second', 3: 'third', 4: 'fourth', 
-            5: 'fifth', 6: 'sixth', 7: 'seventh', 8: 'eighth'
-        }
-        return ordinals.get(num, f'{num}th')
+    def _get_cumulative_totals_ocr(self):
+        if self._ocr_cache_initialized:
+            return self._cached_ocr_input_tokens, self._cached_ocr_output_tokens, self._cached_ocr_cost
+        
+        total_input, total_output, total_cost = 0, 0, 0.0
+        if not os.path.exists(self.gemini_log_file):
+            self._ocr_cache_initialized = True
+            return 0, 0, 0.0
+        
+        input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(OCR, so far\):\s*(\d+)")
+        output_token_regex = re.compile(r"^\s*-\s*Total Output Tokens \(OCR, so far\):\s*(\d+)")
+        cost_regex = re.compile(r"^\s*-\s*Total OCR Cost \(so far\):\s*\$([0-9.]+)")
+        
+        try:
+            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if m := input_token_regex.match(line): total_input = int(m.group(1))
+                    if m := output_token_regex.match(line): total_output = int(m.group(1))
+                    if m := cost_regex.match(line): total_cost = float(m.group(1))
+            
+            self._cached_ocr_input_tokens, self._cached_ocr_output_tokens, self._cached_ocr_cost = total_input, total_output, total_cost
+            self._ocr_cache_initialized = True
+            return total_input, total_output, total_cost
+        except (IOError, ValueError) as e:
+            log_debug(f"Error reading OCR cumulative totals: {e}")
+            self._ocr_cache_initialized = True
+            return 0, 0, 0.0
+
+    def _update_ocr_cache(self, input_tokens, output_tokens, cost):
+        if not self._ocr_cache_initialized: self._get_cumulative_totals_ocr()
+        self._cached_ocr_input_tokens += input_tokens
+        self._cached_ocr_output_tokens += output_tokens
+        self._cached_ocr_cost += cost
+
+    # === UTILITY METHODS (UNCHANGED) ===
+    def _get_precise_timestamp(self):
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+    def _calculate_start_time(self, end_time_str, duration_seconds):
+        try:
+            end_time = datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S.%f")
+            start_time = end_time - timedelta(seconds=duration_seconds)
+            return start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        except Exception:
+            return end_time_str
+            
+    def _format_dialog_text(self, text):
+        if not text or not isinstance(text, str): return text
+        if not (text.startswith("-") or text.startswith("–") or text.startswith("—")): return text
+        formatted_text = re.sub(r'([.?!])\s+([-–—])', r'\1\n\2', text)
+        return formatted_text
+    
+    def _is_error_message(self, text):
+        if not isinstance(text, str): return True
+        error_indicators = ["error:", "api error", "not initialized", "missing", "failed", "not available", "not supported", "invalid result", "empty result"]
+        return any(indicator in text.lower() for indicator in error_indicators)
+    
+    def is_placeholder_text(self, text_content):
+        if not text_content: return True
+        text_lower = text_content.lower().strip()
+        placeholders = ["source text will appear here", "translation will appear here", "translation...", "ocr source", "source text", "loading...", "translating...", "", "translation", "...", "translation error:"]
+        return text_lower in placeholders or text_lower.startswith("translation error:")
+
+    def initialize_marian_translator(self):
+        if self.app.marian_translator is not None: return
+        if not hasattr(self.app, 'MARIANMT_AVAILABLE') or not self.app.MARIANMT_AVAILABLE: return
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cache_dir_name = "marian_models_cache"
+            if getattr(sys, 'frozen', False):
+                 executable_dir = os.path.dirname(sys.executable)
+                 cache_dir = os.path.join(executable_dir, "_internal", cache_dir_name)
+            else:
+                 cache_dir = os.path.join(base_dir, cache_dir_name)
+            os.makedirs(cache_dir, exist_ok=True)
+            current_beam_value = self.app.num_beams_var.get()
+            self.app.marian_translator = MarianMTTranslator(cache_dir=cache_dir, num_beams=current_beam_value)
+            log_debug(f"MarianMT translator initialized (cache: {cache_dir}, beams: {current_beam_value})")
+        except Exception as e:
+            log_debug(f"Error initializing MarianMT translator: {e}\n{traceback.format_exc()}")
