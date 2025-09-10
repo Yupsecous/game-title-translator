@@ -106,7 +106,7 @@ class TranslationHandler:
     def force_end_sessions_on_app_close(self):
         for provider in self.providers.values():
             try:
-                provider.end_translation_session()
+                provider.end_translation_session(force=True)
             except Exception as e:
                 log_debug(f"Error force ending {provider.provider_name} session: {e}")
         self.end_ocr_session(force=True)

@@ -81,6 +81,7 @@ class AbstractLLMProvider(ABC):
         self.translation_session_counter = 1
         self.current_translation_session_active = False
         self._pending_translation_calls = 0
+        self._translation_session_should_end = False
         
         # Client management
         self.client = None
@@ -227,23 +228,26 @@ Purpose: Concise {self.provider_name} translation call results and statistics
                 return self.end_translation_session()
             else:
                 # Mark for ending when calls complete (session will end automatically)
+                self._translation_session_should_end = True
                 log_debug(f"{self.provider_name.title()} session end requested, waiting for {self._pending_translation_calls} pending calls")
                 return False
         return True
     
-    def end_translation_session(self):
+    def end_translation_session(self, force=False):
         """End the current translation session only if no pending translation calls."""
         if self.current_translation_session_active:
             # Wait for any pending translation calls to complete before ending session
-            if self._pending_translation_calls > 0:
+            if self._pending_translation_calls > 0 and not force:
                 log_debug(f"{self.provider_name.title()} session end delayed: {self._pending_translation_calls} pending calls")
                 return False  # Session not ended yet
             
             timestamp = self._get_precise_timestamp()
             try:
+                end_reason = "(FORCED - APP CLOSING)" if force else ""
                 with open(self.short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp}\n")
+                    f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp} {end_reason}\n".strip() + "\n")
                 self.current_translation_session_active = False
+                self._translation_session_should_end = False
                 self.translation_session_counter += 1
                 log_debug(f"{self.provider_name.title()} Translation Session {self.translation_session_counter - 1} ended")
                 return True  # Session ended successfully
@@ -261,6 +265,8 @@ Purpose: Concise {self.provider_name} translation call results and statistics
         """Decrement the count of pending translation calls."""
         with self._api_calls_lock:
             self._pending_translation_calls = max(0, self._pending_translation_calls - 1)
+            if self._pending_translation_calls == 0 and self._translation_session_should_end:
+                self.end_translation_session()
     
     # === CONTEXT WINDOW MANAGEMENT (IDENTICAL ACROSS PROVIDERS) ===
     
