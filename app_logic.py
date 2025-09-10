@@ -900,38 +900,23 @@ class GameChangingTranslator:
             return None
 
     def _pre_initialize_gemini_model(self):
-        """Pre-initialize Gemini model at startup to avoid thread initialization delays."""
+        """Pre-configure Gemini API at startup to avoid thread initialization delays."""
         try:
-            # Only pre-initialize if Gemini API is available and configured
             if not self.GEMINI_API_AVAILABLE:
-                log_debug("Gemini API libraries not available, skipping pre-initialization")
                 return
             
             gemini_api_key = self.gemini_api_key_var.get().strip()
             if not gemini_api_key:
-                log_debug("Gemini API key not configured, skipping pre-initialization")
                 return
             
-            # Pre-initialize for translation if Gemini is the selected translation model
-            if self.translation_model_var.get() == 'gemini_api':
-                log_debug("Pre-initializing Gemini translation model...")
-                self.translation_handler._initialize_gemini_session(
-                    self.gemini_source_lang or 'en', 
-                    self.gemini_target_lang or 'pl'
-                )
-                log_debug("Gemini translation model pre-initialization completed")
-            
-            # Always pre-configure the API since OCR can be used regardless of translation model
-            if self.GEMINI_API_AVAILABLE:
-                try:
-                    import google.generativeai as genai
-                    genai.configure(api_key=gemini_api_key)
-                    log_debug("Gemini API pre-configured for OCR")
-                except Exception as e:
-                    log_debug(f"Error pre-configuring Gemini API: {e}")
+            # This is the only part that's still useful - it sets the global API key.
+            # The client itself will be created by the provider when needed.
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_api_key)
+            log_debug("Gemini API pre-configured")
                     
         except Exception as e:
-            log_debug(f"Error in Gemini model pre-initialization: {e}")
+            log_debug(f"Error in Gemini model pre-configuration: {e}")
     
     # Gemini OCR Batch Processing Methods (Phase 1)
     def get_ocr_model_setting(self):
@@ -1367,6 +1352,7 @@ class GameChangingTranslator:
 
     def update_gemini_stats(self):
         """Update the Gemini statistics fields by reading the log file."""
+        return # Temporarily disable until StatisticsHandler is refactored
         try:
             # Check if all required components are available
             if not hasattr(self.translation_handler, '_get_cumulative_totals'):
@@ -1401,6 +1387,7 @@ class GameChangingTranslator:
 
     def _get_cumulative_cost_from_log(self):
         """Read the cumulative cost from the Gemini API log file."""
+        return 0.0 # Temporarily disable until StatisticsHandler is refactored
         try:
             # Get the log file path
             if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -2685,9 +2672,8 @@ class GameChangingTranslator:
                 if self.get_ocr_model_setting() == 'gemini':
                     self.translation_handler.start_ocr_session()
                 
-                # Start translation session if using Gemini translation
-                if self.translation_model_var.get() == 'gemini_api':
-                    self.translation_handler.start_translation_session()
+                # *** FIX: Call the generic method to start the session for the ACTIVE provider ***
+                self.translation_handler.start_translation_session()
             
             self.start_stop_btn.config(text="Stop", state=tk.NORMAL)
             status_text_running = "Status: " + self.ui_lang.get_label("status_running", "Running (Press ~ to Stop)")
