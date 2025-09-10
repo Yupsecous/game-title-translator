@@ -165,19 +165,17 @@ class TranslationHandler:
             source_lang, target_lang = self.app.deepl_source_lang, self.app.deepl_target_lang
             extra_params = {"model_type": self.app.deepl_model_type_var.get()}
         elif selected_model == 'gemini_api':
-            # *** FIX: Get language codes correctly from the app instance ***
             source_lang, target_lang = self.app.gemini_source_lang, self.app.gemini_target_lang
             provider = self.providers['gemini']
             extra_params = {"context_window": provider._get_context_window_size()}
         elif self.app.is_openai_model(selected_model):
-            # *** FIX: Get language codes correctly from the app instance ***
             source_lang, target_lang = self.app.openai_source_lang, self.app.openai_target_lang
             provider = self.providers['openai']
             extra_params = {"context_window": provider._get_context_window_size()}
         else:
             return f"Error: Unknown translation model '{selected_model}'"
 
-        # 1. Check Unified Cache
+        # 1. Check Unified Cache (In-Memory LRU)
         cached_result = self.unified_cache.get(cleaned_text_main, source_lang, target_lang, selected_model, **extra_params)
         if cached_result:
             log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
@@ -186,7 +184,37 @@ class TranslationHandler:
                 provider._update_sliding_window(cleaned_text_main, cached_result)
             return self._format_dialog_text(cached_result)
 
-        # 2. Check File Cache (can be added here if needed)
+        #
+        # --- START OF RESTORED CODE BLOCK 1 (READING FROM FILE CACHE) ---
+        #
+        # 2. Check File Cache
+        file_cache_hit = None
+        if selected_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+            key = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('gemini', key)
+        elif selected_model == 'google_api' and self.app.google_file_cache_var.get():
+            key = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('google', key)
+        elif selected_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+            model_type = extra_params.get('model_type', 'latency_optimized')
+            key = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('deepl', key)
+        elif self.app.is_openai_model(selected_model) and self.app.openai_file_cache_var.get():
+            key = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
+            file_cache_hit = self.app.cache_manager.check_file_cache('openai', key)
+        
+        if file_cache_hit:
+            log_debug(f"Found \"{cleaned_text_main}\" in {selected_model} file cache.")
+            self.unified_cache.store(cleaned_text_main, source_lang, target_lang, selected_model, file_cache_hit, **extra_params)
+            
+            provider = self._get_active_llm_provider()
+            if provider and not self._is_error_message(file_cache_hit):
+                provider._update_sliding_window(cleaned_text_main, file_cache_hit)
+                
+            return self._format_dialog_text(file_cache_hit)
+        #
+        # --- END OF RESTORED CODE BLOCK 1 ---
+        #
 
         # 3. All Caches Miss - Perform API Call
         log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API.")
@@ -207,10 +235,31 @@ class TranslationHandler:
         
         # 4. Store successful translation
         if translated_api_text and not self._is_error_message(translated_api_text):
+            #
+            # --- START OF RESTORED CODE BLOCK 2 (SAVING TO FILE CACHE) ---
+            #
+            if selected_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+                cache_key_to_save = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('gemini', cache_key_to_save, translated_api_text)
+            elif selected_model == 'google_api' and self.app.google_file_cache_var.get():
+                cache_key_to_save = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('google', cache_key_to_save, translated_api_text)
+            elif selected_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+                model_type = extra_params.get('model_type', 'latency_optimized')
+                cache_key_to_save = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('deepl', cache_key_to_save, translated_api_text)
+            elif self.app.is_openai_model(selected_model) and self.app.openai_file_cache_var.get():
+                cache_key_to_save = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
+                self.app.cache_manager.save_to_file_cache('openai', cache_key_to_save, translated_api_text)
+            #
+            # --- END OF RESTORED CODE BLOCK 2 ---
+            #
+
             self.unified_cache.store(cleaned_text_main, source_lang, target_lang, selected_model, translated_api_text, **extra_params)
         
         log_debug(f"Translation \"{cleaned_text_main}\" -> \"{str(translated_api_text)}\" took {time.monotonic() - translation_start_monotonic:.3f}s")
         return self._format_dialog_text(translated_api_text)
+
 
     # === NON-LLM PROVIDER METHODS (UNCHANGED) ===
     def _google_translate(self, text_to_translate_gt, source_lang_gt, target_lang_gt):
