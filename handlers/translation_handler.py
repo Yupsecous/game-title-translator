@@ -599,9 +599,105 @@ Result:
             return end_time_str
             
     def _format_dialog_text(self, text):
-        if not text or not isinstance(text, str): return text
-        if not (text.startswith("-") or text.startswith("–") or text.startswith("—")): return text
-        formatted_text = re.sub(r'([.?!])\s+([-–—])', r'\1\n\2', text)
+        """Format dialog text by adding line breaks before dashes that follow sentence-ending punctuation.
+        
+        This pre-processing ensures that dialog like:
+        "- How are you? - Fine. - Great."
+        
+        becomes:
+        "- How are you?
+        - Fine.
+        - Great."
+        
+        Args:
+            text (str): The translation text to format
+            
+        Returns:
+            str: The formatted text with proper dialog line breaks
+        """
+        # DEBUG: Always log when this function is called
+        log_debug(f"DIALOG_FORMAT_DEBUG: _format_dialog_text called with: {repr(text)}")
+        
+        if not text or not isinstance(text, str):
+            log_debug(f"DIALOG_FORMAT_DEBUG: Text is None or not string, returning: {repr(text)}")
+            return text
+        
+        # Check if the text starts with any dash (more robust - no space required)
+        dash_check = (text.startswith("-") or text.startswith("–") or text.startswith("—"))
+        log_debug(f"DIALOG_FORMAT_DEBUG: Text starts with dash: {dash_check}")
+        
+        if not dash_check:
+            log_debug(f"DIALOG_FORMAT_DEBUG: Text doesn't start with dash, returning unchanged")
+            return text
+        
+        log_debug(f"DIALOG_FORMAT_DEBUG: Text starts with dash, proceeding with formatting")
+        
+        # Apply the formatting transformations
+        formatted_text = text
+        
+        # Check for patterns before applying
+        patterns_found = []
+        patterns_to_check = [". -", ". –", ". —", "? -", "? –", "? —", "! -", "! –", "! —"]
+        for pattern in patterns_to_check:
+            if pattern in text:
+                patterns_found.append(pattern)
+        
+        log_debug(f"DIALOG_FORMAT_DEBUG: Patterns found: {patterns_found}")
+        
+        # New rule: Handle quoted dialogue format
+        dialogue_patterns = ['"-', '" "', '- "', '" - "']
+        has_dialogue_quotes = formatted_text.count('"') >= 4
+        has_dialogue_pattern = any(pattern in formatted_text for pattern in dialogue_patterns)
+
+        if has_dialogue_quotes and has_dialogue_pattern:
+            # Check if there are occurrences of '"-'
+            if '"-' in formatted_text:
+                # Replace '"-' with '-'
+                formatted_text = formatted_text.replace('"-', '-')
+            # Check if there are occurrences of '- "' (dash + space + quote)
+            elif '- "' in formatted_text:
+                # Replace '- "' with '-'
+                formatted_text = formatted_text.replace('- "', '-')
+            else:
+                # Replace odd occurrences of '"' with '-'
+                result = []
+                quote_count = 0
+                for char in formatted_text:
+                    if char == '"':
+                        quote_count += 1
+                        if quote_count % 2 == 1:  # Odd occurrence (1st, 3rd, 5th, etc.)
+                            result.append('-')
+                        else:  # Even occurrence (2nd, 4th, 6th, etc.)
+                            result.append('"')
+                    else:
+                        result.append(char)
+                formatted_text = ''.join(result)
+            
+            # Remove all remaining quotes
+            formatted_text = formatted_text.replace('"', '')
+
+        # Replace ". -" with ".\n-" (period + space + hyphen)
+        formatted_text = formatted_text.replace(". -", ".\n-")
+        formatted_text = formatted_text.replace(". –", ".\n–")
+        formatted_text = formatted_text.replace(". —", ".\n—")
+        
+        # Replace "? -" with "?\n-" (question mark + space + hyphen)
+        formatted_text = formatted_text.replace("? -", "?\n-")
+        formatted_text = formatted_text.replace("? –", "?\n–")
+        formatted_text = formatted_text.replace("? —", "?\n—")
+        
+        # Replace "! -" with "!\n-" (exclamation mark + space + hyphen)
+        formatted_text = formatted_text.replace("! -", "!\n-")
+        formatted_text = formatted_text.replace("! –", "!\n–")
+        formatted_text = formatted_text.replace("! —", "!\n—")
+        
+        if formatted_text != text:
+            log_debug(f"DIALOG_FORMAT_DEBUG: Dialog formatting applied!")
+            log_debug(f"DIALOG_FORMAT_DEBUG: Original: {repr(text)}")
+            log_debug(f"DIALOG_FORMAT_DEBUG: Formatted: {repr(formatted_text)}")
+        else:
+            log_debug(f"DIALOG_FORMAT_DEBUG: No changes made to text")
+        
         return formatted_text
     
     def _is_error_message(self, text):
