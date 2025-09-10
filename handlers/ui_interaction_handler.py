@@ -358,7 +358,7 @@ class UIInteractionHandler:
             
             # Update API language dropdowns
             active_model = self.app.translation_model_var.get()
-            if active_model in ['google_api', 'deepl_api', 'gemini_api']:
+            if active_model in ['google_api', 'deepl_api', 'gemini_api', 'openai_api']:
                 self._update_language_dropdowns_for_model(active_model)
             
             # Update MarianMT models dropdown
@@ -504,6 +504,25 @@ class UIInteractionHandler:
                     source_names_list.sort()
             
             current_source_api_code_from_app = self.app.gemini_source_lang
+        elif active_model_code == 'openai_api':
+            # Get raw API codes
+            source_codes = [code for _, code in lm.openai_source_languages]
+            # Convert to localized names and create code mapping
+            source_name_to_code = {}
+            source_names_list = []
+            for code in source_codes:
+                # Use 'openai' as provider for language_display_names.csv lookup
+                localized_name = lm.get_localized_language_name(code, 'openai', ui_language_for_lookup)
+                source_names_list.append(localized_name)
+                source_name_to_code[localized_name] = code
+            
+            # Sort alphabetically
+            if ui_language_for_lookup == 'polish':
+                source_names_list = self.app.language_manager.sort_polish_names(source_names_list)
+            else:
+                source_names_list.sort()
+            
+            current_source_api_code_from_app = self.app.openai_source_lang
         
         if hasattr(self.app, 'source_lang_combobox') and self.app.source_lang_combobox.winfo_exists():
             self.app.source_lang_combobox['values'] = source_names_list
@@ -514,6 +533,8 @@ class UIInteractionHandler:
                 provider_for_display = 'deepl'
             elif active_model_code == 'gemini_api':
                 provider_for_display = 'gemini'
+            elif active_model_code == 'openai_api':
+                provider_for_display = 'openai'
             else:
                 provider_for_display = 'google'  # fallback
                 
@@ -545,6 +566,14 @@ class UIInteractionHandler:
                     for name, code in lm.gemini_source_languages:
                         if code == current_source_api_code_from_app:
                             localized_fallback = lm.get_localized_language_name(code, 'gemini', ui_language_for_lookup)
+                            if localized_fallback in source_names_list:
+                                self.app.source_display_var.set(localized_fallback)
+                                fallback_found = True
+                                break
+                elif active_model_code == 'openai_api':
+                    for name, code in lm.openai_source_languages:
+                        if code == current_source_api_code_from_app:
+                            localized_fallback = lm.get_localized_language_name(code, 'openai', ui_language_for_lookup)
                             if localized_fallback in source_names_list:
                                 self.app.source_display_var.set(localized_fallback)
                                 fallback_found = True
@@ -618,6 +647,25 @@ class UIInteractionHandler:
                 target_names_list.sort()
             
             current_target_api_code_from_app = self.app.gemini_target_lang
+        elif active_model_code == 'openai_api':
+            # Get raw API codes
+            target_codes = [code for _, code in lm.openai_target_languages]
+            # Convert to localized names and create code mapping
+            target_name_to_code = {}
+            target_names_list = []
+            for code in target_codes:
+                # Use 'openai' as provider for language_display_names.csv lookup
+                localized_name = lm.get_localized_language_name(code, 'openai', ui_language_for_lookup)
+                target_names_list.append(localized_name)
+                target_name_to_code[localized_name] = code
+            
+            # Sort alphabetically
+            if ui_language_for_lookup == 'polish':
+                target_names_list = self.app.language_manager.sort_polish_names(target_names_list)
+            else:
+                target_names_list.sort()
+            
+            current_target_api_code_from_app = self.app.openai_target_lang
 
         if hasattr(self.app, 'target_lang_combobox') and self.app.target_lang_combobox.winfo_exists():
             self.app.target_lang_combobox['values'] = target_names_list
@@ -628,6 +676,8 @@ class UIInteractionHandler:
                 provider_for_display = 'deepl'
             elif active_model_code == 'gemini_api':
                 provider_for_display = 'gemini'
+            elif active_model_code == 'openai_api':
+                provider_for_display = 'openai'
             else:
                 provider_for_display = 'google'  # fallback
                 
@@ -659,6 +709,14 @@ class UIInteractionHandler:
                     for name, code in lm.gemini_target_languages:
                         if code == current_target_api_code_from_app:
                             localized_fallback = lm.get_localized_language_name(code, 'gemini', ui_language_for_lookup)
+                            if localized_fallback in target_names_list:
+                                self.app.target_display_var.set(localized_fallback)
+                                fallback_found = True
+                                break
+                elif active_model_code == 'openai_api':
+                    for name, code in lm.openai_target_languages:
+                        if code == current_target_api_code_from_app:
+                            localized_fallback = lm.get_localized_language_name(code, 'openai', ui_language_for_lookup)
                             if localized_fallback in target_names_list:
                                 self.app.target_display_var.set(localized_fallback)
                                 fallback_found = True
@@ -849,7 +907,7 @@ class UIInteractionHandler:
             
             self.update_translation_model_ui() 
 
-            if model_to_configure_for == 'google_api' or model_to_configure_for == 'deepl_api' or model_to_configure_for == 'gemini_api':
+            if model_to_configure_for in ['google_api', 'deepl_api', 'gemini_api', 'openai_api']:
                 self._update_language_dropdowns_for_model(model_to_configure_for)
                 if model_to_configure_for == 'google_api':
                     self.app.source_lang_var.set(self.app.google_source_lang)
@@ -861,6 +919,9 @@ class UIInteractionHandler:
                     self.app.source_lang_var.set(self.app.gemini_source_lang)
                     self.app.target_lang_var.set(self.app.gemini_target_lang)
                     # Session will be created/resumed automatically on first translation
+                elif model_to_configure_for == 'openai_api':
+                    self.app.source_lang_var.set(self.app.openai_source_lang)
+                    self.app.target_lang_var.set(self.app.openai_target_lang)
             elif model_to_configure_for == 'marianmt':
                 if self.app.MARIANMT_AVAILABLE and self.app.marian_translator is None and (preload or not initial_setup):
                     self.app.translation_handler.initialize_marian_translator()
