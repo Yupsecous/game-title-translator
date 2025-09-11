@@ -74,6 +74,10 @@ class OpenAIModelsManager:
         """Get list of display names for translation-enabled models."""
         return [model['display_name'] for model in self.translation_models]
     
+    def get_ocr_model_names(self):
+        """Get list of display names for OCR-enabled models."""
+        return [model['display_name'] for model in self.models if model.get('ocr_enabled', False)]
+    
     def get_api_name_by_display_name(self, display_name):
         """Get API name for a given display name."""
         for model in self.models:

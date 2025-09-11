@@ -490,11 +490,11 @@ def process_gemini_ocr_async(app, webp_image_data, source_lang, sequence_number)
         log_debug(f"TIMING: Thread {sequence_number} started execution at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
         log_debug(f"Processing Gemini OCR batch {sequence_number}")
         
-        # Make the Gemini OCR API call - logging is handled inside the function
+        # Make the OCR API call using the new unified provider system - logging is handled inside the provider
         api_start_time = time.monotonic()
         log_debug(f"TIMING: API call {sequence_number} starting at {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
         
-        ocr_result = app.translation_handler._gemini_ocr_only(webp_image_data, source_lang, sequence_number)
+        ocr_result = app.translation_handler.perform_ocr(webp_image_data, source_lang)
         
         api_end_time = time.monotonic()
         api_duration = api_end_time - api_start_time

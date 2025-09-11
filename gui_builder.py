@@ -285,7 +285,7 @@ def create_settings_tab(app):
     # Row 0.5: OCR Model Selection
     ttk.Label(frame, text=app.ui_lang.get_label("ocr_model_label", "OCR Model")).grid(row=1, column=0, padx=5, pady=5, sticky="w")
     
-    # Build OCR models list with Gemini models first, then Tesseract
+    # Build OCR models list with Gemini models first, then OpenAI, then Tesseract
     ocr_models_available_for_ui = []
     
     # Add Gemini OCR models first (from CSV file)
@@ -293,6 +293,12 @@ def create_settings_tab(app):
         gemini_ocr_models = app.gemini_models_manager.get_ocr_model_names()
         ocr_models_available_for_ui.extend(gemini_ocr_models)
         log_debug(f"Added Gemini OCR models: {gemini_ocr_models}")
+    
+    # Add OpenAI OCR models (from CSV file)
+    if app.OPENAI_API_AVAILABLE:
+        openai_ocr_models = app.openai_models_manager.get_ocr_model_names()
+        ocr_models_available_for_ui.extend(openai_ocr_models)
+        log_debug(f"Added OpenAI OCR models: {openai_ocr_models}")
     
     # Add Tesseract
     ocr_models_available_for_ui.append(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
@@ -334,7 +340,7 @@ def create_settings_tab(app):
         # Suppress traces during OCR model update to prevent premature saves
         app.suppress_traces()
         try:
-            # Determine if this is a Gemini model or Tesseract
+            # Determine if this is a Gemini model, OpenAI model, or Tesseract
             if selected_display == app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"):
                 app.ocr_model_var.set('tesseract')
                 log_debug("OCR model set to tesseract")
@@ -343,6 +349,11 @@ def create_settings_tab(app):
                 # Store the specific Gemini model selection
                 app.gemini_ocr_model_var.set(selected_display)
                 log_debug(f"OCR model set to gemini, specific model: {selected_display}")
+            elif app.OPENAI_API_AVAILABLE and selected_display in app.openai_models_manager.get_ocr_model_names():
+                app.ocr_model_var.set('openai')
+                # Store the specific OpenAI model selection in the generic ocr_model_var for now
+                # We could add a specific openai_ocr_model_var later if needed
+                log_debug(f"OCR model set to openai, specific model: {selected_display}")
             else:
                 log_debug(f"Unknown OCR model selection: {selected_display}")
         finally:
