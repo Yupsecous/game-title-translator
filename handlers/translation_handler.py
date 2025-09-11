@@ -179,6 +179,37 @@ class TranslationHandler:
         cached_result = self.unified_cache.get(cleaned_text_main, source_lang, target_lang, selected_model, **extra_params)
         if cached_result:
             log_debug(f"Translation \"{cleaned_text_main}\" -> \"{cached_result}\" from unified cache")
+            
+            # Check if file cache is enabled and save LRU result to file cache if not already there
+            file_cache_enabled = False
+            cache_key_for_file = None
+            
+            if selected_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
+                file_cache_enabled = True
+                cache_key_for_file = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
+            elif selected_model == 'google_api' and self.app.google_file_cache_var.get():
+                file_cache_enabled = True
+                cache_key_for_file = f"google:{source_lang}:{target_lang}:{cleaned_text_main}"
+            elif selected_model == 'deepl_api' and self.app.deepl_file_cache_var.get():
+                file_cache_enabled = True
+                model_type = extra_params.get('model_type', 'latency_optimized')
+                cache_key_for_file = f"deepl:{source_lang}:{target_lang}:{model_type}:{cleaned_text_main}"
+            elif self.app.is_openai_model(selected_model) and self.app.openai_file_cache_var.get():
+                file_cache_enabled = True
+                cache_key_for_file = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
+            
+            # If file cache is enabled, check if translation exists in file cache
+            if file_cache_enabled and cache_key_for_file:
+                provider_name = selected_model.replace('_api', '') if '_api' in selected_model else selected_model
+                file_cache_result = self.app.cache_manager.check_file_cache(provider_name, cache_key_for_file)
+                
+                # If not in file cache, save the LRU result to file cache
+                if not file_cache_result:
+                    log_debug(f"LRU cache hit but file cache miss. Saving to {provider_name} file cache.")
+                    self.app.cache_manager.save_to_file_cache(provider_name, cache_key_for_file, cached_result)
+                else:
+                    log_debug(f"Translation found in both LRU cache and {provider_name} file cache.")
+            
             provider = self._get_active_llm_provider()
             if provider and not self._is_error_message(cached_result):
                 provider._update_sliding_window(cleaned_text_main, cached_result)
