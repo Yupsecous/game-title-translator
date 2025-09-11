@@ -95,6 +95,20 @@ class TranslationHandler:
             return provider.request_end_translation_session()
         return True
 
+    # === OCR SESSION MANAGEMENT ===
+    def start_ocr_session(self):
+        """Start OCR session for the active OCR provider."""
+        provider = self._get_active_ocr_provider()
+        if provider:
+            provider.start_ocr_session()
+
+    def request_end_ocr_session(self):
+        """Request to end OCR session for the active OCR provider."""
+        provider = self._get_active_ocr_provider()
+        if provider:
+            return provider.request_end_ocr_session()
+        return True
+
     def force_end_sessions_on_app_close(self):
         # End translation sessions
         for provider in self.providers.values():
