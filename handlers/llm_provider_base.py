@@ -136,9 +136,17 @@ class AbstractLLMProvider(ABC):
 
             # Initialize main log file
             if not os.path.exists(self.main_log_file):
+                # Calculate proper centering for provider name in header
+                border_width = 55  # Total width of the border
+                api_call_text = f"{self.provider_name.upper()} API CALL LOG"
+                padding_needed = border_width - len(api_call_text) - 2  # -2 for the # symbols on each side
+                left_padding = padding_needed // 2
+                right_padding = padding_needed - left_padding
+                centered_api_line = f"#{' ' * left_padding}{api_call_text}{' ' * right_padding}#"
+                
                 header = f"""
 #######################################################
-#              {self.provider_name.upper()} API CALL LOG                 #
+{centered_api_line}
 #      Game-Changing Translator - Token Analysis      #
 #######################################################
 
@@ -160,9 +168,17 @@ Format: Each entry shows complete message content sent to and received from {sel
 
             # Initialize short translation log file
             if not os.path.exists(self.short_log_file):
+                # Calculate proper centering for provider name in header
+                border_width = 55  # Total width of the border
+                translation_text = f"{self.provider_name.upper()} TRANSLATION - SHORT LOG"
+                padding_needed = border_width - len(translation_text) - 2  # -2 for the # symbols on each side
+                left_padding = padding_needed // 2
+                right_padding = padding_needed - left_padding
+                centered_translation_line = f"#{' ' * left_padding}{translation_text}{' ' * right_padding}#"
+                
                 tra_header = f"""
 #######################################################
-#           {self.provider_name.upper()} TRANSLATION - SHORT LOG            #
+{centered_translation_line}
 #######################################################
 
 Session Started: {timestamp}
