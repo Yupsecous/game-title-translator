@@ -1,4 +1,4 @@
-﻿# handlers/translation_handler.py
+# handlers/translation_handler.py
 import re
 import os
 import gc
@@ -14,9 +14,13 @@ from marian_mt_translator import MarianMTTranslator
 from unified_translation_cache import UnifiedTranslationCache
 
 # Import the new LLM provider classes
-from .llm_provider_base import NetworkCircuitBreaker # Used by legacy OCR
+from .llm_provider_base import NetworkCircuitBreaker # Used by legacy OCR (if needed)
 from .gemini_provider import GeminiProvider
 from .openai_provider import OpenAIProvider
+
+# Import the new OCR provider classes
+from .gemini_ocr_provider import GeminiOCRProvider
+from .openai_ocr_provider import OpenAIOCRProvider
 
 # Import other dependencies
 try:
@@ -26,18 +30,6 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
     log_debug("Requests library not available")
-
-# Import legacy Gemini dependencies for OCR
-try:
-    from google import genai
-    from google.genai import types
-    GENAI_AVAILABLE = True
-except ImportError:
-    try:
-        import google.generativeai as genai
-        GENAI_AVAILABLE = True
-    except ImportError:
-        GENAI_AVAILABLE = False
 
 
 class TranslationHandler:
@@ -51,45 +43,45 @@ class TranslationHandler:
             'openai': OpenAIProvider(app)
         }
         
-        self._log_lock = threading.Lock()
-        self._api_calls_lock = threading.Lock()
+        # Initialize OCR providers using the new architecture
+        self.ocr_providers = {
+            'gemini': GeminiOCRProvider(app),
+            'openai': OpenAIOCRProvider(app)
+        }
         
-        # --- LEGACY OCR SESSION & LOGIC (Kept for now) ---
-        self.ocr_session_counter = 1
-        self.current_ocr_session_active = False
-        self._pending_ocr_calls = 0
-        self._ocr_session_should_end = False
-        
-        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-            base_dir = os.path.dirname(sys.executable)
-        else:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            
-        self.gemini_log_file = os.path.join(base_dir, "Gemini_API_call_logs.txt")
-        self.ocr_short_log_file = os.path.join(base_dir, "GEMINI_API_OCR_short_log.txt")
-        self._initialize_legacy_ocr_session_counter()
-        
-        self._ocr_cache_initialized = False
-        self._cached_ocr_input_tokens = 0
-        self._cached_ocr_output_tokens = 0
-        self._cached_ocr_cost = 0.0
-
-        self.gemini_client = None
-        self.gemini_session_api_key = None
-        self.client_created_time = 0
-        self.api_call_count = 0
-        
-        self.ocr_circuit_breaker = NetworkCircuitBreaker()
-        
-        log_debug("Translation handler initialized with unified cache and LLM providers")
+        log_debug("Translation handler initialized with unified cache, LLM providers, and OCR providers")
 
     def _get_active_llm_provider(self):
+        """Get the currently active LLM provider based on selected translation model."""
         selected_model = self.app.translation_model_var.get()
         if selected_model == 'gemini_api':
             return self.providers.get('gemini')
         elif self.app.is_openai_model(selected_model):
             return self.providers.get('openai')
         return None
+
+    def _get_active_ocr_provider(self):
+        """Get the currently active OCR provider based on selected OCR model."""
+        selected_ocr_model = self.app.ocr_model_var.get()
+        if self.app.is_gemini_model(selected_ocr_model):
+            return self.ocr_providers.get('gemini')
+        elif self.app.is_openai_model(selected_ocr_model):
+            return self.ocr_providers.get('openai')
+        return None
+
+    def perform_ocr(self, image_data, source_lang):
+        """Main public method for performing OCR. Delegates to the currently selected API provider."""
+        provider = self._get_active_ocr_provider()
+        if provider:
+            try:
+                # The recognize method in the base class will handle all logic
+                return provider.recognize(image_data, source_lang)
+            except Exception as e:
+                log_debug(f"Error performing OCR with {provider.provider_name}: {e}")
+                return "<EMPTY>"
+        else:
+            log_debug(f"No active OCR provider found for model: {self.app.ocr_model_var.get()}")
+            return "<EMPTY>"  # Fallback
 
     # === LLM SESSION MANAGEMENT ===
     def start_translation_session(self):
@@ -104,12 +96,19 @@ class TranslationHandler:
         return True
 
     def force_end_sessions_on_app_close(self):
+        # End translation sessions
         for provider in self.providers.values():
             try:
                 provider.end_translation_session(force=True)
             except Exception as e:
                 log_debug(f"Error force ending {provider.provider_name} session: {e}")
-        self.end_ocr_session(force=True)
+        
+        # End OCR sessions
+        for provider in self.ocr_providers.values():
+            try:
+                provider.end_session(force=True)
+            except Exception as e:
+                log_debug(f"Error force ending {provider.provider_name} OCR session: {e}")
 
     # === UNIFIED TRANSLATE METHOD ===
     def translate_text_with_timeout(self, text_content, timeout_seconds=10.0, ocr_batch_number=None):
@@ -215,9 +214,6 @@ class TranslationHandler:
                 provider._update_sliding_window(cleaned_text_main, cached_result)
             return self._format_dialog_text(cached_result)
 
-        #
-        # --- START OF RESTORED CODE BLOCK 1 (READING FROM FILE CACHE) ---
-        #
         # 2. Check File Cache
         file_cache_hit = None
         if selected_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
@@ -243,9 +239,6 @@ class TranslationHandler:
                 provider._update_sliding_window(cleaned_text_main, file_cache_hit)
                 
             return self._format_dialog_text(file_cache_hit)
-        #
-        # --- END OF RESTORED CODE BLOCK 1 ---
-        #
 
         # 3. All Caches Miss - Perform API Call
         log_debug(f"All caches MISS for \"{cleaned_text_main}\". Calling API.")
@@ -266,9 +259,6 @@ class TranslationHandler:
         
         # 4. Store successful translation
         if translated_api_text and not self._is_error_message(translated_api_text):
-            #
-            # --- START OF RESTORED CODE BLOCK 2 (SAVING TO FILE CACHE) ---
-            #
             if selected_model == 'gemini_api' and self.app.gemini_file_cache_var.get():
                 cache_key_to_save = f"gemini:{source_lang}:{target_lang}:{cleaned_text_main}"
                 self.app.cache_manager.save_to_file_cache('gemini', cache_key_to_save, translated_api_text)
@@ -282,9 +272,6 @@ class TranslationHandler:
             elif self.app.is_openai_model(selected_model) and self.app.openai_file_cache_var.get():
                 cache_key_to_save = f"openai:{source_lang}:{target_lang}:{cleaned_text_main}"
                 self.app.cache_manager.save_to_file_cache('openai', cache_key_to_save, translated_api_text)
-            #
-            # --- END OF RESTORED CODE BLOCK 2 ---
-            #
 
             self.unified_cache.store(cleaned_text_main, source_lang, target_lang, selected_model, translated_api_text, **extra_params)
         
@@ -399,388 +386,7 @@ class TranslationHandler:
         except Exception as e_cmm:
             return f"MarianMT translation error: {type(e_cmm).__name__} - {str(e_cmm)}"
 
-    # === LEGACY OCR METHODS (RESTORED FROM BACKUP) ===
-    def _initialize_legacy_ocr_session_counter(self):
-        try:
-            highest_ocr_session = 0
-            if os.path.exists(self.ocr_short_log_file):
-                with open(self.ocr_short_log_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        if line.startswith("SESSION ") and (" STARTED " in line or " ENDED " in line):
-                            try:
-                                session_num = int(line.split()[1])
-                                highest_ocr_session = max(highest_ocr_session, session_num)
-                            except (IndexError, ValueError):
-                                continue
-            self.ocr_session_counter = highest_ocr_session + 1
-            log_debug(f"Initialized legacy OCR session counter: {self.ocr_session_counter}")
-        except Exception as e:
-            log_debug(f"Error initializing OCR session counter: {e}, using default")
-            self.ocr_session_counter = 1
-
-    def _increment_pending_ocr_calls(self):
-        with self._api_calls_lock:
-            self._pending_ocr_calls += 1
-
-    def _decrement_pending_ocr_calls(self):
-        with self._api_calls_lock:
-            self._pending_ocr_calls = max(0, self._pending_ocr_calls - 1)
-            if self._pending_ocr_calls == 0 and self._ocr_session_should_end:
-                self.end_ocr_session()
-
-    def start_ocr_session(self):
-        if not self.current_ocr_session_active:
-            timestamp = self._get_precise_timestamp()
-            try:
-                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"\nSESSION {self.ocr_session_counter} STARTED {timestamp}\n")
-                self.current_ocr_session_active = True
-                log_debug(f"OCR Session {self.ocr_session_counter} started")
-            except Exception as e:
-                log_debug(f"Error starting OCR session: {e}")
-
-    def end_ocr_session(self, force=False):
-        if self.current_ocr_session_active:
-            if self._pending_ocr_calls > 0 and not force:
-                log_debug(f"OCR session end delayed: {self._pending_ocr_calls} pending calls")
-                self._ocr_session_should_end = True
-                return False
-            timestamp = self._get_precise_timestamp()
-            try:
-                end_reason = "(FORCED - APP CLOSING)" if force else ""
-                with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"SESSION {self.ocr_session_counter} ENDED {timestamp} {end_reason}\n".strip() + "\n")
-                self.current_ocr_session_active = False
-                self._ocr_session_should_end = False
-                self.ocr_session_counter += 1
-                log_debug(f"OCR Session {self.ocr_session_counter - 1} ended")
-                return True
-            except Exception as e:
-                log_debug(f"Error ending OCR session: {e}")
-                return False
-        return True
-
-    def request_end_ocr_session(self):
-        if self.current_ocr_session_active:
-            if self._pending_ocr_calls == 0:
-                return self.end_ocr_session()
-            else:
-                self._ocr_session_should_end = True
-                log_debug(f"OCR session end requested, waiting for {self._pending_ocr_calls} pending calls")
-                return False
-        return True
-
-    def _get_next_ocr_image_number(self):
-        """Get the next sequential number for OCR image saving."""
-        try:
-            # Get the base directory (same as where the script runs from)
-            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-                base_dir = os.path.dirname(sys.executable)
-            else:
-                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            
-            ocr_images_dir = os.path.join(base_dir, "OCR_images")
-            
-            # Ensure the directory exists
-            os.makedirs(ocr_images_dir, exist_ok=True)
-            
-            # Get all existing files in the directory
-            if os.path.exists(ocr_images_dir):
-                existing_files = os.listdir(ocr_images_dir)
-                # Filter for .webp files and extract numbers
-                numbers = []
-                for filename in existing_files:
-                    if filename.endswith('.webp'):
-                        try:
-                            # Extract number from filename like "0001.webp"
-                            number_str = filename.split('.')[0]
-                            if number_str.isdigit():
-                                numbers.append(int(number_str))
-                        except (ValueError, IndexError):
-                            continue
-                
-                # Get the next number
-                if numbers:
-                    next_number = max(numbers) + 1
-                else:
-                    next_number = 1
-            else:
-                next_number = 1
-            
-            return next_number, ocr_images_dir
-        except Exception as e:
-            log_debug(f"Error getting next OCR image number: {e}")
-            return 1, None
-    
-    def _save_ocr_image(self, webp_image_data):
-        """Save the OCR image to the OCR_images folder with sequential numbering."""
-        try:
-            # Debug: Check what we received
-            log_debug(f"_save_ocr_image called with data type: {type(webp_image_data)}")
-            
-            if webp_image_data is None:
-                log_debug("webp_image_data is None, cannot save image")
-                return
-            
-            if isinstance(webp_image_data, str):
-                log_debug(f"webp_image_data is string with length: {len(webp_image_data)}")
-                # If it's a string, it might be base64 encoded
-                try:
-                    import base64
-                    webp_image_data = base64.b64decode(webp_image_data)
-                    log_debug(f"Decoded base64 data, new length: {len(webp_image_data)}")
-                except Exception as decode_error:
-                    log_debug(f"Failed to decode base64 data: {decode_error}")
-                    return
-            elif isinstance(webp_image_data, bytes):
-                log_debug(f"webp_image_data is bytes with length: {len(webp_image_data)}")
-            else:
-                log_debug(f"webp_image_data is unexpected type: {type(webp_image_data)}")
-                return
-            
-            if len(webp_image_data) == 0:
-                log_debug("webp_image_data is empty, cannot save image")
-                return
-            
-            next_number, ocr_images_dir = self._get_next_ocr_image_number()
-            
-            if ocr_images_dir is None:
-                log_debug("Could not determine OCR images directory, skipping image save")
-                return
-            
-            # Format the filename with 4-digit zero-padding
-            filename = f"{next_number:04d}.webp"
-            filepath = os.path.join(ocr_images_dir, filename)
-            
-            # Save the image data
-            with open(filepath, 'wb') as f:
-                bytes_written = f.write(webp_image_data)
-                log_debug(f"Wrote {bytes_written} bytes to {filepath}")
-            
-            # Verify the file was written correctly
-            if os.path.exists(filepath):
-                file_size = os.path.getsize(filepath)
-                log_debug(f"Successfully saved OCR image to: {filepath} (size: {file_size} bytes)")
-            else:
-                log_debug(f"File was not created: {filepath}")
-            
-        except Exception as e:
-            log_debug(f"Error saving OCR image: {e}")
-            import traceback
-            log_debug(f"Full traceback: {traceback.format_exc()}")
-            # Don't let image saving errors stop the OCR process
-            pass
-
-    def _gemini_ocr_only(self, webp_image_data, source_lang, batch_number=None):
-        log_debug(f"Gemini OCR request")
-        if self.ocr_circuit_breaker.should_force_refresh():
-            log_debug("Circuit breaker forcing legacy OCR client refresh due to network issues")
-            self.gemini_client = None
-            self.ocr_circuit_breaker = NetworkCircuitBreaker()
-        
-        self._increment_pending_ocr_calls()
-        try:
-            api_key_gemini = self.app.gemini_api_key_var.get().strip()
-            if not api_key_gemini: return "<ERROR>: Gemini API key missing"
-            if not GENAI_AVAILABLE: return "<e>: Google Generative AI libraries not available"
-
-            if self.gemini_client is None or self.gemini_session_api_key != api_key_gemini:
-                log_debug("Creating new Gemini client for legacy OCR")
-                self.gemini_client = genai.Client(api_key=api_key_gemini)
-                self.gemini_session_api_key = api_key_gemini
-            
-            if self.gemini_client is None: return "<e>: Gemini client initialization failed"
-            
-            ocr_model_api_name = self.app.get_current_gemini_model_for_ocr() or 'gemini-2.5-flash-lite'
-            
-            ocr_config = types.GenerateContentConfig(
-                temperature=0.0, max_output_tokens=512, media_resolution="MEDIA_RESOLUTION_MEDIUM",
-                safety_settings=[types.SafetySetting(category=c, threshold='BLOCK_NONE') for c in ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']]
-            )
-            
-            prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.\n2. If there is no text in the image, return only: <EMPTY>."""
-            
-            # Save the image before sending to API
-            # self._save_ocr_image(webp_image_data)
-            
-            api_call_start_time = time.time()
-            response = self.gemini_client.models.generate_content(
-                model=ocr_model_api_name,
-                contents=[types.Part.from_bytes(data=webp_image_data, mime_type='image/webp'), prompt],
-                config=ocr_config
-            )
-            call_duration = time.time() - api_call_start_time
-            
-            self.ocr_circuit_breaker.record_call(call_duration, True)
-            
-            ocr_result = response.text.strip() if response.text else "<EMPTY>"
-            parsed_text = ocr_result.replace('```text\n', '').replace('```', '').replace('\n', ' ').strip()
-            if not parsed_text or "<EMPTY>" in parsed_text:
-                parsed_text = "<EMPTY>"
-            
-            input_tokens, output_tokens, model_name, model_source = 0, 0, ocr_model_api_name, "api_request"
-            try:
-                if response.usage_metadata:
-                    input_tokens = response.usage_metadata.prompt_token_count
-                    output_tokens = response.usage_metadata.candidates_token_count
-            except (AttributeError, KeyError):
-                log_debug("Could not find usage_metadata in Gemini OCR response.")
-            
-            self._log_complete_gemini_ocr_call(prompt, len(webp_image_data), ocr_result, parsed_text, call_duration, input_tokens, output_tokens, source_lang, model_name, model_source)
-            
-            log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s)")
-            return parsed_text
-            
-        except Exception as e:
-            self.ocr_circuit_breaker.record_call(0, False)
-            log_debug(f"Gemini OCR API error: {type(e).__name__} - {str(e)}")
-            return "<EMPTY>"
-        finally:
-            self._decrement_pending_ocr_calls()
-
-    # *** FIX: RESTORED FULL, UNABRIDGED OCR LOGGING METHODS FROM BACKUP ***
-    def _log_complete_gemini_ocr_call(self, prompt, image_size, raw_response, parsed_response, call_duration, input_tokens, output_tokens, source_lang, model_name, model_source):
-        if not self.app.gemini_api_log_enabled_var.get(): return
-        try:
-            with self._log_lock:
-                call_end_time = self._get_precise_timestamp()
-                call_start_time = self._calculate_start_time(call_end_time, call_duration)
-                
-                model_costs = self.app.gemini_models_manager.get_model_costs(model_name)
-                INPUT_COST_PER_MILLION = model_costs.get('input_cost', 0.1)
-                OUTPUT_COST_PER_MILLION = model_costs.get('output_cost', 0.4)
-                
-                call_input_cost = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION
-                call_output_cost = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION
-                total_call_cost = call_input_cost + call_output_cost
-                
-                prev_total_input, prev_total_output, prev_total_cost = self._get_cumulative_totals_ocr()
-                new_total_input = prev_total_input + input_tokens
-                new_total_output = prev_total_output + output_tokens
-                new_total_cost = prev_total_cost + total_call_cost
-                
-                self._update_ocr_cache(input_tokens, output_tokens, total_call_cost)
-                
-                input_cost_str = f"${INPUT_COST_PER_MILLION:.3f}" if (INPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${INPUT_COST_PER_MILLION:.2f}"
-                output_cost_str = f"${OUTPUT_COST_PER_MILLION:.3f}" if (OUTPUT_COST_PER_MILLION * 1000) % 10 != 0 else f"${OUTPUT_COST_PER_MILLION:.2f}"
-                
-                log_entry = f"""
-=== GEMINI OCR API CALL ===
-Timestamp: {call_start_time}
-Image Size: {image_size} bytes
-Call Type: OCR Only
-
-REQUEST PROMPT:
----BEGIN PROMPT---
-{prompt}
----END PROMPT---
-
-RESPONSE RECEIVED:
-Model: {model_name} ({model_source})
-Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
-Timestamp: {call_end_time}
-Call Duration: {call_duration:.3f} seconds
-
----BEGIN RESPONSE---
-{raw_response}
----END RESPONSE---
-
-PERFORMANCE & COST ANALYSIS:
-- Input Tokens: {input_tokens}
-- Output Tokens: {output_tokens}
-- Input Cost: ${call_input_cost:.8f}
-- Output Cost: ${call_output_cost:.8f}
-- Total Cost for this Call: ${total_call_cost:.8f}
-
-CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
-- Total Input Tokens (OCR, so far): {new_total_input}
-- Total Output Tokens (OCR, so far): {new_total_output}
-- Total OCR Cost (so far): ${new_total_cost:.8f}
-
-========================================
-
-"""
-                with open(self.gemini_log_file, 'a', encoding='utf-8') as f: f.write(log_entry)
-                self._write_short_ocr_log(call_start_time, call_end_time, call_duration, input_tokens, output_tokens, total_call_cost, new_total_input, new_total_output, new_total_cost, parsed_response, model_name, model_source)
-        except Exception as e:
-            log_debug(f"Error logging complete Gemini OCR call: {e}")
-
-    def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, input_tokens, output_tokens, call_cost, cumulative_input, cumulative_output, cumulative_cost, parsed_result, model_name, model_source):
-        if not self.app.gemini_api_log_enabled_var.get(): return
-        try:
-            cost_line = ""
-            try:
-                model_costs = self.app.gemini_models_manager.get_model_costs(model_name)
-                input_cost, output_cost = model_costs['input_cost'], model_costs['output_cost']
-                input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
-                output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
-                cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"
-            except Exception: pass
-            
-            log_entry = f"""========= OCR CALL ===========
-Model: {model_name} ({model_source})
-{cost_line}Start: {call_start_time}
-End: {call_end_time}
-Duration: {call_duration:.3f}s
-Tokens: In={input_tokens}, Out={output_tokens} | Cost: ${call_cost:.8f}
-Total (so far): In={cumulative_input}, Out={cumulative_output} | Cost: ${cumulative_cost:.8f}
-Result:
---------------------------------------------------
-{parsed_result}
---------------------------------------------------
-
-"""
-            with open(self.ocr_short_log_file, 'a', encoding='utf-8') as f:
-                f.write(log_entry)
-        except Exception as e:
-            log_debug(f"Error writing short OCR log: {e}")
-
-    def _get_cumulative_totals_ocr(self):
-        if self._ocr_cache_initialized:
-            return self._cached_ocr_input_tokens, self._cached_ocr_output_tokens, self._cached_ocr_cost
-        
-        total_input, total_output, total_cost = 0, 0, 0.0
-        if not os.path.exists(self.gemini_log_file):
-            self._ocr_cache_initialized = True
-            return 0, 0, 0.0
-        
-        input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(OCR, so far\):\s*(\d+)")
-        output_token_regex = re.compile(r"^\s*-\s*Total Output Tokens \(OCR, so far\):\s*(\d+)")
-        cost_regex = re.compile(r"^\s*-\s*Total OCR Cost \(so far\):\s*\$([0-9.]+)")
-        
-        try:
-            with open(self.gemini_log_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if m := input_token_regex.match(line): total_input = int(m.group(1))
-                    if m := output_token_regex.match(line): total_output = int(m.group(1))
-                    if m := cost_regex.match(line): total_cost = float(m.group(1))
-            
-            self._cached_ocr_input_tokens, self._cached_ocr_output_tokens, self._cached_ocr_cost = total_input, total_output, total_cost
-            self._ocr_cache_initialized = True
-            return total_input, total_output, total_cost
-        except (IOError, ValueError) as e:
-            log_debug(f"Error reading OCR cumulative totals: {e}")
-            self._ocr_cache_initialized = True
-            return 0, 0, 0.0
-
-    def _update_ocr_cache(self, input_tokens, output_tokens, cost):
-        if not self._ocr_cache_initialized: self._get_cumulative_totals_ocr()
-        self._cached_ocr_input_tokens += input_tokens
-        self._cached_ocr_output_tokens += output_tokens
-        self._cached_ocr_cost += cost
-
     # === UTILITY METHODS (UNCHANGED) ===
-    def _get_precise_timestamp(self):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-
-    def _calculate_start_time(self, end_time_str, duration_seconds):
-        try:
-            end_time = datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S.%f")
-            start_time = end_time - timedelta(seconds=duration_seconds)
-            return start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        except Exception:
-            return end_time_str
-            
     def _format_dialog_text(self, text):
         """Format dialog text by adding line breaks before dashes that follow sentence-ending punctuation.
         
@@ -871,7 +477,7 @@ Result:
         
         # Replace "! -" with "!\n-" (exclamation mark + space + hyphen)
         formatted_text = formatted_text.replace("! -", "!\n-")
-        formatted_text = formatted_text.replace("! –", "!\n–")
+        formatted_text = formatted_text.replace("! –", "?\n–")
         formatted_text = formatted_text.replace("! —", "!\n—")
         
         if formatted_text != text:

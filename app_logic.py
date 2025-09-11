@@ -2795,6 +2795,38 @@ class GameChangingTranslator:
             return True
         
         return False
+
+    def is_gemini_model(self, model_name):
+        """Check if the given model name is a Gemini model."""
+        if not model_name:
+            return False
+        
+        # Check if it's the Gemini API provider identifier
+        if model_name == 'gemini_api':
+            return True
+        
+        # Check if it's in our Gemini translation models
+        gemini_translation_models = self.gemini_models_manager.get_translation_model_names()
+        if model_name in gemini_translation_models:
+            return True
+        
+        # Check if it's in our Gemini OCR models
+        gemini_ocr_models = self.gemini_models_manager.get_ocr_model_names()
+        if model_name in gemini_ocr_models:
+            return True
+        
+        # Check if it's using the Gemini key format
+        if model_name.startswith('gemini_'):
+            return True
+        
+        return False
+
+    def get_current_openai_model_for_ocr(self):
+        """Get the API name of currently selected OpenAI OCR model."""
+        display_name = self.ocr_model_var.get()
+        if self.is_openai_model(display_name):
+            return self.openai_models_manager.get_api_name_by_display_name(display_name)
+        return 'gpt-4o'  # Default fallback
     
     def create_about_tab(self):
         """Create the About tab with consistent content for both initial load and language changes."""
