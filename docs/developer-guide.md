@@ -23,8 +23,13 @@ Game-Changing Translator follows a modular design with the following key compone
    - `OpenAIModelsManager` - Manages OpenAI model configurations from CSV file
    - `HotkeyHandler` - Manages keyboard shortcuts
    - `StatisticsHandler` - API usage statistics parsing, cost monitoring, and export functionality
-   - `TranslationHandler` - Coordinates translation with different providers and unified cache
+   - `TranslationHandler` - Coordinates translation, legacy OCR methods, and non-LLM providers
    - `UIInteractionHandler` - Manages UI interactions and settings
+
+3. **LLM Provider Architecture (in `handlers/` directory)**
+   - `LLMProviderBase` - Abstract base class for all LLM-based translation providers
+   - `GeminiProvider` - Gemini-specific translation implementation
+   - `OpenAIProvider` - OpenAI-specific translation implementation
 
 3. **Worker Threads (`worker_threads.py`)**
    - `run_capture_thread` - Captures screenshots from selected screen areas
@@ -83,10 +88,14 @@ ocr-translator/
 │   ├── configuration_handler.py   # Settings and configuration
 │   ├── display_manager.py         # Display and UI updates
 │   ├── gemini_models_manager.py   # Gemini model configuration management
-│   ├── openai_models_manager.py   # OpenAI model configuration management
+│   ├── gemini_provider.py         # Gemini LLM translation provider
 │   ├── hotkey_handler.py          # Keyboard shortcuts
+│   ├── llm_provider_base.py       # Abstract base class for LLM providers
+│   ├── openai_models_manager.py   # OpenAI model configuration management
+│   ├── openai_provider.py         # OpenAI LLM translation provider
 │   ├── statistics_handler.py      # API usage statistics and cost monitoring
-│   ├── translation_handler.py     # Translation coordination
+│   ├── translation_handler.py     # Translation coordination and legacy methods
+│   ├── translation_handler_backup.py # Backup of original handler before refactoring
 │   └── ui_interaction_handler.py  # UI event handling
 ├── language_manager.py            # Language code management and mapping
 ├── language_ui.py                 # UI localization support
@@ -211,6 +220,103 @@ Translation Request
 - **Incomplete cache clearing**: Cache clearing didn't clear all cache levels, leaving stale data
 - **Memory waste**: Multiple caches storing the same translations
 - **Thread safety issues**: Inconsistent locking mechanisms across different cache implementations
+
+### LLM Provider Architecture
+
+The application features a modular LLM provider architecture that was introduced to separate concerns and improve maintainability for language model-based translation services (Gemini, OpenAI). This refactoring extracted LLM-specific functionality from the monolithic `TranslationHandler` into specialized provider classes.
+
+#### Architecture Overview
+
+The LLM provider system follows a clean inheritance pattern:
+
+```
+AbstractLLMProvider (llm_provider_base.py)
+├── GeminiProvider (gemini_provider.py)
+└── OpenAIProvider (openai_provider.py)
+```
+
+#### Abstract Base Class (`llm_provider_base.py`)
+
+The `AbstractLLMProvider` class contains all common functionality shared across LLM providers:
+
+**Session Management:**
+- Translation session lifecycle with numbered identifiers
+- Automatic session ending when pending calls complete
+- Thread-safe call counting and session state management
+
+**Context Window Management:**
+- Sliding context window with configurable size (0-2 previous subtitles)
+- Unified context string building with identical format across providers
+- Language-aware context updates with duplicate detection
+
+**Comprehensive Logging System:**
+- Atomic logging with thread safety for complete API call records
+- Detailed main logs with request/response content and token analysis
+- Concise short logs for statistics and monitoring
+- Automatic log file initialization with proper headers
+
+**Client Management:**
+- Automatic client refresh based on age (30 minutes) and call count (100 calls)
+- Circuit breaker pattern for network degradation detection
+- API key change detection and session reset
+
+**Cost Tracking:**
+- Efficient memory caching for cumulative totals
+- Model-specific cost calculations from CSV configuration
+- Real-time cost monitoring and statistics
+
+#### Provider-Specific Implementations
+
+**GeminiProvider (`gemini_provider.py`):**
+- Uses Google's Gen AI library with client-based approach
+- Supports both thinking and non-thinking modes via `thinking_budget` configuration
+- Handles multiple response formats and model types
+- Integrated with `GeminiModelsManager` for dynamic model configuration
+
+**OpenAIProvider (`openai_provider.py`):**
+- Supports both Chat Completions API and Responses API
+- Handles GPT-5 models (Responses API) and GPT-4.1 models (Chat Completions API)
+- Configurable reasoning effort and verbosity for GPT-5 models
+- Integrated with `OpenAIModelsManager` for dynamic model configuration
+
+#### Integration with TranslationHandler
+
+The refactored `TranslationHandler` now serves as a coordinator:
+
+```python
+# Initialize providers
+self.providers = {
+    'gemini': GeminiProvider(app),
+    'openai': OpenAIProvider(app)
+}
+
+# Get active provider based on selected model
+def _get_active_llm_provider(self):
+    selected_model = self.app.translation_model_var.get()
+    if selected_model == 'gemini_api':
+        return self.providers.get('gemini')
+    elif self.app.is_openai_model(selected_model):
+        return self.providers.get('openai')
+    return None
+```
+
+#### Benefits of the New Architecture
+
+✅ **Separation of Concerns**: Each provider focuses only on its specific implementation
+✅ **Code Reuse**: Common functionality is shared via inheritance 
+✅ **Maintainability**: Much easier to add new LLM providers or modify existing ones
+✅ **Consistent Behavior**: All providers share identical session management, logging, and context handling
+✅ **Backward Compatibility**: Public interface remains unchanged
+
+#### Legacy Functionality Preservation
+
+The `TranslationHandler` retains:
+- **Legacy OCR methods** for Gemini OCR (non-translation use cases)
+- **Non-LLM translation methods** (MarianMT, Google Translate, DeepL)
+- **File cache management** for all translation providers
+- **Unified translation cache coordination**
+
+This architecture makes it straightforward to add new LLM providers while maintaining all existing functionality and ensuring consistent behavior across all AI-powered translation services.
 
 ### API Usage Statistics and Monitoring System
 
@@ -665,20 +771,93 @@ The application handles resources differently for development and compiled versi
 
 ## Adding New Features
 
-### Adding a New Translation Provider
+### Adding a New LLM Translation Provider
 
-1. Update `translation_handler.py` to add your new translation method:
-   - Add a new method in `TranslationHandler` for your provider
-   - Update the `translate_text` method to include your provider
-   - Consider adding caching for your provider
+To add a new LLM-based translation provider (e.g., Claude, Llama):
 
-2. Update UI elements in `gui_builder.py`:
-   - Add UI elements for your provider's settings
+1. **Create a new provider class** inheriting from `AbstractLLMProvider`:
+   ```python
+   # handlers/claude_provider.py
+   from .llm_provider_base import AbstractLLMProvider
+   
+   class ClaudeProvider(AbstractLLMProvider):
+       def __init__(self, app):
+           super().__init__(app, "claude")
+       
+       def _get_api_key(self):
+           return self.app.claude_api_key_var.get().strip()
+       
+       def _check_provider_availability(self):
+           return CLAUDE_AVAILABLE
+       
+       # Implement other abstract methods...
+   ```
+
+2. **Implement all abstract methods** required by the base class:
+   - `_get_api_key()` - Get API key for the provider
+   - `_check_provider_availability()` - Check if libraries are available
+   - `_get_context_window_size()` - Get context window setting
+   - `_initialize_client()` - Initialize provider-specific client
+   - `_get_model_config()` - Get model configuration for API calls
+   - `_make_api_call()` - Make provider-specific API call
+   - `_parse_response()` - Parse response and extract tokens/costs
+   - `_get_model_costs()` - Get model-specific costs
+   - `_is_logging_enabled()` - Check if logging is enabled
+   - `_should_suppress_error()` - Check if errors should be suppressed
+
+3. **Add provider to TranslationHandler**:
+   ```python
+   # In TranslationHandler.__init__()
+   self.providers = {
+       'gemini': GeminiProvider(app),
+       'openai': OpenAIProvider(app),
+       'claude': ClaudeProvider(app)  # Add new provider
+   }
+   
+   # Update _get_active_llm_provider() method
+   def _get_active_llm_provider(self):
+       selected_model = self.app.translation_model_var.get()
+       if selected_model == 'claude_api':
+           return self.providers.get('claude')
+       # ... existing logic
+   ```
+
+4. **Create model manager** (optional, for dynamic model configuration):
+   - Create `claude_models_manager.py` similar to existing managers
+   - Add CSV file in `resources/claude_models.csv`
+
+5. **Update UI elements** in `gui_builder.py`:
+   - Add provider to translation model dropdown
+   - Add UI elements for provider-specific settings
    - Handle visibility toggling in `update_translation_model_ui`
 
-3. Add the provider to the available options:
-   - Update `translation_model_names` in `app_logic.py`
-   - Add any necessary API flag detection in `__init__`
+6. **Add configuration support**:
+   - Add provider to available options in `app_logic.py`
+   - Add API key variables and settings
+   - Add language mapping CSV files in `resources/`
+
+### Adding a New Non-LLM Translation Provider
+
+For traditional translation services (like Google Translate, DeepL):
+
+1. **Add translation method to TranslationHandler**:
+   ```python
+   def _new_provider_translate(self, text, source_lang, target_lang):
+       # Implementation specific to the new provider
+       return translated_text
+   ```
+
+2. **Update the main translate_text method**:
+   ```python
+   elif selected_model == 'new_provider_api':
+       translated_api_text = self._new_provider_translate(cleaned_text_main, source_lang, target_lang)
+   ```
+
+3. **Add caching support** if needed:
+   - Add file cache handling in translate_text method
+   - Follow the existing pattern for Google Translate or DeepL
+
+4. **Update UI and configuration** as described above.
 
 ### Adding New OCR Preprocessing Modes
 
@@ -845,6 +1024,16 @@ The application uses multiple threads for capture, OCR, and translation with imp
 ## Recent Enhancements
 
 The application has been enhanced with several recent features:
+
+### LLM Provider Architecture Refactoring (Latest)
+- **Modular provider system** replacing monolithic translation handler approach
+- **Abstract base class** (`AbstractLLMProvider`) containing all common LLM functionality
+- **Separated provider implementations** for Gemini and OpenAI with dedicated files
+- **Preserved backward compatibility** - public interface unchanged
+- **Enhanced maintainability** - much easier to add new LLM providers
+- **Consistent behavior** across all LLM providers for session management, logging, and context windows
+- **Legacy functionality preserved** - non-LLM providers and OCR methods remain in main handler
+- **Backup available** at `handlers/translation_handler_backup.py` for reference
 
 ### Thread Management Optimization (Latest)
 - **Optimized worker thread performance** for faster capture, OCR, and translation processing
