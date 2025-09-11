@@ -572,7 +572,7 @@ class TranslationHandler:
             pass
 
     def _gemini_ocr_only(self, webp_image_data, source_lang, batch_number=None):
-        log_debug(f"Gemini OCR request for source language: {source_lang}")
+        log_debug(f"Gemini OCR request")
         if self.ocr_circuit_breaker.should_force_refresh():
             log_debug("Circuit breaker forcing legacy OCR client refresh due to network issues")
             self.gemini_client = None
@@ -667,7 +667,6 @@ class TranslationHandler:
                 log_entry = f"""
 === GEMINI OCR API CALL ===
 Timestamp: {call_start_time}
-Source Language: {source_lang}
 Image Size: {image_size} bytes
 Call Type: OCR Only
 
