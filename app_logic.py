@@ -2668,8 +2668,8 @@ class GameChangingTranslator:
             
             # Start appropriate sessions based on settings
             if hasattr(self, 'translation_handler'):
-                # Start OCR session if using Gemini OCR
-                if self.get_ocr_model_setting() == 'gemini':
+                # Start OCR session if using API-based OCR (Gemini or OpenAI)
+                if self.is_api_based_ocr_model():
                     self.translation_handler.start_ocr_session()
                 
                 # *** FIX: Call the generic method to start the session for the ACTIVE provider ***
@@ -2801,6 +2801,10 @@ class GameChangingTranslator:
         if not model_name:
             return False
         
+        # Check if it's the legacy Gemini identifier
+        if model_name == 'gemini':
+            return True
+        
         # Check if it's the Gemini API provider identifier
         if model_name == 'gemini_api':
             return True
@@ -2827,6 +2831,13 @@ class GameChangingTranslator:
         if self.is_openai_model(display_name):
             return self.openai_models_manager.get_api_name_by_display_name(display_name)
         return 'gpt-4o'  # Default fallback
+
+    def is_api_based_ocr_model(self, model_name=None):
+        """Check if the given (or current) OCR model is API-based and needs session management."""
+        if model_name is None:
+            model_name = self.get_ocr_model_setting()
+        
+        return self.is_gemini_model(model_name) or self.is_openai_model(model_name)
     
     def create_about_tab(self):
         """Create the About tab with consistent content for both initial load and language changes."""

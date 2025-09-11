@@ -52,6 +52,9 @@ class GeminiOCRProvider(AbstractOCRProvider):
         if self.client is None:
             raise Exception("Gemini client not initialized")
         
+        # Store source_lang for later use in logging
+        self._current_source_lang = source_lang
+        
         # Get the current OCR model
         ocr_model_api_name = self.app.get_current_gemini_model_for_ocr() or 'gemini-2.5-flash-lite'
         
@@ -111,7 +114,7 @@ class GeminiOCRProvider(AbstractOCRProvider):
         if self._is_logging_enabled():
             self._log_complete_ocr_call(
                 prompt, image_size, ocr_result, parsed_text, 
-                call_duration, input_tokens, output_tokens, 
+                call_duration, input_tokens, output_tokens, self._current_source_lang,
                 model_name, model_source
             )
         
@@ -127,7 +130,8 @@ class GeminiOCRProvider(AbstractOCRProvider):
         return self.app.gemini_api_log_enabled_var.get()
 
     def _log_complete_ocr_call(self, prompt, image_size, raw_response, parsed_response, 
-                              call_duration, input_tokens, output_tokens, model_name, model_source):
+                              call_duration, input_tokens, output_tokens, source_lang, 
+                              model_name, model_source):
         """Log the complete OCR call with detailed information."""
         try:
             with self._log_lock:
@@ -161,6 +165,7 @@ class GeminiOCRProvider(AbstractOCRProvider):
                 log_entry = f"""
 === GEMINI OCR API CALL ===
 Timestamp: {call_start_time}
+Source Language: {source_lang}
 Image Size: {image_size} bytes
 Call Type: OCR Only
 

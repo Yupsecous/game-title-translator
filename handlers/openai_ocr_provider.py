@@ -47,6 +47,9 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         if self.client is None:
             raise Exception("OpenAI client not initialized")
         
+        # Store source_lang for later use in logging
+        self._current_source_lang = source_lang
+        
         # Get the current OCR model
         ocr_model_api_name = self.app.get_current_openai_model_for_ocr() or 'gpt-4o'
         
@@ -105,7 +108,7 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         if self._is_logging_enabled():
             self._log_complete_ocr_call(
                 prompt, image_size, ocr_result, parsed_text, 
-                call_duration, input_tokens, output_tokens, 
+                call_duration, input_tokens, output_tokens, self._current_source_lang,
                 model_name, model_source
             )
         
@@ -121,7 +124,8 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         return self.app.openai_api_log_enabled_var.get()
 
     def _log_complete_ocr_call(self, prompt, image_size, raw_response, parsed_response, 
-                              call_duration, input_tokens, output_tokens, model_name, model_source):
+                              call_duration, input_tokens, output_tokens, source_lang,
+                              model_name, model_source):
         """Log the complete OCR call with detailed information."""
         try:
             with self._log_lock:
@@ -155,6 +159,7 @@ class OpenAIOCRProvider(AbstractOCRProvider):
                 log_entry = f"""
 === OPENAI OCR API CALL ===
 Timestamp: {call_start_time}
+Source Language: {source_lang}
 Image Size: {image_size} bytes
 Call Type: OCR Only
 
