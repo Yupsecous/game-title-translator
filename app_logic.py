@@ -306,8 +306,9 @@ class GameChangingTranslator:
         self.gemini_translation_model_var = tk.StringVar(value=self.config['Settings'].get('gemini_translation_model', 'Gemini 2.5 Flash-Lite'))
         self.gemini_ocr_model_var = tk.StringVar(value=self.config['Settings'].get('gemini_ocr_model', 'Gemini 2.5 Flash-Lite'))
         
-        # OpenAI model selection for Translation (no OCR support)
+        # OpenAI model selection for OCR and Translation
         self.openai_translation_model_var = tk.StringVar(value=self.config['Settings'].get('openai_translation_model', 'GPT-4o Mini'))
+        self.openai_ocr_model_var = tk.StringVar(value=self.config['Settings'].get('openai_ocr_model', 'GPT-4o'))
         
         # Gemini statistics variables (initialized by GUI builder)
         self.gemini_total_words_var = None
@@ -2861,10 +2862,12 @@ class GameChangingTranslator:
 
     def get_current_openai_model_for_ocr(self):
         """Get the API name of currently selected OpenAI OCR model."""
-        display_name = self.ocr_model_var.get()
-        if self.is_openai_model(display_name):
-            return self.openai_models_manager.get_api_name_by_display_name(display_name)
-        return 'gpt-4o'  # Default fallback
+        # Read from the new, specific variable
+        display_name = self.openai_ocr_model_var.get()
+        api_name = self.openai_models_manager.get_api_name_by_display_name(display_name)
+        if api_name:
+            return api_name
+        return 'gpt-4o'  # Default fallback if lookup fails
 
     def is_api_based_ocr_model(self, model_name=None):
         """Check if the given (or current) OCR model is API-based and needs session management."""

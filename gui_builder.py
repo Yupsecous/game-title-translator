@@ -327,8 +327,8 @@ def create_settings_tab(app):
                 log_debug(f"OCR model set to gemini, specific model: {selected_display}")
             elif app.OPENAI_API_AVAILABLE and selected_display in app.openai_models_manager.get_ocr_model_names():
                 app.ocr_model_var.set('openai')
-                # Store the specific OpenAI model selection in the generic ocr_model_var for now
-                # We could add a specific openai_ocr_model_var later if needed
+                # --- FIX: Store the specific OpenAI model selection ---
+                app.openai_ocr_model_var.set(selected_display)
                 log_debug(f"OCR model set to openai, specific model: {selected_display}")
             else:
                 log_debug(f"Unknown OCR model selection: {selected_display}")
