@@ -1236,6 +1236,7 @@ class UIInteractionHandler:
             cfg['openai_file_cache'] = str(self.app.openai_file_cache_var.get())
             cfg['openai_api_log_enabled'] = str(self.app.openai_api_log_enabled_var.get())
             cfg['openai_translation_model'] = self.app.openai_translation_model_var.get()
+            cfg['openai_ocr_model'] = self.app.openai_ocr_model_var.get()            
             cfg['marian_models_file'] = self.app.models_file_var.get()
             try: 
                 beam_val = int(self.app.num_beams_var.get())

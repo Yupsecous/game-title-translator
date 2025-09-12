@@ -4,6 +4,7 @@ import os  # <-- FIX: Added missing import
 import re  # <-- FIX: Added missing import
 from logger import log_debug
 from .ocr_provider_base import AbstractOCRProvider
+import json
 
 # Import OpenAI dependencies
 try:
@@ -69,7 +70,10 @@ class OpenAIOCRProvider(AbstractOCRProvider):
                     {"type": "text", "text": prompt},
                     {
                         "type": "image_url", 
-                        "image_url": {"url": f"data:image/webp;base64,{base64_image}"}
+                        "image_url": {
+                            "url": f"data:image/webp;base64,{base64_image}",
+                            "detail": "low"
+                        }
                     }
                 ]
             }
@@ -93,6 +97,7 @@ class OpenAIOCRProvider(AbstractOCRProvider):
     def _parse_response(self, response_data):
         """Parse the API response to extract text, tokens, and model info."""
         response, call_duration, prompt, image_size = response_data
+        # print (response)
         
         # Extract OCR result
         ocr_result = response.choices[0].message.content.strip() if response.choices and response.choices[0].message.content else "<EMPTY>"
