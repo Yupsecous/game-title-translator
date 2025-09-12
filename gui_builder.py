@@ -303,30 +303,6 @@ def create_settings_tab(app):
     # Add Tesseract
     ocr_models_available_for_ui.append(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
     
-    app.ocr_model_display_var = tk.StringVar()
-    # Set initial display value - try to match current setting from config
-    current_ocr_model = app.ocr_model_var.get()
-    if current_ocr_model == 'tesseract':
-        app.ocr_model_display_var.set(app.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)"))
-    elif current_ocr_model == 'gemini':
-        # For Gemini OCR, read the specific model from config
-        if hasattr(app, 'config'):
-            saved_gemini_ocr_model = app.config['Settings'].get('gemini_ocr_model', '')
-            if saved_gemini_ocr_model and app.GEMINI_API_AVAILABLE and saved_gemini_ocr_model in app.gemini_models_manager.get_ocr_model_names():
-                app.ocr_model_display_var.set(saved_gemini_ocr_model)
-            elif app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_ocr_model_names():
-                app.ocr_model_display_var.set(app.gemini_models_manager.get_ocr_model_names()[0])
-            else:
-                app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
-        else:
-            # Fallback to first available Gemini model or first overall
-            if app.GEMINI_API_AVAILABLE and app.gemini_models_manager.get_ocr_model_names():
-                app.ocr_model_display_var.set(app.gemini_models_manager.get_ocr_model_names()[0])
-            else:
-                app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
-    else:
-        # Default to first available option
-        app.ocr_model_display_var.set(ocr_models_available_for_ui[0] if ocr_models_available_for_ui else "Tesseract (offline)")
     
     app.ocr_model_combobox = ttk.Combobox(frame, textvariable=app.ocr_model_display_var,
                                         values=ocr_models_available_for_ui, 

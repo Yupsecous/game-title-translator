@@ -345,6 +345,32 @@ class GameChangingTranslator:
         self.target_font_type_var = tk.StringVar(value=self.config['Settings'].get('target_font_type', 'Arial'))
         self.target_opacity_var = tk.DoubleVar(value=float(self.config['Settings'].get('target_opacity', '0.15')))
         self.target_text_opacity_var = tk.DoubleVar(value=float(self.config['Settings'].get('target_text_opacity', '1.0')))
+
+        # Initialize OCR model display variable here to ensure it persists across UI rebuilds
+        self.ocr_model_display_var = tk.StringVar()
+        initial_ocr_model_code = self.ocr_model_var.get()
+        initial_ocr_display_name = ""
+        if initial_ocr_model_code == 'tesseract':
+            initial_ocr_display_name = self.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)")
+        elif self.is_gemini_model(initial_ocr_model_code):
+            saved_gemini_ocr_model = self.config['Settings'].get('gemini_ocr_model', '')
+            if saved_gemini_ocr_model and self.GEMINI_API_AVAILABLE and saved_gemini_ocr_model in self.gemini_models_manager.get_ocr_model_names():
+                initial_ocr_display_name = saved_gemini_ocr_model
+        elif self.is_openai_model(initial_ocr_model_code):
+            saved_openai_ocr_model = self.config['Settings'].get('openai_ocr_model', '')
+            if saved_openai_ocr_model and self.OPENAI_API_AVAILABLE and saved_openai_ocr_model in self.openai_models_manager.get_ocr_model_names():
+                initial_ocr_display_name = saved_openai_ocr_model
+        
+        # Fallback if no specific display name was found
+        if not initial_ocr_display_name:
+            if self.GEMINI_API_AVAILABLE and self.gemini_models_manager.get_ocr_model_names():
+                initial_ocr_display_name = self.gemini_models_manager.get_ocr_model_names()[0]
+            elif self.OPENAI_API_AVAILABLE and self.openai_models_manager.get_ocr_model_names():
+                initial_ocr_display_name = self.openai_models_manager.get_ocr_model_names()[0]
+            else:
+                initial_ocr_display_name = self.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)")
+
+        self.ocr_model_display_var.set(initial_ocr_display_name)        
         
         # Initialize Handlers
         # self.cache_manager = CacheManager(self)
