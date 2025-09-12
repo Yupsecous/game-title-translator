@@ -1,4 +1,4 @@
-# app_logic.py
+# app_logic.py (Complete, Corrected File)
 
 # --- Configuration ---
 ENABLE_PROCESS_CPU_AFFINITY = False  # Set to False to disable process-level CPU core limiting
@@ -187,7 +187,7 @@ class GameChangingTranslator:
         # Initialize thread pools for optimized performance (especially for compiled version)
         self.ocr_thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=8, 
-            thread_name_prefix="GeminiOCR"
+            thread_name_prefix="ApiOCR"
         )
         self.translation_thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=6, 
@@ -370,7 +370,7 @@ class GameChangingTranslator:
             else:
                 initial_ocr_display_name = self.ui_lang.get_label("ocr_model_tesseract", "Tesseract (offline)")
 
-        self.ocr_model_display_var.set(initial_ocr_display_name)        
+        self.ocr_model_display_var.set(initial_ocr_display_name)
         
         # Initialize Handlers
         # self.cache_manager = CacheManager(self)
@@ -890,8 +890,8 @@ class GameChangingTranslator:
             log_debug(f"Error checking widget existence: {e}")
             return False
 
-    def convert_to_webp_for_gemini(self, pil_image):
-        """Convert PIL image to lossless WebP bytes for Gemini API."""
+    def convert_to_webp_for_api(self, pil_image):
+        """Convert PIL image to lossless WebP bytes for API calls."""
         try:
             # Optimize image for OCR if needed
             if pil_image.mode in ('RGBA', 'LA'):
@@ -914,15 +914,14 @@ class GameChangingTranslator:
                 exact=True
             )
             
-            # Get bytes and encode to base64
+            # Get bytes
             webp_bytes = buffer.getvalue()
-            webp_base64 = base64.b64encode(webp_bytes).decode('utf-8')
             
-            log_debug(f"Converted PIL image to WebP for Gemini: {len(webp_bytes)} bytes")
-            return webp_base64
+            log_debug(f"Converted PIL image to WebP for API: {len(webp_bytes)} bytes")
+            return webp_bytes
             
         except Exception as e:
-            log_debug(f"Error converting image to WebP for Gemini: {e}")
+            log_debug(f"Error converting image to WebP for API: {e}")
             return None
 
     def _pre_initialize_gemini_model(self):
@@ -2807,15 +2806,24 @@ class GameChangingTranslator:
         if not model_name:
             return False
         
+        # Check for the generic 'openai' key used by the OCR model var
+        if model_name == 'openai':
+            return True
+
         # Check if it's the OpenAI API provider identifier
         if model_name == 'openai_api':
             return True
         
-        # Check if it's in our OpenAI translation models
-        openai_models = self.openai_models_manager.get_translation_model_names()
-        if model_name in openai_models:
+        # Check if it's in our OpenAI translation models list
+        openai_translation_models = self.openai_models_manager.get_translation_model_names()
+        if model_name in openai_translation_models:
             return True
-        
+            
+        # Check if it's in our OpenAI OCR models list
+        openai_ocr_models = self.openai_models_manager.get_ocr_model_names()
+        if model_name in openai_ocr_models:
+            return True
+
         # Check if it's using the OpenAI key format
         if model_name.startswith('openai_translation_'):
             return True
@@ -3265,3 +3273,5 @@ For more information, see the user manual."""
         except Exception as e_drw:
              log_debug(f"Error destroying root window: {e_drw}")
         log_debug("Application shutdown sequence complete.")
+
+

@@ -1,6 +1,7 @@
-# handlers/openai_ocr_provider.py
 import base64
 import time
+import os  # <-- FIX: Added missing import
+import re  # <-- FIX: Added missing import
 from logger import log_debug
 from .ocr_provider_base import AbstractOCRProvider
 
@@ -40,6 +41,7 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         """Initialize the OpenAI API client."""
         log_debug("Creating new OpenAI client for OCR")
         self.client = openai.OpenAI(api_key=api_key)
+        self.session_api_key = api_key
         return self.client is not None
 
     def _make_api_call(self, image_data, source_lang):
@@ -83,8 +85,8 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         )
         call_duration = time.time() - api_call_start_time
         
-        # Record the call for circuit breaker
-        self.circuit_breaker.record_call(call_duration, True)
+        # This was the duplicate call. The base class handles this now.
+        # self.circuit_breaker.record_call(call_duration, True)
         
         return response, call_duration, prompt, len(image_data)
 
@@ -251,9 +253,6 @@ Result:
         if not os.path.exists(self.main_log_file):
             self._ocr_cache_initialized = True
             return 0, 0, 0.0
-        
-        # Import here to avoid circular imports
-        import re
         
         # Regular expressions to parse log file
         input_token_regex = re.compile(r"^\s*-\s*Total Input Tokens \(OCR, so far\):\s*(\d+)")
