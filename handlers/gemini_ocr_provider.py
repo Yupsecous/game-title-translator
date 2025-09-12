@@ -45,6 +45,7 @@ class GeminiOCRProvider(AbstractOCRProvider):
         """Initialize the Gemini API client."""
         log_debug("Creating new Gemini client for OCR")
         self.client = genai.Client(api_key=api_key)
+        self.session_api_key = api_key
         return self.client is not None
 
     def _make_api_call(self, image_data, source_lang):
@@ -83,8 +84,8 @@ class GeminiOCRProvider(AbstractOCRProvider):
         )
         call_duration = time.time() - api_call_start_time
         
-        # Record the call for circuit breaker
-        self.circuit_breaker.record_call(call_duration, True)
+        # This was the duplicate call. The base class handles this now.
+        # self.circuit_breaker.record_call(call_duration, True)
         
         return response, call_duration, prompt, len(image_data)
 
