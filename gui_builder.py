@@ -396,17 +396,14 @@ def create_settings_tab(app):
                 elif active_model == 'gemini_api':
                     app.gemini_source_lang = api_code
                     log_debug(f"Gemini source lang set to: {api_code}")
-                    # Clear Gemini context when source language is changed
-                    if (hasattr(app, 'translation_handler') and 
-                        hasattr(app.translation_handler, '_clear_gemini_context')):
-                        app.translation_handler._clear_gemini_context()
                 elif app.is_openai_model(active_model):
                     app.openai_source_lang = api_code
                     log_debug(f"OpenAI source lang set to: {api_code}")
-                    # Clear OpenAI context when source language is changed
-                    if (hasattr(app, 'translation_handler') and 
-                        hasattr(app.translation_handler, '_clear_openai_context')):
-                        app.translation_handler._clear_openai_context()
+                
+                # Clear context for currently active provider when source language is changed
+                if (hasattr(app, 'translation_handler') and 
+                    hasattr(app.translation_handler, '_clear_active_context')):
+                    app.translation_handler._clear_active_context()
                 
                 app.source_lang_var.set(api_code) 
                 log_debug(f"Source lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -467,17 +464,14 @@ def create_settings_tab(app):
                 elif active_model == 'gemini_api':
                     app.gemini_target_lang = api_code
                     log_debug(f"Gemini target lang set to: {api_code}")
-                    # Clear Gemini context when target language is changed
-                    if (hasattr(app, 'translation_handler') and 
-                        hasattr(app.translation_handler, '_clear_gemini_context')):
-                        app.translation_handler._clear_gemini_context()
                 elif app.is_openai_model(active_model):
                     app.openai_target_lang = api_code
                     log_debug(f"OpenAI target lang set to: {api_code}")
-                    # Clear OpenAI context when target language is changed
-                    if (hasattr(app, 'translation_handler') and 
-                        hasattr(app.translation_handler, '_clear_openai_context')):
-                        app.translation_handler._clear_openai_context()
+                
+                # Clear context for currently active provider when target language is changed
+                if (hasattr(app, 'translation_handler') and 
+                    hasattr(app.translation_handler, '_clear_active_context')):
+                    app.translation_handler._clear_active_context()
                 
                 app.target_lang_var.set(api_code)
                 log_debug(f"Target lang GUI changed for {active_model}: Display='{selected_display_name}', API Code='{api_code}' - SAVING")
@@ -592,17 +586,10 @@ def create_settings_tab(app):
             if display == selected_display:
                 app.gemini_context_window_var.set(value)
                 log_debug(f"Gemini context window changed to: {value} (display: {display})")
-                # Reset Gemini session when context window changes
-                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_reset_gemini_session'):
-                    app.translation_handler._reset_gemini_session()
-                    # Reinitialize session with new context window setting
-                    if hasattr(app.translation_handler, '_initialize_gemini_session'):
-                        try:
-                            app.translation_handler._initialize_gemini_session(
-                                app.gemini_source_lang, app.gemini_target_lang)
-                            log_debug(f"Gemini session reinitialized with new context window: {value}")
-                        except Exception as e:
-                            log_debug(f"Error reinitializing Gemini session: {e}")
+                # Clear active context when Gemini context window changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_clear_active_context'):
+                    app.translation_handler._clear_active_context()
+                    log_debug(f"Active provider context cleared due to Gemini context window setting change")
                 if app._fully_initialized:
                     app.save_settings()
                 break
@@ -659,10 +646,10 @@ def create_settings_tab(app):
             if display == selected_display:
                 app.openai_context_window_var.set(value)
                 log_debug(f"OpenAI context window changed to: {value} (display: {display})")
-                # Clear OpenAI context when context window changes
-                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_clear_openai_context'):
-                    app.translation_handler._clear_openai_context()
-                    log_debug(f"OpenAI context window cleared due to setting change")
+                # Clear active context when OpenAI context window changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_clear_active_context'):
+                    app.translation_handler._clear_active_context()
+                    log_debug(f"Active provider context cleared due to OpenAI context window setting change")
                 if app._fully_initialized:
                     app.save_settings()
                 break

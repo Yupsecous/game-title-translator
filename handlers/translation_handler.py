@@ -96,23 +96,14 @@ class TranslationHandler:
         return True
 
     # === CONTEXT MANAGEMENT ===
-    def _clear_gemini_context(self):
-        """Clear Gemini context window. Called when language or model changes."""
-        provider = self.providers.get('gemini')
+    def _clear_active_context(self):
+        """Clear context window for the currently active LLM provider. Called when language, model, or settings change."""
+        provider = self._get_active_llm_provider()
         if provider:
             provider._clear_context()
-            log_debug("Gemini context cleared via TranslationHandler")
+            log_debug(f"{provider.provider_name.title()} context cleared via active provider")
         else:
-            log_debug("Gemini provider not available for context clearing")
-
-    def _clear_openai_context(self):
-        """Clear OpenAI context window. Called when language or model changes."""
-        provider = self.providers.get('openai')
-        if provider:
-            provider._clear_context()
-            log_debug("OpenAI context cleared via TranslationHandler")
-        else:
-            log_debug("OpenAI provider not available for context clearing")
+            log_debug("No active LLM provider found for context clearing")
 
     # === OCR SESSION MANAGEMENT ===
     def start_ocr_session(self):

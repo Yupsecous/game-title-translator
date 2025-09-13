@@ -876,14 +876,10 @@ class UIInteractionHandler:
                 if newly_selected_model_code != previous_model:
                     log_debug(f"Translation model changed from {previous_model} to {newly_selected_model_code}")
                     
-                    # Clear contexts when translation model is changed
+                    # Clear context for currently active provider when translation model is changed
                     if (hasattr(self.app, 'translation_handler') and 
-                        hasattr(self.app.translation_handler, '_clear_gemini_context')):
-                        self.app.translation_handler._clear_gemini_context()
-                    
-                    if (hasattr(self.app, 'translation_handler') and 
-                        hasattr(self.app.translation_handler, '_clear_openai_context')):
-                        self.app.translation_handler._clear_openai_context()
+                        hasattr(self.app.translation_handler, '_clear_active_context')):
+                        self.app.translation_handler._clear_active_context()
                     
                     self.app.translation_model_var.set(newly_selected_model_code) # This triggers save via trace
                     log_debug(f"Translation model var updated by UI to: {newly_selected_model_code}")
