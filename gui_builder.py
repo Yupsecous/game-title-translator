@@ -1208,240 +1208,134 @@ def create_settings_tab(app):
     frame.columnconfigure(1, weight=1)
 
 def create_api_usage_tab(app):
-    """Create the API Usage tab with statistics display and DeepL usage tracker."""
-    # Create a scrollable tab content frame
+    """Create the API Usage tab with provider-specific statistics."""
     scrollable_content = create_scrollable_tab(app.tab_control, app.ui_lang.get_label("api_usage_tab_title"))
     app.tab_api_usage = scrollable_content
     
-    # Create the API usage frame inside the scrollable area
     frame = ttk.LabelFrame(scrollable_content, text=app.ui_lang.get_label("api_usage_tab_title"))
     frame.pack(fill="both", expand=True, padx=10, pady=10)
     
     current_row = 0
-    
-    # OCR Statistics Section
-    ocr_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_ocr"))
-    ocr_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
-    
-    # OCR statistics labels and values - reordered as requested
-    ocr_stats = [
-        ("api_usage_total_ocr_calls", "Total OCR Calls:"),
-        ("api_usage_median_duration_ocr", "Median Duration:"),
-        ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
-        ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
-        ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
-        ("api_usage_total_ocr_cost", "Total OCR Cost:")
-    ]
-    
-    app.ocr_stat_labels = {}
-    app.ocr_stat_vars = {}
-    
-    for i, (label_key, fallback_text) in enumerate(ocr_stats):
-        # Create label
-        label = ttk.Label(ocr_section, text=app.ui_lang.get_label(label_key, fallback_text))
-        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
-        app.ocr_stat_labels[label_key] = label
+
+    def create_stats_section(parent, provider, type, stats_keys, row_start):
+        section_key = f"api_usage_section_{provider.lower()}_{type.lower()}"
+        fallback_text = f"📊 {provider} {type} Statistics"
+        section = ttk.LabelFrame(parent, text=app.ui_lang.get_label(section_key, fallback_text))
+        section.grid(row=row_start, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
         
-        # Create value variable and display
-        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
-        value_label = ttk.Label(ocr_section, textvariable=var, foreground="blue")
-        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
-        app.ocr_stat_vars[label_key] = var
-    
-    current_row += 1
-    
-    # Translation Statistics Section
-    translation_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_translation"))
-    translation_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
-    
-    # Translation statistics labels and values - reordered as requested
-    translation_stats = [
-        ("api_usage_total_translation_calls", "Total Translation Calls:"),
-        ("api_usage_total_words_translated", "Total Words Translated:"),
-        ("api_usage_median_duration_translation", "Median Duration:"),
-        ("api_usage_words_per_minute", "Average Words per Minute:"),
-        ("api_usage_avg_cost_per_word", "Average Cost per Word:"),
-        ("api_usage_avg_cost_per_call", "Average Cost per Call:"),
-        ("api_usage_avg_cost_per_minute", "Average Cost per Minute:"),
-        ("api_usage_avg_cost_per_hour", "Average Cost per Hour:"),
-        ("api_usage_total_translation_cost", "Total Translation Cost:")
-    ]
-    
-    app.translation_stat_labels = {}
-    app.translation_stat_vars = {}
-    
-    for i, (label_key, fallback_text) in enumerate(translation_stats):
-        # Create label
-        label = ttk.Label(translation_section, text=app.ui_lang.get_label(label_key, fallback_text))
-        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
-        app.translation_stat_labels[label_key] = label
+        labels_attr = f"{provider.lower()}_{type.lower()}_stat_labels"
+        vars_attr = f"{provider.lower()}_{type.lower()}_stat_vars"
+        setattr(app, labels_attr, {})
+        setattr(app, vars_attr, {})
+
+        for i, (key, fallback) in enumerate(stats_keys):
+            label = ttk.Label(section, text=app.ui_lang.get_label(key, fallback))
+            label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
+            getattr(app, labels_attr)[key] = label
+            
+            var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
+            value_label = ttk.Label(section, textvariable=var, foreground="blue")
+            value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
+            getattr(app, vars_attr)[key] = var
         
-        # Create value variable and display
-        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
-        value_label = ttk.Label(translation_section, textvariable=var, foreground="blue")
-        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
-        app.translation_stat_vars[label_key] = var
-    
-    current_row += 1
-    
-    # OpenAI Translation Statistics Section
-    openai_translation_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_openai_translation", "🔄 OpenAI Translation Statistics"))
-    openai_translation_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
-    
-    # OpenAI Translation statistics labels and values
-    openai_translation_stats = [
-        ("api_usage_openai_total_translation_calls", "Total Translation Calls:"),
-        ("api_usage_openai_total_words_translated", "Total Words Translated:"),
-        ("api_usage_openai_median_duration_translation", "Median Duration:"),
-        ("api_usage_openai_words_per_minute", "Average Words per Minute:"),
-        ("api_usage_openai_avg_cost_per_word", "Average Cost per Word:"),
-        ("api_usage_openai_avg_cost_per_call", "Average Cost per Call:"),
-        ("api_usage_openai_avg_cost_per_minute", "Average Cost per Minute:"),
-        ("api_usage_openai_avg_cost_per_hour", "Average Cost per Hour:"),
-        ("api_usage_openai_total_translation_cost", "Total Translation Cost:")
+        section.columnconfigure(1, weight=1)
+        return row_start + 1
+
+    trans_keys = [
+        ("api_usage_total_translation_calls", "Total Translation Calls"), ("api_usage_total_words_translated", "Total Words Translated"),
+        ("api_usage_median_duration_translation", "Median Duration"), ("api_usage_words_per_minute", "Average Words per Minute"),
+        ("api_usage_avg_cost_per_word", "Average Cost per Word"), ("api_usage_avg_cost_per_call", "Average Cost per Call"),
+        ("api_usage_avg_cost_per_minute", "Average Cost per Minute"), ("api_usage_avg_cost_per_hour", "Average Cost per Hour"),
+        ("api_usage_total_translation_cost", "Total Translation Cost")
     ]
-    
-    app.openai_translation_stat_labels = {}
-    app.openai_translation_stat_vars = {}
-    
-    for i, (label_key, fallback_text) in enumerate(openai_translation_stats):
-        # Create label
-        label = ttk.Label(openai_translation_section, text=app.ui_lang.get_label(label_key, fallback_text))
-        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
-        app.openai_translation_stat_labels[label_key] = label
-        
-        # Create value variable and display
-        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
-        value_label = ttk.Label(openai_translation_section, textvariable=var, foreground="blue")
-        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
-        app.openai_translation_stat_vars[label_key] = var
-    
-    current_row += 1
-    
-    # Combined Gemini Statistics Section
-    combined_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_combined_gemini", "💰 Combined Gemini API Statistics"))
-    combined_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
-    
-    # Combined statistics labels and values
-    combined_stats = [
-        ("api_usage_combined_cost_per_minute", "Combined Cost per Minute:"),
-        ("api_usage_combined_cost_per_hour", "Combined Cost per Hour:"),
-        ("api_usage_total_api_cost", "Total API Cost:")
+    ocr_keys = [
+        ("api_usage_total_ocr_calls", "Total OCR Calls"), ("api_usage_median_duration_ocr", "Median Duration"),
+        ("api_usage_avg_cost_per_call", "Average Cost per Call"), ("api_usage_avg_cost_per_minute", "Average Cost per Minute"),
+        ("api_usage_avg_cost_per_hour", "Average Cost per Hour"), ("api_usage_total_ocr_cost", "Total OCR Cost")
     ]
+    combined_keys = [
+        ("api_usage_combined_cost_per_minute", "Combined Cost per Minute"), ("api_usage_combined_cost_per_hour", "Combined Cost per Hour"),
+        ("api_usage_total_api_cost", "Total API Cost")
+    ]
+
+    current_row = create_stats_section(frame, "Gemini", "Translation", trans_keys, current_row)
+    current_row = create_stats_section(frame, "Gemini", "OCR", ocr_keys, current_row)
+    current_row = create_stats_section(frame, "Gemini", "Combined", combined_keys, current_row)
     
-    app.combined_stat_labels = {}
-    app.combined_stat_vars = {}
+    current_row = create_stats_section(frame, "OpenAI", "Translation", trans_keys, current_row)
+    current_row = create_stats_section(frame, "OpenAI", "OCR", ocr_keys, current_row)
+    current_row = create_stats_section(frame, "OpenAI", "Combined", combined_keys, current_row)
     
-    for i, (label_key, fallback_text) in enumerate(combined_stats):
-        # Create label
-        label = ttk.Label(combined_section, text=app.ui_lang.get_label(label_key, fallback_text))
-        label.grid(row=i, column=0, padx=5, pady=2, sticky="w")
-        app.combined_stat_labels[label_key] = label
-        
-        # Create value variable and display
-        var = tk.StringVar(value=app.ui_lang.get_label("api_usage_no_data", "No data available"))
-        value_label = ttk.Label(combined_section, textvariable=var, foreground="blue")
-        value_label.grid(row=i, column=1, padx=5, pady=2, sticky="w")
-        app.combined_stat_vars[label_key] = var
-    
-    current_row += 1
-    
-    # DeepL Usage Tracker Section (moved from Settings tab)
     deepl_section = ttk.LabelFrame(frame, text=app.ui_lang.get_label("api_usage_section_deepl"))
     deepl_section.grid(row=current_row, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
-    
-    # DeepL usage display (moved from settings tab) - always visible
     app.deepl_usage_label = ttk.Label(deepl_section, text=app.ui_lang.get_label("deepl_usage_label", "DeepL Usage"))
     app.deepl_usage_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
     app.deepl_usage_var = tk.StringVar(value=app.ui_lang.get_label("deepl_usage_loading", "Loading..."))
     app.deepl_usage_display = ttk.Label(deepl_section, textvariable=app.deepl_usage_var, foreground="blue")
     app.deepl_usage_display.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-    
+    deepl_section.columnconfigure(1, weight=1)
     current_row += 1
     
-    # Action Buttons Section
     button_frame = ttk.Frame(frame)
     button_frame.grid(row=current_row, column=0, columnspan=2, padx=5, pady=10, sticky="ew")
     
-    # Refresh Statistics button
     app.refresh_stats_button = ttk.Button(button_frame, 
                                         text=app.ui_lang.get_label("api_usage_refresh_btn", "Refresh Statistics"),
                                         command=app.refresh_api_statistics)
     app.refresh_stats_button.pack(side=tk.LEFT, padx=5)
     
-    # Export to CSV button
     app.export_csv_button = ttk.Button(button_frame,
                                      text=app.ui_lang.get_label("api_usage_export_csv_btn", "Export to CSV"),
                                      command=app.export_statistics_csv)
     app.export_csv_button.pack(side=tk.LEFT, padx=5)
     
-    # Export to Text button
     app.export_text_button = ttk.Button(button_frame,
                                       text=app.ui_lang.get_label("api_usage_export_text_btn", "Export to Text"),
                                       command=app.export_statistics_text)
     app.export_text_button.pack(side=tk.LEFT, padx=5)
     
-    # Copy to Clipboard button
     app.copy_stats_button = ttk.Button(button_frame,
                                      text=app.ui_lang.get_label("api_usage_copy_btn", "Copy"),
                                      command=app.copy_statistics_to_clipboard)
     app.copy_stats_button.pack(side=tk.LEFT, padx=5)
-    
     current_row += 1
     
-    # Information Note Section
     info_frame = ttk.Frame(frame)
     info_frame.grid(row=current_row, column=0, columnspan=2, padx=5, pady=(10, 5), sticky="ew")
     
-    # Create informational note about data source using proper localization
     app.api_usage_info_label = ttk.Label(info_frame, 
                                         text=app.ui_lang.get_label("api_usage_info_note", 
-                                            "ℹ️ Note: These statistics are based on GEMINI_API_OCR_short_log.txt and GEMINI_API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared."),
+                                            "ℹ️ Note: Statistics are based on the short log files (e.g., Gemini_OCR_Short_Log.txt). Data will be reset if these files are deleted or cleared."),
                                         foreground="gray", 
                                         justify=tk.LEFT, wraplength=600)
     app.api_usage_info_label.pack(anchor="w", fill="x", padx=5, pady=2)
     
-    # Function to update wraplength when window is resized
     def update_info_label_wraplength(event=None):
         if hasattr(app, 'api_usage_info_label') and app.api_usage_info_label.winfo_exists():
             try:
-                # Get the current width of the info_frame and subtract padding
                 frame_width = info_frame.winfo_width()
-                if frame_width > 100:  # Only update if frame has been properly sized
-                    new_wraplength = max(200, frame_width - 20)  # 20px for padding
+                if frame_width > 100:
+                    new_wraplength = max(200, frame_width - 20)
                     app.api_usage_info_label.config(wraplength=new_wraplength)
             except Exception as e:
-                pass  # Ignore errors during resize
+                pass
     
-    # Bind the resize function to the info_frame configure event
     info_frame.bind('<Configure>', update_info_label_wraplength)
-    
-    # Store the function reference for later use
     app.update_info_label_wraplength = update_info_label_wraplength
     
-    # Function to update API usage info label when language changes
     def update_api_usage_info_for_language():
         if hasattr(app, 'api_usage_info_label') and app.api_usage_info_label.winfo_exists():
             app.api_usage_info_label.config(text=app.ui_lang.get_label("api_usage_info_note", 
-                "ℹ️ Note: These statistics are based on API_OCR_short_log.txt and API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared."))
-            # Update wraplength after changing text
+                "ℹ️ Note: Statistics are based on the short log files (e.g., Gemini_OCR_Short_Log.txt). Data will be reset if these files are deleted or cleared."))
             app.root.after_idle(update_info_label_wraplength)
         log_debug("Updated API usage info label for language change")
     
-    # Store function reference for calling during language updates
     app.update_api_usage_info_for_language = update_api_usage_info_for_language
     
-    # Make the columns expandable
     frame.columnconfigure(0, weight=1)
     frame.columnconfigure(1, weight=1)
-    ocr_section.columnconfigure(1, weight=1)
-    translation_section.columnconfigure(1, weight=1)
-    combined_section.columnconfigure(1, weight=1)
-    deepl_section.columnconfigure(1, weight=1)
     
-    # Auto-refresh statistics when tab is created - with a longer delay to ensure GUI is ready
     app.root.after_idle(lambda: app._delayed_api_stats_refresh() if hasattr(app, '_delayed_api_stats_refresh') else None)
-    app.root.after(500, lambda: app.refresh_api_statistics() if hasattr(app, 'refresh_api_statistics') else None)
 
 def create_debug_tab(app):
     # Create a scrollable tab content frame
