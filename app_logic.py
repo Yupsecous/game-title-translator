@@ -1506,262 +1506,74 @@ class GameChangingTranslator:
             log_debug(f"Error in delayed DeepL usage update: {e}")
 
     def refresh_api_statistics(self):
-        """Refresh and update API usage statistics display."""
+        """Refresh and update API usage statistics display with provider-specific data."""
         try:
-            if hasattr(self, 'statistics_handler'):
-                stats = self.statistics_handler.get_statistics()
-                
-                # Update OCR statistics
-                ocr = stats['ocr']
-                if hasattr(self, 'ocr_stat_vars'):
-                    self.ocr_stat_vars['api_usage_total_ocr_cost'].set(self.format_currency_for_display(ocr['total_cost']))
-                    self.ocr_stat_vars['api_usage_total_ocr_calls'].set(self.format_number_with_separators(ocr['total_calls']))
-                    self.ocr_stat_vars['api_usage_median_duration_ocr'].set(
-                        f"{ocr['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' 
-                        else f"{ocr['median_duration']:.3f}s"
-                    )
-                    self.ocr_stat_vars['api_usage_avg_cost_per_call'].set(self.format_currency_for_display(ocr['avg_cost_per_call']))
-                    self.ocr_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(ocr['avg_cost_per_minute'], "/min"))
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    self.ocr_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
-                
-                # Update Translation statistics
-                trans = stats['translation']
-                if hasattr(self, 'translation_stat_vars'):
-                    self.translation_stat_vars['api_usage_total_translation_cost'].set(self.format_currency_for_display(trans['total_cost']))
-                    self.translation_stat_vars['api_usage_total_words_translated'].set(self.format_number_with_separators(trans['total_words']))
-                    self.translation_stat_vars['api_usage_total_translation_calls'].set(self.format_number_with_separators(trans['total_calls']))
-                    self.translation_stat_vars['api_usage_median_duration_translation'].set(
-                        f"{trans['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' 
-                        else f"{trans['median_duration']:.3f}s"
-                    )
-                    self.translation_stat_vars['api_usage_avg_cost_per_word'].set(self.format_currency_for_display(trans['avg_cost_per_word']))
-                    self.translation_stat_vars['api_usage_avg_cost_per_call'].set(self.format_currency_for_display(trans['avg_cost_per_call']))
-                    self.translation_stat_vars['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(trans['avg_cost_per_minute'], "/min"))
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    self.translation_stat_vars['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
-                    
-                    # Format words per minute with proper decimal separator
-                    wpm_str = f"{trans['words_per_minute']:.2f}"
-                    if self.ui_lang.current_lang == 'pol':
-                        wpm_str = wpm_str.replace('.', ',')
-                    self.translation_stat_vars['api_usage_words_per_minute'].set(wpm_str)
-                
-                # Update OpenAI Translation statistics
-                openai_trans = stats['openai_translation']
-                if hasattr(self, 'openai_translation_stat_vars'):
-                    self.openai_translation_stat_vars['api_usage_openai_total_translation_cost'].set(self.format_currency_for_display(openai_trans['total_cost']))
-                    self.openai_translation_stat_vars['api_usage_openai_total_words_translated'].set(self.format_number_with_separators(openai_trans['total_words']))
-                    self.openai_translation_stat_vars['api_usage_openai_total_translation_calls'].set(self.format_number_with_separators(openai_trans['total_calls']))
-                    self.openai_translation_stat_vars['api_usage_openai_median_duration_translation'].set(
-                        f"{openai_trans['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' 
-                        else f"{openai_trans['median_duration']:.3f}s"
-                    )
-                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_word'].set(self.format_currency_for_display(openai_trans['avg_cost_per_word']))
-                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_call'].set(self.format_currency_for_display(openai_trans['avg_cost_per_call']))
-                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_minute'].set(self.format_currency_for_display(openai_trans['avg_cost_per_minute'], "/min"))
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    self.openai_translation_stat_vars['api_usage_openai_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
-                    
-                    # Format words per minute with proper decimal separator
-                    wpm_str = f"{openai_trans['words_per_minute']:.2f}"
-                    if self.ui_lang.current_lang == 'pol':
-                        wpm_str = wpm_str.replace('.', ',')
-                    self.openai_translation_stat_vars['api_usage_openai_words_per_minute'].set(wpm_str)
-                
-                # Update Combined statistics
-                combined = stats['combined']
-                if hasattr(self, 'combined_stat_vars'):
-                    self.combined_stat_vars['api_usage_total_api_cost'].set(self.format_currency_for_display(combined['total_cost']))
-                    self.combined_stat_vars['api_usage_combined_cost_per_minute'].set(self.format_currency_for_display(combined['combined_cost_per_minute'], "/min"))
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    self.combined_stat_vars['api_usage_combined_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
-                
-                log_debug("API statistics refreshed successfully")
-            else:
+            if not hasattr(self, 'statistics_handler'):
                 log_debug("Statistics handler not available")
+                return
+            
+            stats = self.statistics_handler.get_statistics()
+            
+            def populate_section(stats_data, var_dict, ocr=False):
+                if not var_dict: return
+                
+                cost_key = 'api_usage_total_ocr_cost' if ocr else 'api_usage_total_translation_cost'
+                calls_key = 'api_usage_total_ocr_calls' if ocr else 'api_usage_total_translation_calls'
+                median_key = 'api_usage_median_duration_ocr' if ocr else 'api_usage_median_duration_translation'
+                
+                var_dict[cost_key].set(self.format_currency_for_display(stats_data['total_cost']))
+                var_dict[calls_key].set(self.format_number_with_separators(stats_data['total_calls']))
+                var_dict[median_key].set(f"{stats_data['median_duration']:.3f} s".replace('.', ',') if self.ui_lang.current_lang == 'pol' else f"{stats_data['median_duration']:.3f}s")
+                var_dict['api_usage_avg_cost_per_call'].set(self.format_currency_for_display(stats_data['avg_cost_per_call']))
+                var_dict['api_usage_avg_cost_per_minute'].set(self.format_currency_for_display(stats_data['avg_cost_per_minute'], "/min"))
+                cost_per_hour = round(stats_data['avg_cost_per_minute'], 8) * 60
+                var_dict['api_usage_avg_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
+                if not ocr:
+                    var_dict['api_usage_total_words_translated'].set(self.format_number_with_separators(stats_data['total_words']))
+                    var_dict['api_usage_avg_cost_per_word'].set(self.format_currency_for_display(stats_data['avg_cost_per_word']))
+                    wpm_str = f"{stats_data['words_per_minute']:.2f}".replace('.', ',') if self.ui_lang.current_lang == 'pol' else f"{stats_data['words_per_minute']:.2f}"
+                    var_dict['api_usage_words_per_minute'].set(wpm_str)
+
+            def populate_combined_section(stats_data, var_dict):
+                if not var_dict: return
+                var_dict['api_usage_total_api_cost'].set(self.format_currency_for_display(stats_data['total_cost']))
+                var_dict['api_usage_combined_cost_per_minute'].set(self.format_currency_for_display(stats_data['combined_cost_per_minute'], "/min"))
+                cost_per_hour = round(stats_data['combined_cost_per_minute'], 8) * 60
+                var_dict['api_usage_combined_cost_per_hour'].set(self.format_currency_for_display(cost_per_hour, "/hr"))
+            
+            populate_section(stats['gemini_translation'], getattr(self, 'gemini_translation_stat_vars', None), ocr=False)
+            populate_section(stats['gemini_ocr'], getattr(self, 'gemini_ocr_stat_vars', None), ocr=True)
+            populate_combined_section(stats['gemini_combined'], getattr(self, 'gemini_combined_stat_vars', None))
+            
+            populate_section(stats['openai_translation'], getattr(self, 'openai_translation_stat_vars', None), ocr=False)
+            populate_section(stats['openai_ocr'], getattr(self, 'openai_ocr_stat_vars', None), ocr=True)
+            populate_combined_section(stats['openai_combined'], getattr(self, 'openai_combined_stat_vars', None))
+
+            log_debug("API statistics refreshed successfully for new UI layout")
         except Exception as e:
             log_debug(f"Error refreshing API statistics: {e}")
-    
+
     def copy_statistics_to_clipboard(self):
-        """Copy current API usage statistics to clipboard."""
+        """Copy current API usage statistics to clipboard with new structure."""
         try:
-            if hasattr(self, 'statistics_handler'):
-                stats = self.statistics_handler.get_statistics()
-                
-                # Build formatted text matching the GUI layout exactly
-                if self.ui_lang.current_lang == 'pol':
-                    clipboard_text = "Game-Changing Translator - Statystyki użycia API\n"
-                    clipboard_text += "=" * 50 + "\n\n"
-                    
-                    # OCR Statistics - match GUI order
-                    clipboard_text += "📊 Statystyki Gemini OCR\n"
-                    clipboard_text += "-" * 25 + "\n"
-                    ocr = stats['ocr']
-                    clipboard_text += f"Łączne wywołania OCR: {self.format_number_with_separators(ocr['total_calls'])}\n"
-                    clipboard_text += f"Mediana czasu trwania: {ocr['median_duration']:.3f} s".replace('.', ',') + "\n"
-                    clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
-                    clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Łączny koszt OCR: {self.format_currency_for_display(ocr['total_cost'])}\n\n"
-                    
-                    # Translation Statistics - match GUI order
-                    clipboard_text += "🔄 Statystyki tłumaczenia Gemini\n"
-                    clipboard_text += "-" * 30 + "\n"
-                    trans = stats['translation']
-                    clipboard_text += f"Łączne wywołania tłumaczenia: {self.format_number_with_separators(trans['total_calls'])}\n"
-                    clipboard_text += f"Łącznie słów przetłumaczonych: {self.format_number_with_separators(trans['total_words'])}\n"
-                    clipboard_text += f"Mediana czasu trwania: {trans['median_duration']:.3f} s".replace('.', ',') + "\n"
-                    wpm_str = f"{trans['words_per_minute']:.2f}".replace('.', ',')
-                    clipboard_text += f"Średnia słów na minutę: {wpm_str}\n"
-                    clipboard_text += f"Średni koszt na słowo: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
-                    clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(trans['avg_cost_per_call'])}\n"
-                    clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(trans['total_cost'])}\n\n"
-                    
-                    # OpenAI Translation Statistics - match GUI order
-                    clipboard_text += "🔄 Statystyki tłumaczenia OpenAI\n"
-                    clipboard_text += "-" * 30 + "\n"
-                    openai_trans = stats['openai_translation']
-                    clipboard_text += f"Łączne wywołania tłumaczenia: {self.format_number_with_separators(openai_trans['total_calls'])}\n"
-                    clipboard_text += f"Łącznie słów przetłumaczonych: {self.format_number_with_separators(openai_trans['total_words'])}\n"
-                    clipboard_text += f"Mediana czasu trwania: {openai_trans['median_duration']:.3f} s".replace('.', ',') + "\n"
-                    openai_wpm_str = f"{openai_trans['words_per_minute']:.2f}".replace('.', ',')
-                    clipboard_text += f"Średnia słów na minutę: {openai_wpm_str}\n"
-                    clipboard_text += f"Średni koszt na słowo: {self.format_currency_for_display(openai_trans['avg_cost_per_word'])}\n"
-                    clipboard_text += f"Średni koszt na wywołanie: {self.format_currency_for_display(openai_trans['avg_cost_per_call'])}\n"
-                    clipboard_text += f"Średni koszt na minutę: {self.format_currency_for_display(openai_trans['avg_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Średni koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Łączny koszt tłumaczenia: {self.format_currency_for_display(openai_trans['total_cost'])}\n\n"
-                    
-                    # Combined Gemini Statistics - match GUI order
-                    clipboard_text += "💰 Łączne statystyki API Gemini\n"
-                    clipboard_text += "-" * 25 + "\n"
-                    combined = stats['combined']
-                    clipboard_text += f"Łączny koszt API: {self.format_currency_for_display(combined['total_cost'])}\n"
-                    clipboard_text += f"Łączny koszt na minutę: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Łączny koszt na godzinę: {self.format_currency_for_display(cost_per_hour, '/hr')}\n\n"
-                    
-                    # DeepL Usage Monitor
-                    clipboard_text += "📈 Monitor użycia DeepL\n"
-                    clipboard_text += "-" * 25 + "\n"
-                    if hasattr(self, 'deepl_usage_var'):
-                        deepl_usage = self.deepl_usage_var.get()
-                        clipboard_text += f"Darmowy miesięczny limit: {deepl_usage}\n"
-                    else:
-                        clipboard_text += "Darmowy miesięczny limit: N/A\n"
-                else:
-                    clipboard_text = "Game-Changing Translator - API Usage Statistics\n"
-                    clipboard_text += "=" * 50 + "\n\n"
-                    
-                    # OCR Statistics - match GUI order
-                    clipboard_text += "📊 Gemini OCR Statistics\n"
-                    clipboard_text += "-" * 25 + "\n"
-                    ocr = stats['ocr']
-                    clipboard_text += f"Total OCR Calls: {self.format_number_with_separators(ocr['total_calls'])}\n"
-                    clipboard_text += f"Median Duration: {ocr['median_duration']:.3f}s\n"
-                    clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(ocr['avg_cost_per_call'])}\n"
-                    clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(ocr['avg_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(ocr['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Total OCR Cost: {self.format_currency_for_display(ocr['total_cost'])}\n\n"
-                    
-                    # Translation Statistics - match GUI order
-                    clipboard_text += "🔄 Gemini Translation Statistics\n"
-                    clipboard_text += "-" * 30 + "\n"
-                    trans = stats['translation']
-                    clipboard_text += f"Total Translation Calls: {self.format_number_with_separators(trans['total_calls'])}\n"
-                    clipboard_text += f"Total Words Translated: {self.format_number_with_separators(trans['total_words'])}\n"
-                    clipboard_text += f"Median Duration: {trans['median_duration']:.3f}s\n"
-                    clipboard_text += f"Average Words per Minute: {trans['words_per_minute']:.2f}\n"
-                    clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(trans['avg_cost_per_word'])}\n"
-                    clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(trans['avg_cost_per_call'])}\n"
-                    clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(trans['avg_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(trans['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(trans['total_cost'])}\n\n"
-                    
-                    # OpenAI Translation Statistics - match GUI order
-                    clipboard_text += "🔄 OpenAI Translation Statistics\n"
-                    clipboard_text += "-" * 30 + "\n"
-                    openai_trans = stats['openai_translation']
-                    clipboard_text += f"Total Translation Calls: {self.format_number_with_separators(openai_trans['total_calls'])}\n"
-                    clipboard_text += f"Total Words Translated: {self.format_number_with_separators(openai_trans['total_words'])}\n"
-                    clipboard_text += f"Median Duration: {openai_trans['median_duration']:.3f}s\n"
-                    clipboard_text += f"Average Words per Minute: {openai_trans['words_per_minute']:.2f}\n"
-                    clipboard_text += f"Average Cost per Word: {self.format_currency_for_display(openai_trans['avg_cost_per_word'])}\n"
-                    clipboard_text += f"Average Cost per Call: {self.format_currency_for_display(openai_trans['avg_cost_per_call'])}\n"
-                    clipboard_text += f"Average Cost per Minute: {self.format_currency_for_display(openai_trans['avg_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(openai_trans['avg_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Average Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Total Translation Cost: {self.format_currency_for_display(openai_trans['total_cost'])}\n\n"
-                    
-                    # Combined Gemini Statistics - match GUI order
-                    clipboard_text += "💰 Combined Gemini API Statistics\n"
-                    clipboard_text += "-" * 25 + "\n"
-                    combined = stats['combined']
-                    clipboard_text += f"Combined Cost per Minute: {self.format_currency_for_display(combined['combined_cost_per_minute'], '/min')}\n"
-                    # Fix cost per hour calculation: round to 8 decimal places, then multiply by 60
-                    cost_per_minute_rounded = round(combined['combined_cost_per_minute'], 8)
-                    cost_per_hour = cost_per_minute_rounded * 60
-                    clipboard_text += f"Combined Cost per Hour: {self.format_currency_for_display(cost_per_hour, '/hr')}\n"
-                    clipboard_text += f"Total API Cost: {self.format_currency_for_display(combined['total_cost'])}\n\n"
-                    
-                    # DeepL Usage Monitor
-                    clipboard_text += "📈 DeepL Usage Monitor\n"
-                    clipboard_text += "-" * 25 + "\n"
-                    if hasattr(self, 'deepl_usage_var'):
-                        deepl_usage = self.deepl_usage_var.get()
-                        clipboard_text += f"Free Monthly Limit: {deepl_usage}\n"
-                    else:
-                        clipboard_text += "Free Monthly Limit: N/A\n"
-                
-                # Copy to clipboard
-                self.root.clipboard_clear()
-                self.root.clipboard_append(clipboard_text)
-                self.root.update()  # Update clipboard
-                
-                # Show confirmation
-                messagebox.showinfo(
-                    self.ui_lang.get_label("stats_copied_title", "Copied"), 
-                    self.ui_lang.get_label("stats_copied_msg", "Statistics copied to clipboard.")
-                )
-                
-                log_debug("Statistics copied to clipboard")
-            else:
-                log_debug("Statistics handler not available for clipboard copy")
-                
+            if not hasattr(self, 'statistics_handler'):
+                log_debug("Statistics handler not available")
+                return
+
+            report_content = self.statistics_handler._generate_text_report(self.ui_lang, self.deepl_usage_var.get())
+            
+            self.root.clipboard_clear()
+            self.root.clipboard_append(report_content)
+            self.root.update()
+            
+            messagebox.showinfo(
+                self.ui_lang.get_label("stats_copied_title", "Copied"), 
+                self.ui_lang.get_label("stats_copied_msg", "Statistics copied to clipboard.")
+            )
+            log_debug("Statistics copied to clipboard")
         except Exception as e:
             log_debug(f"Error copying statistics to clipboard: {e}")
-            error_msg = self.ui_lang.get_label("stats_copy_error", "Error copying to clipboard.")
-            messagebox.showerror("Error", f"{error_msg}\n{str(e)}")
+            messagebox.showerror("Error", f"Error copying to clipboard.\n{str(e)}")            
 
     def export_statistics_csv(self):
         """Export API usage statistics to CSV file."""

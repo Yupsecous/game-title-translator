@@ -66,9 +66,13 @@ class AbstractOCRProvider(ABC):
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        # Provider-specific log files (OCR-specific naming)
-        self.main_log_file = os.path.join(base_dir, f"{self.provider_name.title()}_API_call_logs.txt")
-        self.short_log_file = os.path.join(base_dir, f"{self.provider_name.upper()}_API_OCR_short_log.txt")
+        base_provider_name = self.provider_name.replace('_ocr', '')
+        provider_title = base_provider_name.title()
+        if base_provider_name == "openai":
+            provider_title = "OpenAI"
+            
+        self.main_log_file = os.path.join(base_dir, f"{provider_title}_OCR_Long_Log.txt")
+        self.short_log_file = os.path.join(base_dir, f"{provider_title}_OCR_Short_Log.txt")
     
     def _initialize_log_files(self):
         """Initialize log files with headers if they're new."""

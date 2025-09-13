@@ -120,9 +120,12 @@ class AbstractLLMProvider(ABC):
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        # Provider-specific log files
-        self.main_log_file = os.path.join(base_dir, f"{self.provider_name.title()}_API_call_logs.txt")
-        self.short_log_file = os.path.join(base_dir, f"{self.provider_name.upper()}_API_TRA_short_log.txt")
+        provider_title = self.provider_name.title()
+        if self.provider_name == "openai":
+            provider_title = "OpenAI"
+        
+        self.main_log_file = os.path.join(base_dir, f"{provider_title}_Translation_Long_Log.txt")
+        self.short_log_file = os.path.join(base_dir, f"{provider_title}_Translation_Short_Log.txt")
     
     def _initialize_log_files(self):
         """Initialize log files with headers if they're new."""
