@@ -108,34 +108,41 @@ class GeminiOCRProvider(AbstractOCRProvider):
         """Parse the API response to extract text, tokens, and model info."""
         response, call_duration, prompt, image_size = response_data
         
-        # Extract OCR result
         ocr_result = response.text.strip() if response.text else "<EMPTY>"
         parsed_text = ocr_result.replace('```text\n', '').replace('```', '').replace('\n', ' ').strip()
         if not parsed_text or "<EMPTY>" in parsed_text:
             parsed_text = "<EMPTY>"
         
-        # Extract token usage
         input_tokens, output_tokens = 0, 0
-        model_name = self.app.get_current_gemini_model_for_ocr() or 'gemini-2.5-flash-lite'
+        # Get model name for costing from app config
+        model_name_for_costing = self.app.get_current_gemini_model_for_ocr() or 'gemini-2.5-flash-lite'
         model_source = "api_request"
         
         try:
             if response.usage_metadata:
                 input_tokens = response.usage_metadata.prompt_token_count
                 output_tokens = response.usage_metadata.candidates_token_count
+            
+            # Get model name for logging from API response
+            model_name_for_logging = "unknown"
+            if hasattr(response, 'model_version') and response.model_version:
+                model_name_for_logging = response.model_version
+            else:
+                model_name_for_logging = model_name_for_costing # Fallback
         except (AttributeError, KeyError):
             log_debug("Could not find usage_metadata in Gemini OCR response.")
+            model_name_for_logging = model_name_for_costing # Fallback
         
-        # Log the complete OCR call if logging is enabled
         if self._is_logging_enabled():
             self._log_complete_ocr_call(
                 prompt, image_size, ocr_result, parsed_text, 
                 call_duration, input_tokens, output_tokens, self._current_source_lang,
-                model_name, model_source
+                model_name_for_costing, model_name_for_logging, model_source
             )
         
         log_debug(f"Gemini OCR result: '{parsed_text}' (took {call_duration:.3f}s)")
-        return (parsed_text, input_tokens, output_tokens, model_name, model_source)
+        # Return both model names
+        return (parsed_text, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source)
 
     def _get_model_costs(self, model_name):
         """Get the input/output costs for a given Gemini model."""
@@ -147,7 +154,7 @@ class GeminiOCRProvider(AbstractOCRProvider):
 
     def _log_complete_ocr_call(self, prompt, image_size, raw_response, parsed_response, 
                               call_duration, input_tokens, output_tokens, source_lang, 
-                              model_name, model_source):
+                              model_name_for_costing, model_name_for_logging, model_source):
         """Log the complete OCR call with detailed information."""
         try:
             with self._log_lock:
@@ -155,7 +162,7 @@ class GeminiOCRProvider(AbstractOCRProvider):
                 call_start_time = self._calculate_start_time(call_end_time, call_duration)
                 
                 # Get model costs
-                model_costs = self._get_model_costs(model_name)
+                model_costs = self._get_model_costs(model_name_for_costing)
                 INPUT_COST_PER_MILLION = model_costs.get('input_cost', 0.1)
                 OUTPUT_COST_PER_MILLION = model_costs.get('output_cost', 0.4)
                 
@@ -191,7 +198,7 @@ REQUEST PROMPT:
 ---END PROMPT---
 
 RESPONSE RECEIVED:
-Model: {model_name} ({model_source})
+Model: {model_name_for_logging} ({model_source})
 Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
 Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
@@ -223,7 +230,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                 self._write_short_ocr_log(
                     call_start_time, call_end_time, call_duration, input_tokens, 
                     output_tokens, total_call_cost, new_total_input, new_total_output, 
-                    new_total_cost, parsed_response, model_name, model_source
+                    new_total_cost, parsed_response, model_name_for_logging, model_source,
+                    INPUT_COST_PER_MILLION, OUTPUT_COST_PER_MILLION
                 )
                 
         except Exception as e:
@@ -232,13 +240,14 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     def _write_short_ocr_log(self, call_start_time, call_end_time, call_duration, 
                             input_tokens, output_tokens, call_cost, cumulative_input, 
                             cumulative_output, cumulative_cost, parsed_result, 
-                            model_name, model_source):
+                            model_name, model_source,
+                            input_cost_per_million, output_cost_per_million):
         """Write a condensed log entry for OCR statistics."""
         try:
             cost_line = ""
             try:
-                model_costs = self._get_model_costs(model_name)
-                input_cost, output_cost = model_costs['input_cost'], model_costs['output_cost']
+                # Use the passed-in cost rates directly
+                input_cost, output_cost = input_cost_per_million, output_cost_per_million
                 input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
                 output_str = f"${output_cost:.3f}" if (output_cost * 1000) % 10 != 0 else f"${output_cost:.2f}"
                 cost_line = f"Cost: input {input_str}, output {output_str} (per 1M)\n"

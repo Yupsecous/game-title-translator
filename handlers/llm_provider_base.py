@@ -403,7 +403,7 @@ Purpose: Concise {self.provider_name} translation call results and statistics
     
     def _log_complete_translation_call(self, message_content, response_text, call_duration, 
                                      input_tokens, output_tokens, original_text, 
-                                     source_lang, target_lang, model_name, model_source):
+                                     source_lang, target_lang, model_name_for_costing, model_name_for_logging, model_source):
         """Log complete translation API call with atomic writing (identical format for all providers)."""
         # Check if API logging is enabled
         if not self._is_logging_enabled():
@@ -422,7 +422,7 @@ Purpose: Concise {self.provider_name} translation call results and statistics
                 prev_total_translated_words, prev_total_input, prev_total_output = self._get_cumulative_totals()
 
                 # --- 3. Get model-specific costs and calculate for current call ---
-                input_cost_per_million, output_cost_per_million = self._get_model_costs(model_name)
+                input_cost_per_million, output_cost_per_million = self._get_model_costs(model_name_for_costing)
                 
                 call_input_cost = (input_tokens / 1_000_000) * input_cost_per_million
                 call_output_cost = (output_tokens / 1_000_000) * output_cost_per_million
@@ -472,7 +472,7 @@ COMPLETE MESSAGE CONTENT SENT TO {self.provider_name.upper()}:
 
 
 RESPONSE RECEIVED:
-Model: {model_name} ({model_source})
+Model: {model_name_for_logging} ({model_source})
 Cost: input {input_cost_str}, output {output_cost_str} (per 1M)
 Timestamp: {call_end_time}
 Call Duration: {call_duration:.3f} seconds
@@ -511,17 +511,19 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
                                                 new_total_input, new_total_output, 
                                                 total_input_cost + total_output_cost, 
                                                 original_text, response_text, source_lang, target_lang, 
-                                                model_name, model_source)
+                                                model_name_for_logging, model_source,
+                                                input_cost_per_million, output_cost_per_million)
                 
                 log_debug(f"Complete {self.provider_name} translation call logged: In={input_tokens}, Out={output_tokens}, Duration={call_duration:.3f}s")
                     
         except Exception as e:
             log_debug(f"Error logging complete {self.provider_name} translation call: {e}")
     
-    def _write_short_translation_log(self, call_start_time, call_end_time, call_duration, 
-                                   input_tokens, output_tokens, call_cost, cumulative_input, 
-                                   cumulative_output, cumulative_cost, original_text, 
-                                   translated_text, source_lang, target_lang, model_name, model_source):
+    def _write_short_translation_log(self, call_start_time, call_end_time, call_duration,
+                                   input_tokens, output_tokens, call_cost, cumulative_input,
+                                   cumulative_output, cumulative_cost, original_text,
+                                   translated_text, source_lang, target_lang, model_name, model_source,
+                                   input_cost_per_million, output_cost_per_million):
         """Write concise translation call log entry with IDENTICAL format."""
         if not self._is_logging_enabled():
             return
@@ -534,7 +536,8 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
             # Get model costs from CSV for display
             cost_line = ""
             try:
-                input_cost, output_cost = self._get_model_costs(model_name)
+                # Use the passed-in cost rates directly
+                input_cost, output_cost = input_cost_per_million, output_cost_per_million
                 
                 # Format with 3 decimals if third decimal is non-zero, otherwise 2 decimals
                 input_str = f"${input_cost:.3f}" if (input_cost * 1000) % 10 != 0 else f"${input_cost:.2f}"
@@ -865,14 +868,14 @@ Result:
                 self.api_call_count += 1
 
             # Parse the response (provider-specific)
-            translation_result, input_tokens, output_tokens, model_name, model_source = self._parse_response(response)
+            translation_result, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source = self._parse_response(response)
             
             log_debug(f"{self.provider_name.title()} response: {translation_result}")
             
             # Log complete API call atomically (request + response + stats together)
             self._log_complete_translation_call(message_content, translation_result, call_duration, 
                                               input_tokens, output_tokens, text_to_translate, 
-                                              source_lang, target_lang, model_name, model_source)
+                                              source_lang, target_lang, model_name_for_costing, model_name_for_logging, model_source)
             
             # Update context window
             if translation_result and not self._is_error_message(translation_result):
@@ -941,7 +944,7 @@ Result:
     
     @abstractmethod
     def _parse_response(self, response):
-        """Parse provider-specific response and return (result, input_tokens, output_tokens, model_name, model_source)."""
+        """Parse provider-specific response and return (result, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source)."""
         pass
     
     @abstractmethod

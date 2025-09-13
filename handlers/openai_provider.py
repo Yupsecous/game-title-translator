@@ -165,17 +165,15 @@ class OpenAIProvider(AbstractLLMProvider):
     
     def _parse_response(self, response):
         """Parse OpenAI response and extract relevant information."""
-        # print(response)
-        model_config = self._get_model_config()
-        model_name = model_config['api_name']
+        # Get the model name for costing from the app configuration
+        model_name_for_costing = self.app.get_current_openai_model_for_translation() or 'gpt-4o-mini'
         
-        # Extract exact token counts from API response metadata
         input_tokens, output_tokens = 0, 0
         model_source = "api_request"
         
         try:
             # Handle different response structures for different APIs
-            if model_name.startswith('gpt-5'):
+            if model_name_for_costing.startswith('gpt-5'):
                 # GPT 5 models use Responses API - check for usage in different locations
                 if hasattr(response, 'usage') and response.usage:
                     input_tokens = getattr(response.usage, 'prompt_tokens', 0) or getattr(response.usage, 'input_tokens', 0)
@@ -191,16 +189,16 @@ class OpenAIProvider(AbstractLLMProvider):
                     output_tokens = response.usage.completion_tokens
                 log_debug(f"OpenAI Chat Completions usage metadata: In={input_tokens}, Out={output_tokens}")
             
-            log_debug(f"OpenAI model used: {model_name} (source: {model_source})")
+            # Get the model name for logging from the actual API response
+            model_name_for_logging = response.model if hasattr(response, 'model') else model_name_for_costing
+            log_debug(f"OpenAI model used (for logging): {model_name_for_logging} (source: {model_source})")
+
         except (AttributeError, KeyError) as e:
-            log_debug(f"Could not find usage metadata in OpenAI response: {e}. Using requested model name as fallback.")
-            # For GPT-5 models, estimate tokens if not available
-            if model_name.startswith('gpt-5'):
-                # This will be calculated after we get the translation_result
-                pass
+            log_debug(f"Could not find usage metadata in OpenAI response: {e}.")
+            model_name_for_logging = model_name_for_costing # Fallback
 
         # Handle different response structures for different APIs
-        if model_name.startswith('gpt-5'):
+        if model_name_for_costing.startswith('gpt-5'):
             # GPT 5 models use Responses API
             translation_result = response.output_text.strip() if hasattr(response, 'output_text') else response.text.strip()
         else:
@@ -208,7 +206,7 @@ class OpenAIProvider(AbstractLLMProvider):
             translation_result = response.choices[0].message.content.strip()
         
         # For GPT-5 models, estimate tokens if not available
-        if model_name.startswith('gpt-5') and (input_tokens == 0 or output_tokens == 0):
+        if model_name_for_costing.startswith('gpt-5') and (input_tokens == 0 or output_tokens == 0):
             input_tokens = max(input_tokens, int(len(str(response).split()) * 1.3))  # Rough estimate
             output_tokens = max(output_tokens, int(len(translation_result.split()) * 1.3))  # Rough estimate
             log_debug(f"OpenAI GPT-5 estimated tokens: In={input_tokens}, Out={output_tokens}")
@@ -226,7 +224,8 @@ class OpenAIProvider(AbstractLLMProvider):
         # Strip language prefixes from the result
         translation_result = self._clean_language_prefixes(translation_result)
         
-        return translation_result, input_tokens, output_tokens, model_name, model_source
+        # Return both model names
+        return translation_result, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source
     
     def _clean_language_prefixes(self, text):
         """Remove language prefixes from OpenAI response."""
