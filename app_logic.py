@@ -2429,11 +2429,7 @@ class GameChangingTranslator:
             self.is_running = False
             
             # DO NOT request session ends here. This will be done in _finalize_shutdown.
-
-            # Clear Gemini context when translation is stopped
-            if (hasattr(self, 'translation_handler') and 
-                hasattr(self.translation_handler, '_clear_gemini_context')):
-                self.translation_handler._clear_gemini_context()
+            # Context clearing is now handled automatically after session end logging in llm_provider_base.py
             
             # Update usage statistics when translation stops
             if hasattr(self, 'update_gemini_stats'):
