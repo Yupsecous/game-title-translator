@@ -273,7 +273,7 @@ Purpose: Concise {self.provider_name} OCR call results and statistics
     @abstractmethod
     def _log_complete_ocr_call(self, prompt, image_size, raw_response, parsed_response, 
                              call_duration, input_tokens, output_tokens, source_lang, 
-                             model_name, model_source):
+                             model_name_for_costing, model_name_for_logging, model_source):
         """Log complete OCR API call with atomic writing."""
     
     # === UTILITY METHODS ===
@@ -360,7 +360,7 @@ Purpose: Concise {self.provider_name} OCR call results and statistics
                 self.api_call_count += 1
 
             # Parse the response (provider-specific)
-            parsed_text, input_tokens, output_tokens, model_name, model_source = self._parse_response(response)
+            parsed_text, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source = self._parse_response(response)
             
             # Provider-specific implementations handle their own logging in _parse_response
             
@@ -407,7 +407,7 @@ Purpose: Concise {self.provider_name} OCR call results and statistics
     
     @abstractmethod
     def _parse_response(self, response):
-        """Parse provider-specific response and return (result, input_tokens, output_tokens, model_name, model_source)."""
+        """Parse provider-specific response and return (result, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source)."""
         pass
     
     @abstractmethod

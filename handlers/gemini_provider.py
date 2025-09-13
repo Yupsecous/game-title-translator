@@ -222,29 +222,30 @@ class GeminiProvider(AbstractLLMProvider):
     
     def _parse_response(self, response):
         """Parse Gemini response and extract relevant information."""
-        # Extract exact token counts from API response metadata
+        # Get the model name for costing from the app configuration (the one we requested)
+        model_name_for_costing = self.app.get_current_gemini_model_for_translation() or 'gemini-2.5-flash-lite'
+        
         input_tokens, output_tokens = 0, 0
-        model_name = "unknown"
-        model_source = "fallback"
+        model_source = "api_request"
         
         try:
             if response.usage_metadata:
                 input_tokens = response.usage_metadata.prompt_token_count
                 output_tokens = response.usage_metadata.candidates_token_count
-                log_debug(f"Gemini usage metadata found: In={input_tokens}, Out={output_tokens}")
-            # Try to extract model name from response metadata
+            
+            # Get the model name for logging from the actual API response
+            model_name_for_logging = "unknown"
             if hasattr(response, 'model_version') and response.model_version:
-                model_name = response.model_version
-                model_source = "api_response"
+                model_name_for_logging = response.model_version
             elif hasattr(response, '_response') and hasattr(response._response, 'model_version'):
-                model_name = response._response.model_version
-                model_source = "api_response"
-            log_debug(f"Gemini model used: {model_name} (source: {model_source})")
+                model_name_for_logging = response._response.model_version
+            else:
+                model_name_for_logging = model_name_for_costing # Fallback
+            log_debug(f"Gemini model used (for logging): {model_name_for_logging} (source: {model_source})")
+
         except (AttributeError, KeyError):
-            log_debug("Could not find usage_metadata or model info in Gemini response. Using requested model name as fallback.")
-            # Fall back to requested model name
-            model_config = self._get_model_config()
-            model_name = model_config['api_name']
+            log_debug("Could not find usage_metadata or model info in Gemini response.")
+            model_name_for_logging = model_name_for_costing # Fallback
 
         translation_result = response.text.strip()
         
@@ -261,7 +262,8 @@ class GeminiProvider(AbstractLLMProvider):
         # Strip language prefixes from the result
         translation_result = self._clean_language_prefixes(translation_result)
         
-        return translation_result, input_tokens, output_tokens, model_name, model_source
+        # Return both model names
+        return translation_result, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source
     
     def _clean_language_prefixes(self, text):
         """Remove language prefixes from Gemini response."""
