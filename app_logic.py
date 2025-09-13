@@ -1,5 +1,3 @@
-# app_logic.py (Complete, Corrected File)
-
 # --- Configuration ---
 ENABLE_PROCESS_CPU_AFFINITY = False  # Set to False to disable process-level CPU core limiting
 
@@ -96,6 +94,7 @@ class GameChangingTranslator:
         self.root.resizable(True, True)
         
         self._fully_initialized = False # Flag for settings save callback
+        self.toggle_in_progress = False
 
         self.KEYBOARD_AVAILABLE = KEYBOARD_AVAILABLE
         self.GOOGLE_TRANSLATE_API_AVAILABLE = GOOGLE_TRANSLATE_API_AVAILABLE
@@ -2352,16 +2351,85 @@ class GameChangingTranslator:
         self.clear_timeout_timer_start = None
         log_debug("Gemini OCR batch state reset")
 
+    def _graceful_shutdown_poll(self):
+        """
+        Non-blocking poll to check if all async API calls have finished.
+        This allows the tkinter event loop to process callbacks that decrement pending call counters.
+        """
+        # Calculate pending calls from all providers
+        pending_ocr = 0
+        if hasattr(self.translation_handler, 'ocr_providers'):
+            for provider in self.translation_handler.ocr_providers.values():
+                pending_ocr += provider._pending_ocr_calls
+        
+        pending_translation = 0
+        if hasattr(self.translation_handler, 'providers'):
+            for provider in self.translation_handler.providers.values():
+                pending_translation += provider._pending_translation_calls
+
+        # Check if timeout is reached or all calls are done
+        elapsed = time.monotonic() - self._shutdown_start_time
+        if (pending_ocr == 0 and pending_translation == 0) or elapsed > 20.0:
+            if elapsed > 20.0:
+                log_debug(f"Warning: Shutdown timeout of 20.0s reached. Some API calls may not have completed.")
+            else:
+                log_debug("All pending API calls have completed.")
+            
+            log_debug(f"Graceful shutdown for thread pools completed in {elapsed:.2f}s.")
+            self._finalize_shutdown() # Proceed to the final steps
+            return
+
+        # If not done, poll again shortly
+        log_debug(f"Waiting for pending API calls to complete... OCR: {pending_ocr}, Translation: {pending_translation}")
+        self.root.after(100, self._graceful_shutdown_poll)
+
+    def _finalize_shutdown(self):
+        """Contains the final steps of the shutdown process after graceful polling."""
+        # End the sessions HERE, after all pending calls are confirmed to be finished.
+        if hasattr(self, 'translation_handler'):
+            self.translation_handler.request_end_ocr_session()
+            self.translation_handler.request_end_translation_session()
+
+        self._clear_queue(self.ocr_queue)
+        self._clear_queue(self.translation_queue)
+
+        if self.translation_text and self.translation_text.winfo_exists():
+            try:
+                self.translation_text.config(state=tk.NORMAL)
+                self.translation_text.delete(1.0, tk.END)
+                self.translation_text.config(state=tk.DISABLED)
+            except tk.TclError as e_ctt:
+                log_debug(f"Error clearing translation text on stop: {e_ctt}")
+        
+        if self.source_overlay and self.source_overlay.winfo_exists() and self.source_overlay.winfo_viewable():
+            try: self.source_overlay.hide()
+            except tk.TclError: log_debug("Error hiding source overlay on stop (likely closed).")
+        
+        if self.target_overlay and self.target_overlay.winfo_exists() and self.target_overlay.winfo_viewable():
+            try: self.target_overlay.hide()
+            except tk.TclError: log_debug("Error hiding target overlay on stop (likely closed).")
+        
+        self.start_stop_btn.config(state=tk.NORMAL)
+        status_text_stopped = "Status: " + self.ui_lang.get_label("status_stopped", "Stopped (Press ~ to Start)")
+        self.status_label.config(text=status_text_stopped)
+        log_debug("Translation process stopped.")
+        
+        self.toggle_in_progress = False # Release the lock here
+
     def toggle_translation(self):
+        # Add re-entrancy lock
+        if self.toggle_in_progress:
+            log_debug("Toggle translation already in progress, ignoring call.")
+            return
+        
+        self.toggle_in_progress = True
+
         if self.is_running:
             log_debug("Stopping translation process requested by user.")
             self.is_running = False
             
-            # End sessions if they are active
-            if hasattr(self, 'translation_handler'):
-                self.translation_handler.request_end_ocr_session()
-                self.translation_handler.request_end_translation_session()
-            
+            # DO NOT request session ends here. This will be done in _finalize_shutdown.
+
             # Clear Gemini context when translation is stopped
             if (hasattr(self, 'translation_handler') and 
                 hasattr(self.translation_handler, '_clear_gemini_context')):
@@ -2381,153 +2449,115 @@ class GameChangingTranslator:
             self.threads.clear()
 
             thread_stop_start_time = time.monotonic()
-            log_debug(f"Waiting for threads to join: {[t.name for t in active_threads_copy if t.is_alive()]}")
+            log_debug(f"Waiting for main worker threads to join: {[t.name for t in active_threads_copy if t.is_alive()]}")
 
             for thread_obj in active_threads_copy:
                 if thread_obj.is_alive():
                     try:
-                        thread_obj.join(timeout=20.0) # Increased timeout to 20 seconds
-                        if thread_obj.is_alive():
-                            log_debug(f"Warning: Thread {thread_obj.name} did not terminate within the 20-second timeout.")
+                        thread_obj.join(timeout=1.0) # Short timeout for main threads
                     except Exception as join_err_tt:
                         log_debug(f"Error joining thread {thread_obj.name}: {join_err_tt}")
 
-            log_debug(f"Thread joining process completed in {time.monotonic() - thread_stop_start_time:.2f}s.")
+            log_debug(f"Main worker threads joined in {time.monotonic() - thread_stop_start_time:.2f}s.")
 
-            self._clear_queue(self.ocr_queue)
-            self._clear_queue(self.translation_queue)
+            # Use non-blocking poll for graceful shutdown
+            log_debug("Starting graceful shutdown poll for API call thread pools...")
+            self._shutdown_start_time = time.monotonic()
+            self.root.after(0, self._graceful_shutdown_poll)
+            # The rest of the shutdown logic is now in _finalize_shutdown()
+            # The lock will be released in _finalize_shutdown()
 
-            if self.translation_text and self.translation_text.winfo_exists():
-                try:
-                    self.translation_text.config(state=tk.NORMAL)
-                    self.translation_text.delete(1.0, tk.END)
-                    self.translation_text.config(state=tk.DISABLED)
-                except tk.TclError as e_ctt:
-                    log_debug(f"Error clearing translation text on stop: {e_ctt}")
-            
-            if self.source_overlay and self.source_overlay.winfo_exists() and self.source_overlay.winfo_viewable():
-                try: self.source_overlay.hide()
-                except tk.TclError: log_debug("Error hiding source overlay on stop (likely closed).")
-            
-            if self.target_overlay and self.target_overlay.winfo_exists() and self.target_overlay.winfo_viewable():
-                try: self.target_overlay.hide()
-                except tk.TclError: log_debug("Error hiding target overlay on stop (likely closed).")
-            
-            # Stop OCR Preview real-time updates - REMOVED, now runs continuously
-            
-            self.start_stop_btn.config(state=tk.NORMAL)
-            status_text_stopped = "Status: " + self.ui_lang.get_label("status_stopped", "Stopped (Press ~ to Start)")
-            self.status_label.config(text=status_text_stopped)
-            log_debug("Translation process stopped.")
         else: 
-            log_debug("Starting translation process requested by user...")
-            self.start_stop_btn.config(state=tk.DISABLED) 
-            self.status_label.config(text="Status: Initializing...")
-            self.root.update_idletasks()
-
-            valid_start_flag = True 
-            
-            # Debug logging for overlay validation
-            log_debug(f"Start validation - Source overlay: {self.source_overlay is not None}")
-            log_debug(f"Start validation - Target overlay: {self.target_overlay is not None}")
-            log_debug(f"Start validation - Translation text: {self.translation_text is not None}")
-            
-            if self.target_overlay:
-                log_debug(f"Target overlay type: {type(self.target_overlay).__name__}")
-            if self.translation_text:
-                log_debug(f"Translation text type: {type(self.translation_text).__name__}")
-            
-            if not self.source_overlay or not self._widget_exists_safely(self.source_overlay):
-                messagebox.showerror("Start Error", "Source area overlay missing. Select source area.", parent=self.root)
-                valid_start_flag = False
-            if valid_start_flag and (not self.target_overlay or not self._widget_exists_safely(self.target_overlay)):
-                log_debug(f"Target overlay validation failed - overlay exists: {self.target_overlay is not None}, widget_exists_safely: {self._widget_exists_safely(self.target_overlay) if self.target_overlay else False}")
-                messagebox.showerror("Start Error", "Target area overlay missing. Select target area.", parent=self.root)
-                valid_start_flag = False
-            if valid_start_flag and (not self.translation_text or not self._widget_exists_safely(self.translation_text)):
-                log_debug(f"Translation text validation failed - text exists: {self.translation_text is not None}, widget_exists_safely: {self._widget_exists_safely(self.translation_text) if self.translation_text else False}")
-                messagebox.showerror("Start Error", "Target text display widget missing. Reselect target area.", parent=self.root)
-                valid_start_flag = False
-            
-            # Only validate Tesseract path when using Tesseract OCR
-            if self.get_ocr_model_setting() == 'tesseract':
-                tesseract_exe_path = self.tesseract_path_var.get()
-                if valid_start_flag and (not tesseract_exe_path or not os.path.isfile(tesseract_exe_path)):
-                    messagebox.showerror("Start Error", f"Tesseract path invalid:\n{tesseract_exe_path}\nCheck Settings.", parent=self.root)
-                    valid_start_flag = False
-                elif valid_start_flag and pytesseract.pytesseract.tesseract_cmd != tesseract_exe_path:
-                     pytesseract.pytesseract.tesseract_cmd = tesseract_exe_path
-                     log_debug(f"Runtime Tesseract path updated to: {tesseract_exe_path}")
-            else:
-                log_debug(f"Skipping Tesseract path validation - using OCR model: {self.get_ocr_model_setting()}")
-            
-            if valid_start_flag:
-                 try:
-                     self.source_area = self.source_overlay.get_geometry()
-                     self.target_area = self.target_overlay.get_geometry()
-                     if not self._validate_area_coords(self.source_area, "source"): valid_start_flag = False
-                     if valid_start_flag and not self._validate_area_coords(self.target_area, "target"): valid_start_flag = False
-                 except (tk.TclError, AttributeError) as e_gog:
-                     messagebox.showerror("Start Error", f"Could not get overlay geometry: {e_gog}", parent=self.root)
-                     valid_start_flag = False
-            
-            if not valid_start_flag:
-                self.start_stop_btn.config(state=tk.NORMAL)
-                status_text_failed = "Status: Start Failed"
-                if self.KEYBOARD_AVAILABLE: status_text_failed += " (Press ~ to Retry)"
-                self.status_label.config(text=status_text_failed)
-                log_debug("Start aborted due to failed pre-start validation checks.")
-                return
-            
-            log_debug("Pre-start checks passed. Preparing to start threads...")
-            self.text_stability_counter = 0
-            self.previous_text = ""
-            self.last_image_hash = None
-            self.last_screenshot = None 
-            self.last_processed_image = None 
-            
-            # Reset Gemini OCR batch management state
-            self._reset_gemini_batch_state() 
-
             try:
-                if self.target_overlay and self.target_overlay.winfo_exists() and not self.target_overlay.winfo_viewable():
-                    self.target_overlay.show()
-            except tk.TclError:
-                log_debug("Warning: Error ensuring target overlay visibility at start (likely closed).")
+                log_debug("Starting translation process requested by user...")
+                self.start_stop_btn.config(state=tk.DISABLED) 
+                self.status_label.config(text="Status: Initializing...")
+                self.root.update_idletasks()
 
-            self._clear_queue(self.ocr_queue)
-            self._clear_queue(self.translation_queue)
-
-            # Reload file caches to ensure we have the most up-to-date cached translations
-            log_debug("Reloading file caches to ensure up-to-date translations...")
-            self.cache_manager.load_file_caches()
-
-            self.is_running = True 
-            
-            # Start appropriate sessions based on settings
-            if hasattr(self, 'translation_handler'):
-                # Start OCR session if using API-based OCR (Gemini or OpenAI)
-                if self.is_api_based_ocr_model():
-                    self.translation_handler.start_ocr_session()
+                valid_start_flag = True 
                 
-                # *** FIX: Call the generic method to start the session for the ACTIVE provider ***
-                self.translation_handler.start_translation_session()
-            
-            self.start_stop_btn.config(text="Stop", state=tk.NORMAL)
-            status_text_running = "Status: " + self.ui_lang.get_label("status_running", "Running (Press ~ to Stop)")
-            self.status_label.config(text=status_text_running)
-            self.root.update_idletasks()
-            
-            capture_thread_instance = threading.Thread(target=run_capture_thread, args=(self,), name="CaptureThread", daemon=True)
-            ocr_thread_instance = threading.Thread(target=run_ocr_thread, args=(self,), name="OCRThread", daemon=True)
-            translation_thread_instance = threading.Thread(target=run_translation_thread, args=(self,), name="TranslationThread", daemon=True)
+                if not self.source_overlay or not self._widget_exists_safely(self.source_overlay):
+                    messagebox.showerror("Start Error", "Source area overlay missing. Select source area.", parent=self.root)
+                    valid_start_flag = False
+                if valid_start_flag and (not self.target_overlay or not self._widget_exists_safely(self.target_overlay)):
+                    messagebox.showerror("Start Error", "Target area overlay missing. Select target area.", parent=self.root)
+                    valid_start_flag = False
+                if valid_start_flag and (not self.translation_text or not self._widget_exists_safely(self.translation_text)):
+                    messagebox.showerror("Start Error", "Target text display widget missing. Reselect target area.", parent=self.root)
+                    valid_start_flag = False
+                
+                if self.get_ocr_model_setting() == 'tesseract':
+                    tesseract_exe_path = self.tesseract_path_var.get()
+                    if valid_start_flag and (not tesseract_exe_path or not os.path.isfile(tesseract_exe_path)):
+                        messagebox.showerror("Start Error", f"Tesseract path invalid:\n{tesseract_exe_path}\nCheck Settings.", parent=self.root)
+                        valid_start_flag = False
+                
+                if valid_start_flag:
+                     try:
+                         self.source_area = self.source_overlay.get_geometry()
+                         self.target_area = self.target_overlay.get_geometry()
+                         if not self._validate_area_coords(self.source_area, "source"): valid_start_flag = False
+                         if valid_start_flag and not self._validate_area_coords(self.target_area, "target"): valid_start_flag = False
+                     except (tk.TclError, AttributeError) as e_gog:
+                         messagebox.showerror("Start Error", f"Could not get overlay geometry: {e_gog}", parent=self.root)
+                         valid_start_flag = False
+                
+                if not valid_start_flag:
+                    self.start_stop_btn.config(state=tk.NORMAL)
+                    status_text_failed = "Status: Start Failed"
+                    if self.KEYBOARD_AVAILABLE: status_text_failed += " (Press ~ to Retry)"
+                    self.status_label.config(text=status_text_failed)
+                    log_debug("Start aborted due to failed pre-start validation checks.")
+                    return
 
-            self.threads = [capture_thread_instance, ocr_thread_instance, translation_thread_instance]
-            for t_obj in self.threads:
-                t_obj.start()
-            log_debug(f"Threads started: {[t.name for t in self.threads]}")
+                log_debug("Pre-start checks passed. Preparing to start threads...")
+                self.text_stability_counter = 0
+                self.previous_text = ""
+                self.last_image_hash = None
+                self.last_screenshot = None 
+                self.last_processed_image = None 
+                
+                self._reset_gemini_batch_state() 
+
+                try:
+                    if self.target_overlay and self.target_overlay.winfo_exists() and not self.target_overlay.winfo_viewable():
+                        self.target_overlay.show()
+                except tk.TclError:
+                    log_debug("Warning: Error ensuring target overlay visibility at start (likely closed).")
+
+                self._clear_queue(self.ocr_queue)
+                self._clear_queue(self.translation_queue)
+
+                self.cache_manager.load_file_caches()
+
+                self.is_running = True 
+                
+                if hasattr(self, 'translation_handler'):
+                    if self.is_api_based_ocr_model():
+                        self.translation_handler.start_ocr_session()
+                    self.translation_handler.start_translation_session()
+                
+                self.start_stop_btn.config(text="Stop", state=tk.NORMAL)
+                status_text_running = "Status: " + self.ui_lang.get_label("status_running", "Running (Press ~ to Stop)")
+                self.status_label.config(text=status_text_running)
+                self.root.update_idletasks()
+                
+                capture_thread_instance = threading.Thread(target=run_capture_thread, args=(self,), name="CaptureThread", daemon=True)
+                ocr_thread_instance = threading.Thread(target=run_ocr_thread, args=(self,), name="OCRThread", daemon=True)
+                translation_thread_instance = threading.Thread(target=run_translation_thread, args=(self,), name="TranslationThread", daemon=True)
+
+                self.threads = [capture_thread_instance, ocr_thread_instance, translation_thread_instance]
+                for t_obj in self.threads:
+                    t_obj.start()
+                log_debug(f"Threads started: {[t.name for t in self.threads]}")
+                
+                # Release lock after successful start
+                self.toggle_in_progress = False
             
-            # OCR Preview real-time updates run continuously, no need to start/stop with translation
+            finally:
+                # Release lock if start failed before threads were launched
+                if not self.is_running: 
+                    self.toggle_in_progress = False
 
     def _validate_area_coords(self, area_coordinates, area_type_str):
         min_dimension = 10 
@@ -3088,5 +3118,3 @@ For more information, see the user manual."""
         except Exception as e_drw:
              log_debug(f"Error destroying root window: {e_drw}")
         log_debug("Application shutdown sequence complete.")
-
-

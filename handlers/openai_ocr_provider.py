@@ -1,7 +1,7 @@
 import base64
 import time
-import os  # <-- FIX: Added missing import
-import re  # <-- FIX: Added missing import
+import os
+import re
 from logger import log_debug
 from .ocr_provider_base import AbstractOCRProvider
 import json
@@ -77,35 +77,63 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         # OCR prompt optimized for text transcription
         prompt = """Transcribe the text from this image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. If no text is present, return only: <EMPTY>"""
         
-        # Prepare the messages
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url", 
-                        "image_url": {
-                            "url": f"data:image/webp;base64,{base64_image}",
-                            "detail": "low"
+        # Create different message structures for different APIs
+        if ocr_model_api_name.startswith('gpt-5'):
+            # GPT-5 models use Responses API with specific message format
+            input_data = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "input_image",
+                            "image_url": f"data:image/webp;base64,{base64_image}"
                         }
-                    }
-                ]
-            }
-        ]
-        
+                    ]
+                }
+            ]
+        else:
+            # Other models use Chat Completions API with standard content types
+            input_data = [
+                {
+                    "role": "user", 
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url", 
+                            "image_url": {
+                                "url": f"data:image/webp;base64,{base64_image}",
+                                "detail": "low"
+                            }
+                        }
+                    ]
+                }
+            ]
+
         # Make the API call
         api_call_start_time = time.time()
-        response = self.client.chat.completions.create(
-            model=ocr_model_api_name,
-            messages=messages,
-            # max_tokens=512,
-            temperature=0.0
-        )
-        call_duration = time.time() - api_call_start_time
         
-        # This was the duplicate call. The base class handles this now.
-        # self.circuit_breaker.record_call(call_duration, True)
+        if ocr_model_api_name.startswith('gpt-5'):
+            log_debug(f"Using GPT 5 model {ocr_model_api_name} for OCR with minimal effort and low verbosity")
+            # GPT 5 models use the Responses API
+            response = self.client.responses.create(
+                model=ocr_model_api_name,
+                input=input_data,
+                reasoning={'effort': 'minimal'},
+                text={'verbosity': 'low'}
+            )
+        else:
+            # Other models use the default Chat Completions API
+            response = self.client.chat.completions.create(
+                model=ocr_model_api_name,
+                messages=input_data,
+                temperature=0.0
+            )
+            
+        call_duration = time.time() - api_call_start_time
         
         return response, call_duration, prompt, len(image_data)
 
@@ -113,16 +141,43 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         """Parse the API response to extract text, tokens, and model info."""
         response, call_duration, prompt, image_size = response_data
         
-        ocr_result = response.choices[0].message.content.strip() if response.choices and response.choices[0].message.content else "<EMPTY>"
+        # Get model name for costing from app config
+        model_name_for_costing = self.app.get_current_openai_model_for_ocr() or 'gpt-4o'
+
+        ocr_result = ""
+        input_tokens = 0
+        output_tokens = 0
+
+        if model_name_for_costing.startswith('gpt-5'):
+            # GPT 5 models use Responses API
+            ocr_result = response.output_text.strip() if hasattr(response, 'output_text') else response.text.strip()
+            
+            # Check for usage in different locations
+            if hasattr(response, 'usage') and response.usage:
+                input_tokens = getattr(response.usage, 'prompt_tokens', 0) or getattr(response.usage, 'input_tokens', 0)
+                output_tokens = getattr(response.usage, 'completion_tokens', 0) or getattr(response.usage, 'output_tokens', 0)
+            elif hasattr(response, 'input_tokens') and hasattr(response, 'output_tokens'):
+                input_tokens = response.input_tokens
+                output_tokens = response.output_tokens
+            log_debug(f"OpenAI GPT-5 OCR usage metadata: In={input_tokens}, Out={output_tokens}")
+            
+            # Estimate tokens if not available in response
+            if input_tokens == 0 or output_tokens == 0:
+                input_tokens = max(input_tokens, int(len(str(response).split()) * 1.3))  # Rough estimate
+                output_tokens = max(output_tokens, int(len(ocr_result.split()) * 1.3))  # Rough estimate
+                log_debug(f"OpenAI GPT-5 OCR estimated tokens: In={input_tokens}, Out={output_tokens}")
+        else:
+            # Other models use Chat Completions API
+            ocr_result = response.choices[0].message.content.strip() if response.choices and response.choices[0].message.content else "<EMPTY>"
+            if hasattr(response, 'usage') and response.usage:
+                input_tokens = response.usage.prompt_tokens
+                output_tokens = response.usage.completion_tokens
+            log_debug(f"OpenAI Chat Completions OCR usage metadata: In={input_tokens}, Out={output_tokens}")
+
         parsed_text = ocr_result.replace('```text\n', '').replace('```', '').replace('\n', ' ').strip()
         if not parsed_text or "<EMPTY>" in parsed_text:
             parsed_text = "<EMPTY>"
         
-        input_tokens = response.usage.prompt_tokens if response.usage else 0
-        output_tokens = response.usage.completion_tokens if response.usage else 0
-        
-        # Get model name for costing from app config
-        model_name_for_costing = self.app.get_current_openai_model_for_ocr() or 'gpt-4o'
         # Get model name for logging from API response
         model_name_for_logging = response.model if hasattr(response, 'model') else model_name_for_costing
         model_source = "api_response"
@@ -135,7 +190,6 @@ class OpenAIOCRProvider(AbstractOCRProvider):
             )
         
         log_debug(f"OpenAI OCR result: '{parsed_text}' (took {call_duration:.3f}s)")
-        # Return both model names
         return (parsed_text, input_tokens, output_tokens, model_name_for_costing, model_name_for_logging, model_source)
 
     def _get_model_costs(self, model_name):
