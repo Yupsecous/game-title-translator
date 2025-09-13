@@ -38,13 +38,20 @@ class OpenAIProvider(AbstractLLMProvider):
     
     def _initialize_client(self, api_key, source_lang, target_lang):
         """Initialize OpenAI client session."""
+        if not OPENAI_AVAILABLE:
+            log_debug("OpenAI library not available for session.")
+            self.client = None
+            return
+
+        if hasattr(self, 'client') and self._should_refresh_client():
+            self._force_client_refresh()
+
         try:
             self.client = openai.OpenAI(api_key=api_key)
             self.session_api_key = api_key
             self.client_created_time = time.time()
             self.api_call_count = 0
             
-            # Clear context window on session initialization
             self._clear_context()
             
             log_debug(f"OpenAI client initialized for {source_lang}->{target_lang}")
@@ -158,6 +165,7 @@ class OpenAIProvider(AbstractLLMProvider):
     
     def _parse_response(self, response):
         """Parse OpenAI response and extract relevant information."""
+        # print(response)
         model_config = self._get_model_config()
         model_name = model_config['api_name']
         

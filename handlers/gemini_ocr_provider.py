@@ -43,10 +43,25 @@ class GeminiOCRProvider(AbstractOCRProvider):
 
     def _initialize_client(self, api_key):
         """Initialize the Gemini API client."""
-        log_debug("Creating new Gemini client for OCR")
-        self.client = genai.Client(api_key=api_key)
-        self.session_api_key = api_key
-        return self.client is not None
+        if not GENAI_AVAILABLE:
+            log_debug("Google Gen AI libraries not available for Gemini OCR session")
+            self.client = None
+            return
+
+        if hasattr(self, 'client') and self._should_refresh_client():
+            self._force_client_refresh()
+
+        try:
+            log_debug("Creating new Gemini client for OCR")
+            self.client = genai.Client(api_key=api_key)
+            self.session_api_key = api_key
+            self.client_created_time = time.time()
+            self.api_call_count = 0
+            return self.client is not None
+        except Exception as e:
+            log_debug(f"Failed to initialize Gemini OCR client: {e}")
+            self.client = None
+            return False
 
     def _make_api_call(self, image_data, source_lang):
         """Make the actual Gemini OCR API call."""

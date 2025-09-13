@@ -2574,9 +2574,9 @@ class GameChangingTranslator:
             for thread_obj in active_threads_copy:
                 if thread_obj.is_alive():
                     try:
-                        thread_obj.join(timeout=1.0)
+                        thread_obj.join(timeout=20.0) # Increased timeout to 20 seconds
                         if thread_obj.is_alive():
-                             log_debug(f"Warning: Thread {thread_obj.name} did not terminate within timeout.")
+                            log_debug(f"Warning: Thread {thread_obj.name} did not terminate within the 20-second timeout.")
                     except Exception as join_err_tt:
                         log_debug(f"Error joining thread {thread_obj.name}: {join_err_tt}")
 
@@ -3190,12 +3190,12 @@ For more information, see the user manual."""
         else:
              log_debug("Process was not running at close time.")
 
-        # Force end any remaining sessions when application closes
-        if hasattr(self, 'translation_handler'):
-            try:
-                self.translation_handler.force_end_sessions_on_app_close()
-            except Exception as e:
-                log_debug(f"Error ending sessions on app close: {e}")
+        # # Force end any remaining sessions when application closes
+        # if hasattr(self, 'translation_handler'):
+        #     try:
+        #         self.translation_handler.force_end_sessions_on_app_close()
+        #     except Exception as e:
+        #         log_debug(f"Error ending sessions on app close: {e}")
 
         if hasattr(self, 'marian_translator') and self.marian_translator and hasattr(self.marian_translator, 'thread_pool'):
             try:

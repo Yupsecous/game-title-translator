@@ -40,10 +40,25 @@ class OpenAIOCRProvider(AbstractOCRProvider):
 
     def _initialize_client(self, api_key):
         """Initialize the OpenAI API client."""
-        log_debug("Creating new OpenAI client for OCR")
-        self.client = openai.OpenAI(api_key=api_key)
-        self.session_api_key = api_key
-        return self.client is not None
+        if not OPENAI_AVAILABLE:
+            log_debug("OpenAI library not available for OCR session.")
+            self.client = None
+            return False
+
+        if hasattr(self, 'client') and self._should_refresh_client():
+            self._force_client_refresh()
+
+        try:
+            log_debug("Creating new OpenAI client for OCR")
+            self.client = openai.OpenAI(api_key=api_key)
+            self.session_api_key = api_key
+            self.client_created_time = time.time()
+            self.api_call_count = 0
+            return self.client is not None
+        except Exception as e:
+            log_debug(f"Failed to initialize OpenAI OCR client: {e}")
+            self.client = None
+            return False
 
     def _make_api_call(self, image_data, source_lang):
         """Make the actual OpenAI OCR API call."""
@@ -84,7 +99,7 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         response = self.client.chat.completions.create(
             model=ocr_model_api_name,
             messages=messages,
-            max_tokens=512,
+            # max_tokens=512,
             temperature=0.0
         )
         call_duration = time.time() - api_call_start_time
