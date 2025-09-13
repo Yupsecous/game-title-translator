@@ -89,11 +89,30 @@ class TranslationHandler:
         if provider:
             provider.start_translation_session()
 
-    def request_end_translation_session(self):
+    def request_end_translation_session(self):        
         provider = self._get_active_llm_provider()
         if provider:
             return provider.request_end_translation_session()
         return True
+
+    # === CONTEXT MANAGEMENT ===
+    def _clear_gemini_context(self):
+        """Clear Gemini context window. Called when language or model changes."""
+        provider = self.providers.get('gemini')
+        if provider:
+            provider._clear_context()
+            log_debug("Gemini context cleared via TranslationHandler")
+        else:
+            log_debug("Gemini provider not available for context clearing")
+
+    def _clear_openai_context(self):
+        """Clear OpenAI context window. Called when language or model changes."""
+        provider = self.providers.get('openai')
+        if provider:
+            provider._clear_context()
+            log_debug("OpenAI context cleared via TranslationHandler")
+        else:
+            log_debug("OpenAI provider not available for context clearing")
 
     # === OCR SESSION MANAGEMENT ===
     def start_ocr_session(self):
@@ -110,6 +129,7 @@ class TranslationHandler:
         return True
 
     def force_end_sessions_on_app_close(self):
+        # Context clearing is now handled automatically in base class after session end logging        
         # End translation sessions
         for provider in self.providers.values():
             try:

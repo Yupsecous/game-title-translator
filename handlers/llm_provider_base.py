@@ -265,6 +265,10 @@ Purpose: Concise {self.provider_name} translation call results and statistics
                 end_reason = "(FORCED - APP CLOSING)" if force else ""
                 with open(self.short_log_file, 'a', encoding='utf-8') as f:
                     f.write(f"SESSION {self.translation_session_counter} ENDED {timestamp} {end_reason}\n".strip() + "\n")
+                
+                # Clear context AFTER session end is logged to ensure clean start for next session
+                self._clear_context()
+                
                 self.current_translation_session_active = False
                 self._translation_session_should_end = False
                 self.translation_session_counter += 1
