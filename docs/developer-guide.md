@@ -33,8 +33,8 @@ Game-Changing Translator follows a modular design with the following key compone
 
 4. **OCR Provider Architecture (in `handlers/` directory)** *[New Architecture]*
    - `OCRProviderBase` - Abstract base class for all API-based OCR providers
-   - `GeminiOCRProvider` - Gemini-specific OCR implementation with AI-powered text recognition
-   - `OpenAIOCRProvider` - OpenAI-specific OCR implementation using GPT-4o and GPT-4-turbo vision models
+   - `GeminiOCRProvider` - Gemini-specific OCR implementation with Gemini-powered text recognition
+   - `OpenAIOCRProvider` - OpenAI-specific OCR implementation using GPT-enabled text recognition
 
 5. **Worker Threads (`worker_threads.py`)**
    - `run_capture_thread` - Captures screenshots from selected screen areas
