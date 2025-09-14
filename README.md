@@ -70,6 +70,15 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
+### 🚀 NEW in Version 3.6.0
+- **![OpenAI Logo](docs/screenshots/OpenAI_Logo.png) OpenAI Integration - More Choice, More Power!**: The application now includes support for OpenAI's powerful language models, offering a flexible and high-quality alternative to existing AI services.
+  - **Three Versatile Models**: Access to a curated selection of OpenAI's best models:
+    - `GPT-5 Nano`
+    - `GPT-4.1 Mini`
+    - `GPT-4.1 Nano`
+  - **Dual Functionality**: All supported OpenAI models can be used for both high-quality **Translation** and advanced, vision-capable **OCR**, giving you the freedom to choose the best tool for the job.
+  - Be sure to check out the **comparison between OpenAI and Gemini models** in the updated [user manual](https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html#openai-api-a-flexible-alternative).
+
 ### 🚀 NEW in Version 3.5.8
 
 - **Auto-Update System**: Complete auto-update functionality accessible through "Check for Updates" button in the About tab
@@ -141,20 +150,6 @@ This application was developed or rather vibe-coded with the support of the foll
 - **Extended Context Window**: Expanded sliding history window from 2 to 5 previous subtitles for enhanced translation quality
   - **Better Context Awareness**: Improved narrative coherence and grammatical consistency across longer conversations
   - **Enhanced Asian Language Support**: Extended context particularly beneficial for languages that rely heavily on contextual understanding
-
-### 🚀 NEW in Version 2.0.0
-
-- **Gemini 2.5 Flash-Lite Integration**: Revolutionary AI-powered translation with advanced context awareness and cost-effectiveness
-  - Context-aware translation with configurable sliding window (0-2 previous subtitles) for narrative coherence
-  - Intelligent OCR error correction that automatically fixes garbled input text
-  - Exceptional cost-effectiveness: translate massive games like The Witcher 3 for pennies
-  - Built-in real-time cost tracking with token usage analytics and cumulative cost monitoring
-  - Detailed API call logging with complete transparency (`Gemini_API_call_logs.txt`)
-  - Advanced file caching system (`gemini_cache.txt`) for reduced API costs
-  - Superior translation quality with context understanding for dialogue flow and character consistency
-- **DeepL Free Usage Tracker**: Monitor your monthly free quota consumption with real-time tracking in the Settings tab
-  - Displays current usage against the 500,000 character monthly limit for DeepL API Free accounts
-  - Helps users optimize their free tier usage
 
 ### Core Features
 

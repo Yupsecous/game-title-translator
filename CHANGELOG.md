@@ -5,23 +5,16 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.6.0] - 2025-09-08
+## [3.6.0] - 2025-09-14
 
 ### Added
-- **OpenAI API Translation Support**: Complete integration with OpenAI's translation services providing advanced AI-powered translation capabilities
-  - Support for multiple OpenAI models including GPT-4.1 Mini, GPT-4.1 Nano, and GPT-5 Nano
-  - Advanced model support with GPT-5 models using the Responses API and GPT-4.1 models with non-thinking mode
-  - Context-aware translation with configurable context window (0-2 previous subtitles) for narrative coherence
+- **OpenAI API Translation and OCR Support**: Complete integration with OpenAI's translation services providing advanced AI-powered translation capabilities
+  - Support for multiple OpenAI models: GPT-4.1 Mini, GPT-4.1 Nano, and GPT-5 Nano
   - Comprehensive API call logging with detailed token usage and cost tracking
   - Dynamic model configuration through CSV-based management system
-  - OpenAI-specific cache system for API cost optimization
-  - Integration with unified translation cache architecture for consistent performance
-
+  
 ### Changed
-- **Enhanced Translation Provider Architecture**: Expanded translation system to support OpenAI alongside existing Gemini, DeepL, Google Translate, and MarianMT providers
-  - Extended translation handler with OpenAI-specific methods and session management
-  - Added OpenAI model manager for dynamic model configuration and cost tracking
-  - Updated UI elements to include OpenAI model selection and configuration options
+- **Enhanced Translation and OCR Provider Architecture**: Expanded translation and OCR workflows to support OpenAI alongside existing Gemini, DeepL, Google Translate, and MarianMT providers
 
 ### Fixed
 - N/A
