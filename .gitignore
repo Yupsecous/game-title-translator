@@ -32,6 +32,7 @@ debug_images/
 !screenshots/*.png
 !docs/screenshots/*.png
 !docs/OCR Test/*.png
+docs/*backup*.*
 googletrans_cache*.txt
 deepl_cache*.txt
 gemini_cache*.txt

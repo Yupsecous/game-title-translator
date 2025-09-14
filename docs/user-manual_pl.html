@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
@@ -182,6 +182,29 @@
         .marianmt-note-content {
             flex: 1;
         }
+            
+        /* OpenAI note style */
+        .openai-note {
+            background-color: #e0f7fa;
+            border: 2px solid #0097a7;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 100%;
+        }
+
+        .openai-note-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .openai-note-content {
+            flex: 1;
+        }
 
         /* Disclaimer note style */
         .disclaimer-note {
@@ -236,16 +259,23 @@
         <a href="#settings-configuration">Konfiguracja ustawień</a>
       </li>
       <li>
-        <a href="#gemini-ocr-premium-text-recognition">Gemini OCR – premium rozpoznawanie tekstu</a>
+        <a href="#ai-translation-and-ocr">Tłumaczenie i OCR z wykorzystaniem sztucznej inteligencji</a>
+        <ul>
+            <li><a href="#gemini-ocr-premium-text-recognition">Gemini OCR – zaawansowane rozpoznawanie tekstu</a></li>
+            <li><a href="#gemini-api-cost-effective-and-context-aware-translation">Gemini API – tanie tłumaczenie kontekstowe</a></li>
+            <li><a href="#openai-api-a-flexible-alternative">OpenAI API – elastyczna alternatywa</a></li>
+        </ul>
       </li>
       <li>
         <a href="#api-usage-monitoring">Monitorowanie zużycia API</a>
       </li>
       <li>
-        <a href="#translation-methods">Metody tłumaczenia</a>
-      </li>
-      <li>
-        <a href="#gemini-api-cost-effective-and-context-aware-translation">Gemini API – tanie tłumaczenie kontekstowe</a>
+        <a href="#other-translation-methods">Inne metody tłumaczenia</a>
+          <ul>
+              <li><a href="#marianmt-offline-and-free">MarianMT (lokalny i bezpłatny)</a></li>
+              <li><a href="#deepl-api">DeepL API</a></li>
+              <li><a href="#google-translate-api">Google Translate API</a></li>
+          </ul>
       </li>
       <li>
         <a href="#keyboard-shortcuts">Skróty klawiszowe</a>
@@ -317,21 +347,21 @@
     <p>Tutaj można skonfigurować:</p>
     <ol>
       <li>
-        <strong>Model tłumaczenia</strong> – wybierz spośród różnych modeli tłumaczeń.</li>
+        <strong>Model tłumaczenia</strong> – wybierz spośród różnych modeli tłumaczeń (Gemini, OpenAI, MarianMT, DeepL itp.).</li>
       <li>
-        <strong>Model OCR</strong> – wybierz między <strong>Tesseract (lokalny)</strong> a <strong>Gemini API (online)</strong>.</li>
+        <strong>Model OCR</strong> – wybierz między <strong>Tesseract (lokalny)</strong>, <strong>Gemini API (online)</strong> lub <strong>OpenAI API (online)</strong>.</li>
       <li>
         <strong>Język źródłowy</strong> – język źródłowy i rozpoznawany przez OCR (tylko DeepL i Google Translate).</li>
       <li>
         <strong>Język docelowy</strong> – język tłumaczenia (tylko DeepL i Google Translate).</li>
       <li>
-        <strong>Klucz API</strong> – tylko w przypadku Gemini, DeepL lub Google Translate.</li>
+        <strong>Klucz API</strong> – tylko w przypadku Gemini, OpenAI, DeepL lub Google Translate.</li>
       <li>
         <strong>Jakość</strong> – wybierz między opcjami <strong>Klasyczna</strong> (szybsze tłumaczenie) lub <strong>Nowej generacji</strong> (potencjalnie lepsza jakość) (tylko DeepL).</li>
       <li>
         <strong>Opcje MarianMT</strong> – lokalne tłumaczenie neuronowe (tylko model MarianMT).</li>
       <li>
-        <strong>Opcje Gemini</strong> – tanie tłumaczenie modelem LLM z uwzględnieniem kontekstu (tylko Gemini).</li>
+        <strong>Opcje Gemini/OpenAI</strong> – tanie tłumaczenie modelem LLM z uwzględnieniem kontekstu.</li>
       <li>
         <strong>Ścieżka do Tesseract</strong> – ścieżka do pliku wykonywalnego Tesseract OCR (tylko Tesseract).</li>
       <li>
@@ -353,7 +383,7 @@
       <li>
         <strong>Opcje wyglądu</strong> – kolory i rozmiary czcionek dla nakładek.</li>
       <li>
-        <strong>Opcje buforowania do plików</strong> – ustawienia włączania/wyłączania buforowania w przypadku DeepL i Google Translate.</li>
+        <strong>Opcje buforowania do plików</strong> – ustawienia włączania/wyłączania buforowania w przypadku usług API.</li>
     </ol>
     <h3 id="ocr-preview">Podgląd OCR (tylko Tesseract)</h3>
     <p>
@@ -371,14 +401,14 @@
     <p>
       <img src="screenshots/API_Stats_pl.png" alt="Zakładka Zużycie API" />
     </p>
-    <p>Ta zakładka umożliwia kompleksowe monitorowanie i analizę zużycia Gemini API. Obejmuje:</p>
+    <p>Ta zakładka umożliwia kompleksowe monitorowanie i analizę zużycia API usług takich jak Gemini i OpenAI. Obejmuje:</p>
     <ol>
       <li>
-        <strong>Statystyki OCR Gemini</strong> – śledzenie kosztów i wskaźniki wydajności OCR.</li>
+        <strong>Statystyki OCR (Gemini i OpenAI)</strong> – śledzenie kosztów i wskaźniki wydajności OCR.</li>
       <li>
-        <strong>Statystyki tłumaczenia Gemini</strong> – liczby słów, koszty i wskaźniki wydajności tłumaczeń.</li>
+        <strong>Statystyki tłumaczenia (Gemini i OpenAI)</strong> – liczby słów, koszty i wskaźniki wydajności tłumaczeń.</li>
       <li>
-        <strong>Łączne statystyki API</strong> – ogólna analiza kosztów i prognozy.</li>
+        <strong>Łączne statystyki API</strong> – ogólna analiza kosztów i prognozy dla każdego dostawcy.</li>
       <li>
         <strong>Monitor zużycia DeepL</strong> – monitorowanie darmowych miesięcznych limitów DeepL API.</li>
       <li>
@@ -441,10 +471,12 @@
       <li>
         <p>
           <strong>Model tłumaczenia</strong>:</p>
-        <p>W górnej części listy rozwijanej znajdują się modele Gemini, a poniżej tradycyjne usługi tłumaczenia:</p>
+        <p>Dostępne są różnorodne usługi tłumaczeniowe, zarówno oparte na sztucznej inteligencji, jak i tradycyjne:</p>
         <ul>
           <li>
-            <strong>Modele Gemini (różne)</strong> – dostępne są różne modele Gemini AI (np. Gemini 2.5 Flash, Gemini 2.0 Flash itp.). Wymagają klucza API, zapewniają tanie i bardzo naturalne tłumaczenia sztucznej inteligencji z uwzględnianiem kontekstu. Dostępne modele konfiguruje się w pliku <code>resources/gemini_models.csv</code>.</li>
+            <strong>Modele Gemini (różne)</strong> – różne modele AI od Google. Wymagają klucza API, zapewniają tanie tłumaczenia z uwzględnieniem kontekstu.</li>
+          <li>
+            <strong>Modele OpenAI (różne)</strong> – różne modele od OpenAI (GPT-5, GPT-4.1). Stanowią elastyczną alternatywę dla tłumaczeń AI.</li>
           <li>
             <strong>MarianMT (lokalny i bezpłatny)</strong> – nie wymaga klucza API, pobiera modele przy pierwszym użyciu, działa bez połączenia z Internetem.</li>
           <li>
@@ -476,13 +508,15 @@
       <li>
         <p>
           <strong>Model OCR</strong>:</p>
-        <p>W górnej części listy rozwijanej znajdują się modele Gemini, a poniżej tradycyjne opcje OCR:</p>
+        <p>Wybierz między modelami online opartymi na AI a tradycyjnym silnikiem offline:</p>
         <ul>
           <li>
-            <strong>Modele Gemini (różne)</strong> – dostępne są różne modele Gemini AI (np. Gemini 2.5 Flash, Gemini 2.0 Flash itp.). Zaawansowane OCR z wykorzystaniem sztucznej inteligencji o doskonałej jakości w przypadku słabo widocznych napisów. Dostępne modele konfiguruje się w pliku <code>resources/gemini_models.csv</code>. Wymagają klucza API i połączenia z Internetem.</li>
+            <strong>Modele Gemini (różne)</strong> – zaawansowane OCR z wykorzystaniem sztucznej inteligencji o doskonałej jakości w przypadku słabo widocznych napisów. Wymagają klucza API i połączenia z Internetem.</li>
           <li>
-            <strong>Tesseract (lokalny)</strong> – tradycyjne narzędzie OCR, bezpłatne i działa offline. Zalecane dla wyraźnych napisów o dobrym kontraście (np. biały tekst na ciemnym tle).</li>
-          <li>Podczas korzystania z Gemini OCR można wybrać różne modele do operacji OCR i tłumaczenia. Jedynym ustawieniem OCR jest <strong>Interwał skanowania</strong>.</li>
+            <strong>Modele OpenAI (różne)</strong> - alternatywny dostawca OCR opartego na AI, wykorzystujący modele takie jak GPT-4.1 Nano, oferujący bardzo dobrą jakość.</li>
+          <li>
+            <strong>Tesseract (lokalny)</strong> – tradycyjne narzędzie OCR, bezpłatne i działa offline. Zalecane dla wyraźnych napisów o dobrym kontraście.</li>
+          <li>Podczas korzystania z Gemini lub OpenAI OCR można wybrać różne modele do operacji OCR i tłumaczenia.</li>
         </ul>
       </li>
       <li>
@@ -590,13 +624,8 @@
         <p>
           <strong>Opcje buforowania do plików (tylko usługi tłumaczenia za pomocą API)</strong>:</p>
         <ul>
-          <li>
-            <strong>Włącz bufor Google Translate</strong> – wykorzystuje ten sam system buforowania co DeepL (szczegółowe wyjaśnienie w sekcji DeepL).</li>
-          <li>
-            <strong>Włącz bufor DeepL</strong> – zapisuje tłumaczenia DeepL w plikach na dysku, aby zmniejszyć liczbę zapytań API.</li>
-          <li>Te opcje pomagają ograniczyć wykorzystanie API i koszty płatnych usług.</li>
+          <li>Włącza zapisywanie tłumaczeń w plikach na dysku, aby zmniejszyć liczbę zapytań API w przypadku usług Gemini, OpenAI, Google Translate i DeepL.</li>
           <li>Przycisk <strong>Wyczyść pliki buforów</strong> usuwa wszystkie zapisane tłumaczenia przechowywane w plikach.</li>
-          <li>Te ustawienia nie dotyczą modelu MarianMT, ponieważ ten działa w trybie offline.</li>
         </ul>
       </li>
       <li>
@@ -622,11 +651,16 @@
       <li>
         <strong>Rozmiar czcionki okna tłumaczenia</strong> – wielkość przetłumaczonego tekstu.</li>
     </ol>
-    <h2 id="gemini-ocr-premium-text-recognition">Gemini OCR – zaawansowane rozpoznawanie tekstu</h2>
+
+    <h2 id="ai-translation-and-ocr">Tłumaczenie i OCR z wykorzystaniem sztucznej inteligencji</h2>
+
+    <p>Game-Changing Translator integruje najnowocześniejsze duże modele językowe (LLM) od Google (Gemini) i OpenAI (GPT), aby zapewnić zaawansowane możliwości zarówno w zakresie OCR, jak i tłumaczenia. Daje to wybór między wysoce zalecanymi, opłacalnymi modelami Gemini a elastycznymi, potężnymi alternatywami od OpenAI.</p>
     
-    <p>Gemini OCR to zaawansowanie rozpoznawaniu tekstu z wykorzystaniem sztucznej inteligencji. Doskonale rozpoznaje mało czytelny tekst, z którym tradycyjne programy OCR, takie jak Tesseract, sobie nie radzą. Ta zaawansowana funkcja wykorzystuje modele Gemini firmy Google, gwarantując doskonałe rozpoznawanie tekstu i elastyczny wybór modeli pod kątem optymalnej wydajności i ceny.</p>
+    <h3 id="gemini-ocr-premium-text-recognition">Gemini OCR – zaawansowane rozpoznawanie tekstu</h2>
     
-    <h3 id="intelligent-model-selection">Inteligentny wybór modelu</h3>
+    <p>Gemini OCR to zaawansowane rozpoznawanie tekstu z wykorzystaniem sztucznej inteligencji. Doskonale rozpoznaje mało czytelny tekst, z którym tradycyjne programy OCR, takie jak Tesseract, sobie nie radzą. Ta zaawansowana funkcja wykorzystuje modele Gemini firmy Google, gwarantując doskonałe rozpoznawanie tekstu i elastyczny wybór modeli pod kątem optymalnej wydajności i ceny.</p>
+    
+    <h4>Inteligentny wybór modelu</h4>
     
     <p>Aplikacja oferuje elastyczny wybór modeli do operacji OCR i tłumaczenia, co pozwala zoptymalizować wydajność w zależności od konkretnego zastosowania:</p>
     
@@ -638,7 +672,7 @@
     
     <p><strong>Zaawansowana konfiguracja:</strong> dostępność modeli i koszty można dostosować, edytując plik <code>gemini_models.csv</code> w katalogu <strong>resources</strong>. Można dodawać nowe modele, aktualizować ceny oraz określać, które modele są dostępne do operacji OCR i tłumaczenia w miarę pojawiania się nowych modeli Gemini.</p>
     
-    <h3 id="challenging-subtitles-scenarios">Mało czytelne napisy</h3>
+    <h4>Mało czytelne napisy</h4>
     
     <p>Gemini OCR najlepiej nadaje się do mało czytelnych napisów z powodu:</p>
     <ul>
@@ -649,22 +683,18 @@
     </ul>
     
     <p><strong>Porównanie Tesseract i Gemini pod kątem jakości OCR</strong></p>
-    
     <p>
       <img src="screenshots/ocr_1.png" alt="Przykład trudnego napisu 1" />
     </p>
-    
     <p><strong>Wynik Tesseract OCR:</strong> <code>~ Trust me, OD tite WE loca mS</code><br>
     <strong>Wynik Gemini OCR:</strong> <code>Trust me, Oakmonters know a newcomer when they see one. We locals can tell.</code></p>
-    
     <p>
       <img src="screenshots/ocr_2.png" alt="Przykład trudnego napisu 2" />
     </p>
-    
     <p><strong>Wynik Tesseract OCR:</strong> <code>' Paulie: Driv: show, Tom. Next stop's Bi the motel. 7 jj ie</code><br>
     <strong>Wynik Gemini OCR:</strong> <code>Paulie: Drive before the cops show, Tom. Next stop's Bill at the motel.</code></p>
     
-    <h3 id="superior-premium-feature">Doskonała jakość z wieloma modelami</h3>
+    <h4>Doskonała jakość z wieloma modelami</h4>
     
     <p>Gemini OCR to zaawansowana funkcja, która znacznie przewyższa tradycyjne metody rozpoznawania tekstu dzięki inteligentnemu wyborowi modeli. Aplikacja zapewnia dostęp do wielu modeli Gemini, każdy zoptymalizowany pod kątem różnych scenariuszy:</p>
     
@@ -692,7 +722,7 @@
       <li>Rzeczywiste koszty mogą się różnić w zależności od konkretnego zastosowania i złożoności napisów.</li>
     </ul>
     
-    <h3 id="cost-quality-ratio">Doskonały stosunek jakości do ceny</h3>
+    <h4>Doskonały stosunek jakości do ceny</h4>
     
     <p>Dostępne modele Gemini zapewniają wyjątkowo szybkie i dokładne rozpoznawanie tekstu, które znacznie przewyższa Tesseract czy Paddle OCR. Dzięki inteligentnemu wyborowi modeli można zoptymalizować stosunek jakości do ceny dla konkretnego zastosowania przy zachowaniu doskonałej wydajności w porównaniu z bezpłatnymi i płatnymi rozwiązaniami OCR.</p>
     
@@ -703,169 +733,14 @@
       <li><strong>Różnica:</strong> modele Gemini są ok. 37,5 razy tańsze (0,04 USD wobec 1,5 USD za 1000 wywołań API).</li>
     </ul>
     
-    <h3 id="best-practices-gemini-ocr">Najlepsze praktyki z Gemini OCR</h3>
-    
+    <h4>Najlepsze praktyki z Gemini OCR</h4>
     <ul>
       <li><strong>Wybór modelu:</strong> wybierz Gemini 2.0 Flash do dłuższych napisów (ponad 1 sekunda), aby skorzystać z doskonałej dokładności OCR przy takich samych kosztach, lub Gemini 2.5 Flash-Lite do szybko zmieniających się treści.</li>
-      <li><strong>Minimalny interwał skanowania:</strong> minimalny interwał skanowania w przypadku Gemini wynosi 500 ms i wystarcza w większości przypadków.</li>
+      <li><strong>Minimalny interwał skanowania:</strong> używaj co najmniej 500 ms interwału skanowania, co wystarcza w większości przypadków.</li>
       <li><strong>Dłuższe interwały dla dłuższych treści:</strong> w grach z długimi napisami (np. seria Wiedźmin) rozważ zwiększenie interwału skanowania, aby zminimalizować koszty przy zachowaniu jakości.</li>
       <li><strong>Szersze obszary przechwytywania:</strong> w przeciwieństwie do tradycyjnych programów OCR duże modele językowe (LLM) zapewniają lepsze wyniki przy szerszym kontekście. Wybierz szeroki obszar wokół napisów zamiast ciasnego kadrowania, aby uzyskać spójne, dokładne rozpoznawanie identycznego tekstu wyświetlanego przez kilka sekund.</li>
     </ul>
-    
-    <p>Zakładka <strong>Zużycie API</strong> (szczegółowo opisana w następnej sekcji) pomaga monitorować koszty i szacować wydatki dla konkretnych zastosowań, zapewniając optymalizację zużycia OCR przy zachowaniu doskonałej jakości.</p>
-    
-    <h2 id="api-usage-monitoring">Monitorowanie zużycia API</h2>
-    
-    <p>Zakładka <strong>Zużycie API</strong> umożliwia kompleksowe monitorowanie i analizę kosztów Gemini API, pomagając śledzić wydatki i optymalizować wykorzystanie API zarówno dla usług OCR, jak i tłumaczenia.</p>
-    
-    <p>
-      <img src="screenshots/API_Stats_pl.png" alt="Zakładka Zużycie API" />
-    </p>
-    
-    <p>Zakładka zawiera szczegółowe statystyki w kilku kategoriach:</p>
-    
-    <h3 id="gemini-ocr-statistics">📊 Statystyki OCR Gemini</h3>
-    <ul>
-      <li><strong>Łączne wywołania OCR</strong> – liczba żądań OCR wysłanych do API.</li>
-      <li><strong>Mediana czasu trwania</strong> – typowy czas odpowiedzi dla żądań OCR.</li>
-      <li><strong>Średni koszt na wywołanie</strong> – średni koszt indywidualnych operacji OCR.</li>
-      <li><strong>Średni koszt na minutę/godzinę</strong> – prognozy kosztów dla ciągłego użytkowania.</li>
-      <li><strong>Łączny koszt OCR</strong> – skumulowany koszt wszystkich wywołań API OCR.</li>      
-    </ul>
-    
-    <h3 id="gemini-translation-statistics">🔄 Statystyki tłumaczenia Gemini</h3>
-    <ul>
-      <li><strong>Łączne wywołania tłumaczenia</strong> – liczba wysłanych żądań tłumaczenia.</li>
-      <li><strong>Łącznie słów przetłumaczonych</strong> – liczba słów przetworzonych przez API.</li>
-      <li><strong>Mediana czasu trwania</strong> – typowy czas odpowiedzi dla żądań tłumaczenia.</li>
-      <li><strong>Średnia słów na minutę</strong> – wskaźniki przepustowości tłumaczenia.</li>
-      <li><strong>Średni koszt na słowo/wywołanie</strong> – jednostkowe koszty operacji tłumaczenia.</li>
-      <li><strong>Średni koszt na minutę/godzinę</strong> – prognozy kosztów dla ciągłego użytkowania.</li>
-      <li><strong>Łączny koszt tłumaczenia</strong> – skumulowany koszt wszystkich wywołań API tłumaczenia.</li>
-    </ul>
-    
-    <h3 id="combined-api-statistics">💰 Łączne statystyki API</h3>
-    <ul>
-      <li><strong>Łączny koszt API</strong> – całkowity koszt wszystkich usług Gemini API.</li>
-      <li><strong>Łączny koszt na minutę/godzinę</strong> – jednolite prognozy kosztów.</li>
-    </ul>
-    
-    <h3 id="deepl-usage-tracker">📈 Monitor zużycia DeepL</h3>
-    <ul>
-      <li><strong>Darmowy miesięczny limit</strong> – monitoruj wykorzystanie limitu bezpłatnej wersji DeepL.</li>
-    </ul>
-    
-    <h3 id="statistics-management">Zarządzanie statystykami</h3>
-    <p>Zakładka zawiera kilka opcji zarządzania:</p>
-    <ul>
-      <li><strong>Odśwież statystyki</strong> – zaktualizuj wszystkie wyświetlane dane o bieżące zużycie.</li>
-      <li><strong>Eksportuj do CSV</strong> – eksportuj szczegółowe statystyki do pliku CSV.</li>
-      <li><strong>Eksportuj do tekstu</strong> – eksportuj szczegółowe statystyki do pliku tekstowego.</li>
-      <li><strong>Kopiuj</strong> – skopiuj statystyki do schowka.</li>
-    </ul>
-    
-    <p><strong>Uwaga:</strong> statystyki opierają się na plikach <code>GEMINI_API_OCR_short_log.txt</code> i <code>GEMINI_API_TRA_short_log.txt</code>. Dane zostaną zresetowane po usunięciu tych plików.</p>
-    
-    <div class="disclaimer-note">
-      <div class="disclaimer-note-icon">❗</div>
-      <div class="disclaimer-note-content">
-        <strong>Ważne:</strong> śledzenie kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie rzeczywistego zużycia API i kosztów w panelu rozliczeniowym Google.
-      </div>
-    </div>
-    
-    <h2 id="translation-methods">Metody tłumaczenia</h2>
-    <h3 id="gemini-api">Gemini API (zalecane)</h3>
-    <p>Najnowsze modele Gemini firmy Google zapewniają wyjątkową jakość tłumaczeń z inteligentnym uwzględnianiem kontekstu. Ta przełomowa technologia łączy wysokiej klasy tłumaczenia z wyjątkowo niską ceną, dzięki czemu umożliwia tłumaczenie dużych ilości tekstu, na przykład wszystkich napisów w grze, za zaledwie kilka dolarów.</p>
-    
-    <p><strong>Kluczowe zalety</strong>:</p>
-    <ul>
-      <li><strong>Uwzględnianie kontekstu</strong> – używa przesuwnego okna kontekstu w celu zachowania spójności narracji i poprawy gramatyki.</li>
-      <li><strong>Inteligentna korekta błędów OCR</strong> – automatycznie koryguje niektóre błędy OCR, zapewniając poprawne tłumaczenia zniekształconego tekstu źródłowego.</li>
-      <li><strong>Wyjątkowy stosunek jakości do ceny</strong> – tłumaczenie całych gier, np. Wiedźmin 3, za kilka dolarów, nawet przy wielokrotnym tłumaczeniu tych samych zdań z uwagi na niedoskonałości OCR.</li>
-      <li><strong>Wbudowane monitorowanie kosztów</strong> – monitorowanie kosztów tłumaczeń i zużytych tokenów w czasie rzeczywistym.</li>
-      <li><strong>Zaawansowane buforowanie</strong> – inteligentne buforowanie tłumaczeń w pliku w celu minimalizacji kosztów API.</li>
-    </ul>
-    
-    <p><strong>Gemini API to zalecana metoda tłumaczenia</strong> dla większości użytkowników poszukujących najlepszego kompromisu między jakością, inteligencją i ceną. Szczegółowe opcje konfiguracji, zaawansowane funkcje i strategie optymalizacji kosztów znajdziesz w <a href="#gemini-api-cost-effective-and-context-aware-translation">szczegółowym przewodniku po Gemini API</a>.</p>
-    
-    <h3 id="marianmt-offline-and-free">MarianMT (lokalny i bezpłatny)</h3>
-    <ol>
-      <li>Nie wymaga klucza API – całkowicie bezpłatny w użyciu.</li>
-      <li>Działa całkowicie offline po pobraniu modeli.</li>
-      <li>Modele są pobierane automatycznie przy pierwszym użyciu (około 500 MB na parę językową).</li>
-      <li>Konfiguracja:
-        <ul>
-          <li>Wybierz <strong>MarianMT (lokalny i bezpłatny)</strong> jako model tłumaczenia.</li>
-          <li>Wybierz parę językową z listy rozwijanej <strong>Model MarianMT</strong>.</li>
-          <li>Dostosuj parametr <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> (wyższe wartości = lepsza jakość, ale wolniejsze działanie).</li>
-        </ul>
-      </li>
-    </ol>
-    <p>Modele MarianMT to otwarte systemy tłumaczenia maszynowego oparte na sieciach neuronowych, które zapewniają całkiem dobrą jakość tłumaczenia. Choć nie dorównują standardom usług premium takich jak DeepL, zapewniają zaskakująco dobre tłumaczenia bez kosztów i połączenia z Internetem po początkowym pobraniu modelu.</p>
-    <p>Modele te zostały pierwotnie zaprojektowane do tłumaczenia krótkich, pojedynczych zdań i zwykle obcinają dłuższe fragmenty. Jednak <strong>Game-Changing Translator</strong> w pomysłowy sposób obchodzi to ograniczenie. Aplikacja automatycznie dzieli dłuższe teksty na pojedyncze zdania i tłumaczy je równolegle przy użyciu trybu wsadowego. Wszystkie zdania są przetwarzane razem w jednym, zoptymalizowanym wywołaniu modelu, a następnie płynnie łączone w całość, co zapewnia kompletne tłumaczenia niezależnie od długości tekstu.</p>
-    <p>Takie podejście ma kilka praktycznych zalet:</p>
-    <ul>
-      <li>Pełna prywatność – tekst nigdy nie opuszcza komputera użytkownika.</li>
-      <li>Brak limitów użycia lub kosztów subskrypcji.</li>
-      <li>Działa nawet podczas przerw w dostępie do Internetu.</li>
-      <li>Brak opóźnień API – tłumaczenia działają z prędkością komputera użytkownika.</li>
-    </ul>
-    <p>Ustawienie <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> pozwala zrównoważyć szybkość i jakość. Wyższe wartości (8–12) dają bardziej dopracowane tłumaczenia, ale wymagają więcej czasu przetwarzania, podczas gdy niższe wartości (1–4) priorytetowo traktują szybkość kosztem idealnego sformułowania.</p>
-    
-    <div class="marianmt-note">
-      <div class="marianmt-note-icon">⚠️</div>
-      <div class="marianmt-note-content">
-        <strong>UWAGA:</strong> Model angielsko-polski wymaga nieco więcej czasu na instalację przy pierwszym wyborze, ponieważ jest pobierany i konwertowany z innego źródła niż pozostałe modele MarianMT.
-      </div>
-    </div>
-    
-    <h3 id="deepl-api">DeepL API</h3>
-    <ol>
-      <li>Wymaga konta DeepL i klucza API.</li>
-      <li>Zapewnia tłumaczenia premium, ale obsługuje mniej języków.</li>
-      <li>Uznawany przez wielu za lidera branży pod względem jakości tłumaczenia.</li>
-      <li>Darmowy plan DeepL API pozwala na tłumaczenie 500 000 znaków miesięcznie bez opłat (stan na maj 2025 r.).</li>
-      <li>Wykorzystanie DeepL można sprawdzić w zakładce <a href="#api-usage-monitoring">Zużycie API</a> (pod statystykami API modelu Gemini).</li>
-      <li>Konfiguracja:
-        <ul>
-          <li>Wybierz <strong>DeepL API</strong> jako model tłumaczenia.</li>
-          <li>Wprowadź swój klucz API w zakładce <strong>Ustawienia</strong>.</li>
-          <li>Wybierz preferowaną opcję w polu <strong>Jakość</strong>:
-            <ul>
-              <li><strong>Klasyczna</strong> – szybsze tłumaczenie z doskonałą jakością</li>
-              <li><strong>Nowej generacji</strong> – minimalnie wolniejsze tłumaczenie, ale czasami jeszcze lepsza jakość</li>
-            </ul>
-          </li>
-          <li>Jeśli nie masz klucza API, zapoznaj się z <a href="installation_pl.html">Instrukcją instalacji</a>.</li>
-        </ul>
-      </li>
-    </ol>
-    
-    <p><strong>Dwa tryby jakości</strong></p>
-    <p>DeepL ma dwa tryby jakości. Model <strong>Klasyczny</strong> zapewnia szybkie, wysokiej jakości tłumaczenia, które działają ze wszystkimi obsługiwanymi parami językowymi. Model <strong>Nowej generacji</strong> wykorzystuje najnowszą technologię tłumaczeniową DeepL, która może dawać jeszcze lepsze wyniki w przypadku niektórych treści, choć jest nieco wolniejsza i może nie obsługiwać wszystkich par językowych.</p>
-    <p>Jeśli wybierzesz model <strong>Nowej generacji</strong>, a wybrana para językowa nie jest obsługiwana, aplikacja automatycznie przełączy się na tryb <strong>Klasyczny</strong>, aby zapewnić ciągłość tłumaczenia. Obie opcje gwarantują doskonałą jakość, z której słynie DeepL.</p>
-    
-    <p><strong>System buforowania tłumaczeń DeepL w plikach</strong></p>
-    <p><strong>Game-Changing Translator</strong> umożliwia buforowanie tłumaczeń DeepL. Po przetłumaczeniu fragmentu tekstu jest on zapisywany w lokalnej pamięci podręcznej aplikacji (<code>deepl_cache.txt</code>). Gdy ten sam tekst pojawi się ponownie, aplikacja pobiera tłumaczenie z pamięci podręcznej zamiast wysyłać kolejne zapytanie API.</p>
-    <p>Należy pamiętać, że mechanizm buforowania zależy całkowicie od jakości OCR. Aby tłumaczenie zostało pobrane z pamięci podręcznej, tekst rozpoznany przez OCR musi być identyczny – co do ostatniego znaku – z tym, co już jest w niej przechowywane. Nawet pojedyncza różnica znaku spowoduje nowe wywołanie API i nowe tłumaczenie. Oznacza to, że faktyczna efektywność pamięci podręcznej zależy w dużej mierze od spójności wyników OCR.</p>
-    <p>Pamięć podręczna może być pomocna dla graczy w określonych sytuacjach. Na przykład w grze, w której statyczne opcje menu lub powtarzające się dialogi pojawiają się dokładnie w tej samej czcionce, rozmiarze i pozycji na ekranie, OCR prawdopodobnie wygeneruje identyczne wyniki za każdym razem. Jednak jeśli tekst pojawia się na różnych tłach, przy różnym oświetleniu lub z drobnymi zmianami pozycji, różnice w wynikach OCR prawdopodobnie spowodują nowe tłumaczenia.</p>
-    <p>Na przykład, przycisk <strong>Zapisz grę</strong> może być konsekwentnie rozpoznawany tak samo i korzystać z pamięci podręcznej, podczas gdy dynamiczne dialogi ze zmieniającymi się postaciami lub tłami mogą dawać nieco różne wyniki OCR za każdym razem, ograniczając skuteczność buforowania.</p>
-    <p>Pamięć podręczna jest zachowywana między sesjami aplikacji, ale jej praktyczną korzyść należy traktować jako dodatkowy atut, a nie główną funkcję oszczędzającą API. Im bardziej jednolita i wyraźna prezentacja tekstu, tym większa szansa na skorzystanie z systemu buforowania.</p>
-    <h3 id="google-translate-api">Google Translate API</h3>
-    <ol>
-      <li>Wymaga konta Google Cloud i klucza API.</li>
-      <li>Obsługuje największą liczbę języków.</li>
-      <li>Dobrze sprawdza się do ogólnych tłumaczeń z szerokim wyborem języków.</li>
-      <li>Konfiguracja:
-        <ul>
-          <li>Wybierz <strong>Google Translate API</strong> jako model tłumaczenia.</li>
-          <li>Wprowadź swój klucz API w zakładce <strong>Ustawienia</strong>.</li>
-          <li>Jeśli nie masz klucza API, zapoznaj się z <a href="installation_pl.html">Instrukcją instalacji</a>.</li>
-        </ul>
-      </li>
-    </ol>
-    <p>Google Translate wykorzystuje ten sam system pamięci podręcznej plików co DeepL. W sekcji na temat DeepL powyżej znajduje się szczegółowe wyjaśnienie działania mechanizmu buforowania, jego zależności od jakości OCR oraz praktycznych korzyści i ograniczeń. Wszystkie te same uwagi i zastrzeżenia dotyczą funkcji buforowania Google Translate.</p>
-    
+
     <h2 id="gemini-api-cost-effective-and-context-aware-translation">Gemini API – tanie tłumaczenie kontekstowe</h2>
     
     <p>Zaawansowane modele Gemini firmy Google reprezentują przełom w technologii tłumaczenia za pomocą sztucznej inteligencji, zapewniając wysokiej jakości tłumaczenia w niespotykanie niskiej cenie. Te zaawansowane modele inteligentnie uwzględniają kontekst poprzednich zdań, umożliwiając tanie tłumaczenie napisów w rozbudowanych grach za ułamek tradycyjnych kosztów.</p>
@@ -1137,58 +1012,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
       <li>Używaj adaptacyjnych trybów przetwarzania w przypadku trudnego tekstu.</li>
       <li>Monitoruj wbudowany licznik kosztów, aby poznać schematy korzystania z API.</li>
     </ul>
-    
-    <h3 id="comparison-with-other-methods">Porównanie z innymi metodami</h3>
-    
-    <table>
-      <thead>
-        <tr>
-          <th>Cecha</th>
-          <th>Gemini API</th>
-          <th>DeepL API</th>
-          <th>Google Translate</th>
-          <th>MarianMT</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Jakość tłumaczenia</strong></td>
-          <td>Doskonała + Kontekst</td>
-          <td>Doskonała</td>
-          <td>Dobra</td>
-          <td>Średnia do dobrej</td>
-        </tr>
-        <tr>
-          <td><strong>Koszt (duże ilości tekstu)</strong></td>
-          <td>Bardzo niski</td>
-          <td>Wysoki</td>
-          <td>Wysoki</td>
-          <td>Brak</td>
-        </tr>
-        <tr>
-          <td><strong>Kontekst</strong></td>
-          <td>✅ Zaawansowany</td>
-          <td>❌ Brak</td>
-          <td>❌ Brak</td>
-          <td>❌ Brak</td>
-        </tr>
-        <tr>
-          <td><strong>Obsługa błędów OCR</strong></td>
-          <td>✅ Często usuwa błędy</td>
-          <td>❌ Często powtarza błędy</td>
-          <td>❌ Często powtarza błędy</td>
-          <td>❌ Często powtarza błędy</td>
-        </tr>
-        <tr>
-          <td><strong>Śledzenie kosztów</strong></td>
-          <td>✅ Wbudowane</td>
-          <td>✅ Śledzenie darmowego limitu</td>
-          <td>❌ Tylko zewnętrzne</td>
-          <td>Nie dotyczy</td>
-        </tr>
-      </tbody>
-    </table>
-    
+        
     <h3 id="gaming-and-large-project-applications">Zastosowania w grach i dużych projektach</h3>
     
     <p><strong>Idealne do tłumaczenia gier</strong></p>
@@ -1199,6 +1023,223 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
       <li><strong>Treści z dużą ilością napisów</strong> – inteligentna korekta błędów radzi sobie z niedoskonałym wynikiem OCR tekstu nałożonego na obraz.</li>
       <li><strong>Dialogi wielopostaciowe</strong> – świadomość kontekstu poprawia dobór zaimków i identyfikację rozmówcy.</li>
     </ul>
+
+    <h3 id="openai-api-a-flexible-alternative">OpenAI API – elastyczna alternatywa</h3>
+    <div class="openai-note">
+        <div class="openai-note-icon">💡</div>
+        <div class="openai-note-content">
+            <strong>Większy wybór, większe możliwości:</strong> dodanie obsługi model OpenAI zapewnia użytkownikom większą elastyczność. Chociaż modele Gemini są zalecane ze względu na wyjątkowy stosunek jakości do ceny, OpenAI jest atrakcyjną alternatywą, szczególnie dla użytkowników, którzy nie chcą lub nie mogą korzystać z modeli Gemini.
+        </div>
+    </div>
+
+    <p>Integracja modeli OpenAI poszerza wybór modeli zaawansowanej sztucznej inteligencji na potrzeby tłumaczenia i OCR. Zwiększa to wszechstronność aplikacji, pozwalając wybrać dostawcę, który najlepiej odpowiada wymaganiom użytkownika.</p>
+
+    <h4>Obsługiwane modele OpenAI i zalecenia</h4>
+    <p>Obsługiwane są trzy główne modele OpenAI, z których każdy ma swoje mocne strony:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Nazwa modelu</th>
+                <th>Zalecane zastosowanie</th>
+                <th>Jakość tłumaczenia</th>
+                <th>Jakość OCR</th>
+                <th>Koszt</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>GPT 4.1 Mini</code></td>
+                <td><strong>Tłumaczenie</strong></td>
+                <td>Doskonała (dobrze radzi sobie z kontekstem)</td>
+                <td>Nie dotyczy (zbyt drogi)</td>
+                <td>Wysoki</td>
+            </tr>
+            <tr>
+                <td><code>GPT 4.1 Nano</code></td>
+                <td><strong>OCR</strong></td>
+                <td>Przeciętna (może mieć problemy z kontekstem)</td>
+                <td>Bardzo dobra</td>
+                <td>Wysoki</td>
+            </tr>
+            <tr>
+                <td><code>GPT 5 Nano</code></td>
+                <td>Budżetowe</td>
+                <td>Przeciętna (może mieć problemy z kontekstem)</td>
+                <td>Dobra</td>
+                <td>Niski</td>
+            </tr>
+        </tbody>
+    </table>
+    <p>Aby uzyskać najlepsze możliwe rezultaty z OpenAI, zaleca się użycie kombinacji modeli: <strong><code>GPT 4.1 Nano</code> do OCR oraz <code>GPT 4.1 Mini</code> do tłumaczenia</strong>. Pozwala to wykorzystać mocne strony każdego z modeli, zapewniając wysokiej jakości rozpoznawanie tekstu i doskonałe, świadome kontekstu tłumaczenie.</p>
+
+    <h4>Porównanie wydajności i kosztów: OpenAI kontra Gemini</h4>
+    <p>Chociaż modele OpenAI są bardzo zaawansowane, warto zauważyć, że w testach modele Gemini – w szczególności Gemini 2.0 Flash – spisują się lepiej przy niższych kosztach zarówno w zadaniach tłumaczenia, jak i OCR.</p>
+    
+    <p>Całkowity koszt konfiguracji Gemini był ponad dwa razy niższy niż w przypadku kombinacji OpenAI. Wyższy koszt OpenAI wynika z dwóch czynników. Po pierwsze, model OCR (<code>GPT 4.1 Nano</code>) zużywa ponad dwukrotnie więcej tokenów do przetworzenia tych samych obrazów co <code>Gemini 2.0 Flash</code>. Po drugie, koszt tłumaczenia jest również znacznie wyższy, ponieważ jedyny model OpenAI oferujący doskonałą jakość tłumaczenia z uwzględnieniem kontekstu, <code>GPT 4.1 Mini</code>, ma cenę za token cztery razy wyższą niż <code>Gemini 2.0 Flash</code>. To sprawia, że Gemini jest bardziej opłacalnym wyborem przy dłuższym użytkowaniu.</p>
+
+    <p>Oto wyniki testu tłumaczenia tej samej zawartości z gry:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Wskaźnik</th>
+          <th>Gemini 2.0 Flash (OCR i tłumaczenie)</th>
+          <th>Kombinacja OpenAI (GPT 4.1 Nano OCR + GPT 4.1 Mini tłumaczenie)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Koszt OCR na godzinę</td>
+          <td>~0,29 $ / godz.</td>
+          <td>~0,60 $ / godz.</td>
+        </tr>
+        <tr>
+          <td>Koszt tłumaczenia na godzinę</td>
+          <td>~0,02 $ / godz.</td>
+          <td>~0,07 $ / godz.</td>
+        </tr>
+        <tr>
+          <td><strong>Łączny koszt na godzinę</strong></td>
+          <td><strong>~0,31 $ / godz.</strong></td>
+          <td><strong>~0,68 $ / godz.</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Ogólnie rzecz biorąc, modele OpenAI należy traktować jako solidną opcję zapasową lub alternatywę, jeśli z jakiegoś powodu nie można używać modeli Gemini. Całe zużycie API OpenAI można śledzić w zakładce <strong>Zużycie API</strong>.</p>
+    
+    <h2 id="api-usage-monitoring">Monitorowanie zużycia API</h2>
+    
+    <p>Zakładka <strong>Zużycie API</strong> umożliwia kompleksowe monitorowanie i analizę kosztów zużycia API Gemini i OpenAI, pomagając śledzić wydatki i optymalizować wykorzystanie API zarówno dla usług OCR, jak i tłumaczenia.</p>
+    
+    <p>
+      <img src="screenshots/API_Stats_pl.png" alt="Zakładka Zużycie API" />
+    </p>
+    
+    <p>Zakładka zawiera szczegółowe statystyki w kilku kategoriach dla każdego dostawcy:</p>
+    
+    <h3 id="ocr-statistics">📊 Statystyki OCR (Gemini i OpenAI)</h3>
+    <ul>
+      <li><strong>Łączny koszt OCR</strong> – skumulowany koszt wszystkich wywołań API OCR.</li>
+      <li><strong>Łączne wywołania OCR</strong> – liczba żądań OCR wysłanych do API.</li>
+      <li><strong>Mediana czasu trwania</strong> – typowy czas odpowiedzi dla żądań OCR.</li>
+      <li><strong>Średni koszt na wywołanie/minutę/godzinę</strong> – prognozy kosztów dla ciągłego użytkowania.</li>
+    </ul>
+    
+    <h3 id="translation-statistics">🔄 Statystyki tłumaczenia (Gemini i OpenAI)</h3>
+    <ul>
+      <li><strong>Łączne wywołania tłumaczenia</strong> – liczba wysłanych żądań tłumaczenia.</li>
+      <li><strong>Łącznie słów przetłumaczonych</strong> – liczba słów przetworzonych przez API.</li>
+      <li><strong>Mediana czasu trwania</strong> – typowy czas odpowiedzi dla żądań tłumaczenia.</li>
+      <li><strong>Średnia słów na minutę</strong> – wskaźniki przepustowości tłumaczenia.</li>
+      <li><strong>Średni koszt na słowo/wywołanie/minutę/godzinę</strong> – koszty jednostkowe i prognozy kosztów.</li>
+      <li><strong>Łączny koszt tłumaczenia</strong> – skumulowany koszt wszystkich wywołań API tłumaczenia.</li>
+    </ul>
+    
+    <h3 id="combined-api-statistics">💰 Łączne statystyki API</h3>
+    <ul>
+      <li><strong>Łączny koszt API</strong> – całkowity koszt wszystkich usług danego dostawcy.</li>
+      <li><strong>Łączny koszt na minutę/godzinę</strong> – jednolite prognozy kosztów.</li>
+    </ul>
+    
+    <h3 id="deepl-usage-tracker">📈 Monitor zużycia DeepL</h3>
+    <ul>
+      <li><strong>Darmowy miesięczny limit</strong> – monitoruj wykorzystanie limitu bezpłatnej wersji DeepL.</li>
+    </ul>
+    
+    <h3 id="statistics-management">Zarządzanie statystykami</h3>
+    <p>Zakładka zawiera kilka opcji zarządzania:</p>
+    <ul>
+      <li><strong>Odśwież statystyki</strong> – zaktualizuj wszystkie wyświetlane dane o bieżące zużycie.</li>
+      <li><strong>Eksportuj do CSV / tekstu</strong> – eksportuj szczegółowe statystyki do analizy zewnętrznej lub raportowania.</li>
+      <li><strong>Kopiuj</strong> – skopiuj statystyki do schowka.</li>
+    </ul>
+    
+    <p><strong>Uwaga:</strong> statystyki opierają się na plikach takich jak <code>GEMINI_API_OCR_short_log.txt</code> i <code>OpenAI_API_TRA_short_log.txt</code>. Dane zostaną zresetowane po usunięciu tych plików.</p>
+    
+    <div class="disclaimer-note">
+      <div class="disclaimer-note-icon">❗</div>
+      <div class="disclaimer-note-content">
+        <strong>Ważne:</strong> śledzenie kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie rzeczywistego zużycia API i kosztów w panelu rozliczeniowym swojego dostawcy usługi.
+      </div>
+    </div>
+    
+    <h2 id="other-translation-methods">Inne metody tłumaczenia</h2>
+    <h3 id="marianmt-offline-and-free">MarianMT (lokalny i bezpłatny)</h3>
+    <ol>
+      <li>Nie wymaga klucza API – całkowicie bezpłatny w użyciu.</li>
+      <li>Działa całkowicie offline po pobraniu modeli.</li>
+      <li>Modele są pobierane automatycznie przy pierwszym użyciu (około 500 MB na parę językową).</li>
+      <li>Konfiguracja:
+        <ul>
+          <li>Wybierz <strong>MarianMT (lokalny i bezpłatny)</strong> jako model tłumaczenia.</li>
+          <li>Wybierz parę językową z listy rozwijanej <strong>Model MarianMT</strong>.</li>
+          <li>Dostosuj parametr <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> (wyższe wartości = lepsza jakość, ale wolniejsze działanie).</li>
+        </ul>
+      </li>
+    </ol>
+    <p>Modele MarianMT to otwarte systemy tłumaczenia maszynowego oparte na sieciach neuronowych, które zapewniają całkiem dobrą jakość tłumaczenia. Choć nie dorównują standardom usług premium takich jak DeepL, zapewniają zaskakująco dobre tłumaczenia bez kosztów i połączenia z Internetem po początkowym pobraniu modelu.</p>
+    <p>Modele te zostały pierwotnie zaprojektowane do tłumaczenia krótkich, pojedynczych zdań i zwykle obcinają dłuższe fragmenty. Jednak <strong>Game-Changing Translator</strong> w pomysłowy sposób obchodzi to ograniczenie. Aplikacja automatycznie dzieli dłuższe teksty na pojedyncze zdania i tłumaczy je równolegle przy użyciu trybu wsadowego. Wszystkie zdania są przetwarzane razem w jednym, zoptymalizowanym wywołaniu modelu, a następnie płynnie łączone w całość, co zapewnia kompletne tłumaczenia niezależnie od długości tekstu.</p>
+    <p>Takie podejście ma kilka praktycznych zalet:</p>
+    <ul>
+      <li>Pełna prywatność – tekst nigdy nie opuszcza komputera użytkownika.</li>
+      <li>Brak limitów użycia lub kosztów subskrypcji.</li>
+      <li>Działa nawet podczas przerw w dostępie do Internetu.</li>
+      <li>Brak opóźnień API – tłumaczenia działają z prędkością komputera użytkownika.</li>
+    </ul>
+    <p>Ustawienie <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> pozwala zrównoważyć szybkość i jakość. Wyższe wartości (8–12) dają bardziej dopracowane tłumaczenia, ale wymagają więcej czasu przetwarzania, podczas gdy niższe wartości (1–4) priorytetowo traktują szybkość kosztem idealnego sformułowania.</p>
+    
+    <div class="marianmt-note">
+      <div class="marianmt-note-icon">⚠️</div>
+      <div class="marianmt-note-content">
+        <strong>UWAGA:</strong> Model angielsko-polski wymaga nieco więcej czasu na instalację przy pierwszym wyborze, ponieważ jest pobierany i konwertowany z innego źródła niż pozostałe modele MarianMT.
+      </div>
+    </div>
+    
+    <h3 id="deepl-api">DeepL API</h3>
+    <ol>
+      <li>Wymaga konta DeepL i klucza API.</li>
+      <li>Zapewnia tłumaczenia premium, ale obsługuje mniej języków.</li>
+      <li>Uznawany przez wielu za lidera branży pod względem jakości tłumaczenia.</li>
+      <li>Darmowy plan DeepL API pozwala na tłumaczenie 500 000 znaków miesięcznie bez opłat (stan na maj 2025 r.).</li>
+      <li>Wykorzystanie DeepL można sprawdzić w zakładce <a href="#api-usage-monitoring">Zużycie API</a>.</li>
+      <li>Konfiguracja:
+        <ul>
+          <li>Wybierz <strong>DeepL API</strong> jako model tłumaczenia.</li>
+          <li>Wprowadź swój klucz API w zakładce <strong>Ustawienia</strong>.</li>
+          <li>Wybierz preferowaną opcję w polu <strong>Jakość</strong>:
+            <ul>
+              <li><strong>Klasyczna</strong> – szybsze tłumaczenie z doskonałą jakością</li>
+              <li><strong>Nowej generacji</strong> – minimalnie wolniejsze tłumaczenie, ale czasami jeszcze lepsza jakość</li>
+            </ul>
+          </li>
+          <li>Jeśli nie masz klucza API, zapoznaj się z <a href="installation_pl.html">Instrukcją instalacji</a>.</li>
+        </ul>
+      </li>
+    </ol>
+    
+    <p><strong>Dwa tryby jakości</strong></p>
+    <p>DeepL ma dwa tryby jakości. Model <strong>Klasyczny</strong> zapewnia szybkie, wysokiej jakości tłumaczenia, które działają ze wszystkimi obsługiwanymi parami językowymi. Model <strong>Nowej generacji</strong> wykorzystuje najnowszą technologię tłumaczeniową DeepL, która może dawać jeszcze lepsze wyniki w przypadku niektórych treści, choć jest nieco wolniejsza i może nie obsługiwać wszystkich par językowych.</p>
+    <p>Jeśli wybierzesz model <strong>Nowej generacji</strong>, a wybrana para językowa nie jest obsługiwana, aplikacja automatycznie przełączy się na tryb <strong>Klasyczny</strong>, aby zapewnić ciągłość tłumaczenia. Obie opcje gwarantują doskonałą jakość, z której słynie DeepL.</p>
+    
+    <p><strong>System buforowania tłumaczeń DeepL w plikach</strong></p>
+    <p><strong>Game-Changing Translator</strong> umożliwia buforowanie tłumaczeń DeepL. Po przetłumaczeniu fragmentu tekstu jest on zapisywany w lokalnej pamięci podręcznej aplikacji (<code>deepl_cache.txt</code>). Gdy ten sam tekst pojawi się ponownie, aplikacja pobiera tłumaczenie z pamięci podręcznej zamiast wysyłać kolejne zapytanie API.</p>
+    <p>Należy pamiętać, że mechanizm buforowania zależy całkowicie od jakości OCR. Aby tłumaczenie zostało pobrane z pamięci podręcznej, tekst rozpoznany przez OCR musi być identyczny – co do ostatniego znaku – z tym, co już jest w niej przechowywane. Nawet pojedyncza różnica znaku spowoduje nowe wywołanie API i nowe tłumaczenie. Oznacza to, że faktyczna efektywność pamięci podręcznej zależy w dużej mierze od spójności wyników OCR.</p>
+    <p>Pamięć podręczna jest zachowywana między sesjami aplikacji, ale jej praktyczną korzyść należy traktować jako dodatkowy atut, a nie główną funkcję oszczędzającą API. Im bardziej jednolita i wyraźna prezentacja tekstu, tym większa szansa na skorzystanie z systemu buforowania.</p>
+    <h3 id="google-translate-api">Google Translate API</h3>
+    <ol>
+      <li>Wymaga konta Google Cloud i klucza API.</li>
+      <li>Obsługuje największą liczbę języków.</li>
+      <li>Dobrze sprawdza się do ogólnych tłumaczeń z szerokim wyborem języków.</li>
+      <li>Konfiguracja:
+        <ul>
+          <li>Wybierz <strong>Google Translate API</strong> jako model tłumaczenia.</li>
+          <li>Wprowadź swój klucz API w zakładce <strong>Ustawienia</strong>.</li>
+          <li>Jeśli nie masz klucza API, zapoznaj się z <a href="installation_pl.html">Instrukcją instalacji</a>.</li>
+        </ul>
+      </li>
+    </ol>
+    <p>Google Translate wykorzystuje ten sam system pamięci podręcznej plików co DeepL. W sekcji na temat DeepL powyżej znajduje się szczegółowe wyjaśnienie działania mechanizmu buforowania, jego zależności od jakości OCR oraz praktycznych korzyści i ograniczeń. Wszystkie te same uwagi i zastrzeżenia dotyczą funkcji buforowania Google Translate.</p>
     
     <h2 id="keyboard-shortcuts">Skróty klawiszowe</h2>
     <p>Dostępne są następujące skróty klawiszowe:</p>
@@ -1279,7 +1320,7 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
           <li>Niższy <strong>Rozmiar wiązki tłumaczenia (MarianMT)</strong> zapewni szybsze tłumaczenie.</li>
         </ul>
       </li>
-      <li>W przypadku modelu DeepL lub Google Translate:
+      <li>W przypadku modeli API:
         <ul>
           <li>Włącz pamięć podręczną plików, aby poprawić wydajność przy powtarzającym się tekście.</li>
         </ul>
@@ -1313,26 +1354,6 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
           <li>Przechwyć obszar napisów.</li>
           <li>Dostosuj tryb przetwarzania, jeśli napisy są wbudowane – <strong>tryb adaptacyjny</strong> często sprawdza się dobrze przy zmiennych tłach filmowych.</li>
           <li>W przypadku treści strumieniowych ustaw niższy próg stabilności (0–1) dla szybszej reakcji.</li>
-        </ul>
-      </li>
-      <li>
-        <p>
-          <strong>Dokumenty i pliki PDF</strong>:
-        </p>
-        <ul>
-          <li>Dostosuj rozmiar okna źródłowego tak, aby obejmował akapity.</li>
-          <li>Użyj progu stabilności 1–2, aby zmniejszyć migotanie podczas przewijania.</li>
-          <li>W przypadku dokumentów naukowych lub technicznych zwiększ próg pewności, aby zmniejszyć liczbę błędów.</li>
-        </ul>
-      </li>
-      <li>
-        <p>
-          <strong>Aplikacje</strong>:
-        </p>
-        <ul>
-          <li>Umieść nakładki tak, aby nie zasłaniały ważnych elementów interfejsu.</li>
-          <li>Korzystaj ze skrótów klawiszowych, aby szybko włączać tłumaczenie, gdy jest potrzebne.</li>
-          <li>W przypadku aplikacji ze zmieniającą się zawartością dostosuj interwał skanowania dla optymalnej wydajności.</li>
         </ul>
       </li>
     </ol>
