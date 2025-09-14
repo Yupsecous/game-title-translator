@@ -1572,7 +1572,8 @@ class GameChangingTranslator:
             log_debug("Statistics copied to clipboard")
         except Exception as e:
             log_debug(f"Error copying statistics to clipboard: {e}")
-            messagebox.showerror("Error", f"Error copying to clipboard.\n{str(e)}")            
+            messagebox.showerror(self.ui_lang.get_label("export_error_title", "Error"), 
+                               f"{self.ui_lang.get_label('stats_copy_error', 'Error copying to clipboard.')}\n{str(e)}")            
 
     def export_statistics_csv(self):
         """Export API usage statistics to CSV file."""
@@ -1582,8 +1583,9 @@ class GameChangingTranslator:
             # Ask user for file location
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".csv",
-                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-                title="Export Statistics to CSV"
+                filetypes=[(self.ui_lang.get_label("file_type_csv", "CSV files"), "*.csv"), 
+                          (self.ui_lang.get_label("file_type_all", "All files"), "*.*")],
+                title=self.ui_lang.get_label("export_csv_dialog_title", "Export Statistics to CSV")
             )
             
             if file_path and hasattr(self, 'statistics_handler'):
@@ -1594,13 +1596,16 @@ class GameChangingTranslator:
                 
                 success = self.statistics_handler.export_statistics_csv(file_path, self.ui_lang, deepl_usage)
                 if success:
-                    messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
+                    messagebox.showinfo(self.ui_lang.get_label("export_success_title", "Export Successful"), 
+                                      f"{self.ui_lang.get_label('export_success_msg', 'Statistics exported to:')}\n{file_path}")
                 else:
-                    messagebox.showerror("Export Failed", "Failed to export statistics to CSV.")
+                    messagebox.showerror(self.ui_lang.get_label("export_failed_title", "Export Failed"), 
+                                       self.ui_lang.get_label("export_csv_failed_msg", "Failed to export statistics to CSV."))
             
         except Exception as e:
             log_debug(f"Error exporting statistics to CSV: {e}")
-            messagebox.showerror("Export Error", f"Error exporting statistics: {str(e)}")
+            messagebox.showerror(self.ui_lang.get_label("export_error_title", "Export Error"), 
+                               f"{self.ui_lang.get_label('export_error_msg', 'Error exporting statistics:')}\n{str(e)}")
     
     def export_statistics_text(self):
         """Export API usage statistics to text file."""
@@ -1610,8 +1615,9 @@ class GameChangingTranslator:
             # Ask user for file location
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".txt",
-                filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
-                title="Export Statistics to Text"
+                filetypes=[(self.ui_lang.get_label("file_type_text", "Text files"), "*.txt"), 
+                          (self.ui_lang.get_label("file_type_all", "All files"), "*.*")],
+                title=self.ui_lang.get_label("export_text_dialog_title", "Export Statistics to Text")
             )
             
             if file_path and hasattr(self, 'statistics_handler'):
@@ -1622,13 +1628,16 @@ class GameChangingTranslator:
                 
                 success = self.statistics_handler.export_statistics_text(file_path, self.ui_lang, deepl_usage)
                 if success:
-                    messagebox.showinfo("Export Successful", f"Statistics exported to:\n{file_path}")
+                    messagebox.showinfo(self.ui_lang.get_label("export_success_title", "Export Successful"), 
+                                      f"{self.ui_lang.get_label('export_success_msg', 'Statistics exported to:')}\n{file_path}")
                 else:
-                    messagebox.showerror("Export Failed", "Failed to export statistics to text.")
+                    messagebox.showerror(self.ui_lang.get_label("export_failed_title", "Export Failed"), 
+                                       self.ui_lang.get_label("export_text_failed_msg", "Failed to export statistics to text."))
             
         except Exception as e:
             log_debug(f"Error exporting statistics to text: {e}")
-            messagebox.showerror("Export Error", f"Error exporting statistics: {str(e)}")
+            messagebox.showerror(self.ui_lang.get_label("export_error_title", "Export Error"), 
+                               f"{self.ui_lang.get_label('export_error_msg', 'Error exporting statistics:')}\n{str(e)}")
     
     # =============================================================================
     # AUTO-UPDATE SYSTEM METHODS

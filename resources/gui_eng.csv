@@ -136,28 +136,28 @@ gemini_refresh_stats_button,Refresh
 deepl_usage_label,Free Monthly Usage
 deepl_usage_loading,Loading...
 api_usage_tab_title,API Usage
-api_usage_section_ocr,📊 Gemini OCR Statistics
-api_usage_section_translation,🔄 Gemini Translation Statistics
+api_usage_section_gemini_ocr,📊 Gemini OCR Statistics
+api_usage_section_gemini_translation,🔄 Gemini Translation Statistics
+api_usage_section_gemini_combined,💰 Combined Gemini API Statistics
+api_usage_section_openai_ocr,📊 OpenAI OCR Statistics
 api_usage_section_openai_translation,🔄 OpenAI Translation Statistics
-api_usage_section_combined,💰 Combined Gemini API Statistics
-api_usage_section_combined_gemini,💰 Combined Gemini API Statistics
+api_usage_section_openai_combined,💰 Combined OpenAI API Statistics
 api_usage_section_deepl,📈 DeepL Usage Tracker
-api_usage_total_ocr_cost,Total OCR Cost:
 api_usage_total_ocr_calls,Total OCR Calls:
 api_usage_median_duration_ocr,Median Duration:
 api_usage_avg_cost_per_call,Average Cost per Call:
 api_usage_avg_cost_per_minute,Average Cost per Minute:
 api_usage_avg_cost_per_hour,Average Cost per Hour:
-api_usage_total_translation_cost,Total Translation Cost:
-api_usage_total_words_translated,Total Words Translated:
+api_usage_total_ocr_cost,Total OCR Cost:
 api_usage_total_translation_calls,Total Translation Calls:
+api_usage_total_words_translated,Total Words Translated:
 api_usage_median_duration_translation,Median Duration:
-api_usage_avg_cost_per_word,Average Cost per Word:
-api_usage_avg_cost_per_call,Average Cost per Call:
 api_usage_words_per_minute,Average Words per Minute:
-api_usage_total_api_cost,Total API Cost:
+api_usage_avg_cost_per_word,Average Cost per Word:
+api_usage_total_translation_cost,Total Translation Cost:
 api_usage_combined_cost_per_minute,Combined Cost per Minute:
 api_usage_combined_cost_per_hour,Combined Cost per Hour:
+api_usage_total_api_cost,Total API Cost:
 api_usage_refresh_btn,Refresh Statistics
 api_usage_export_csv_btn,Export to CSV
 api_usage_export_text_btn,Export to Text
@@ -229,3 +229,35 @@ stats_duration_suffix,s
 currency_usd, USD
 mb_progress_of, MB of 
 mb_progress_format, MB ({0}%)
+export_csv_dialog_title,Export Statistics to CSV
+export_text_dialog_title,Export Statistics to Text
+file_type_csv,CSV files
+file_type_text,Text files
+file_type_all,All files
+csv_header_provider,Provider
+csv_header_type,Type
+csv_header_metric,Metric
+csv_header_value,Value
+csv_metric_free_monthly_limit,Free Monthly Limit
+stats_text_total_ocr_calls,Total OCR Calls
+stats_text_median_duration,Median Duration
+stats_text_avg_cost_per_call,Average Cost per Call
+stats_text_avg_cost_per_minute,Average Cost per Minute
+stats_text_avg_cost_per_hour,Average Cost per Hour
+stats_text_total_ocr_cost,Total OCR Cost
+stats_text_total_trans_calls,Total Translation Calls
+stats_text_total_words,Total Words Translated
+stats_text_words_per_minute,Average Words per Minute
+stats_text_avg_cost_per_word,Average Cost per Word
+stats_text_total_trans_cost,Total Translation Cost
+stats_text_total_api_cost,Total API Cost
+stats_text_combined_cost_per_minute,Combined Cost per Minute
+stats_text_combined_cost_per_hour,Combined Cost per Hour
+stats_text_ocr_header_gemini,📊 Gemini OCR Statistics
+stats_text_trans_header_gemini,🔄 Gemini Translation Statistics
+stats_text_combined_header_gemini,💰 Combined Gemini API Statistics
+stats_text_ocr_header_openai,📊 OpenAI OCR Statistics
+stats_text_trans_header_openai,🔄 OpenAI Translation Statistics
+stats_text_combined_header_openai,💰 Combined OpenAI API Statistics
+stats_text_deepl_header,📈 DeepL Usage Monitor
+stats_report_generated,Report generated:
