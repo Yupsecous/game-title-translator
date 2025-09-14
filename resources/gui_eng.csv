@@ -138,10 +138,10 @@ deepl_usage_loading,Loading...
 api_usage_tab_title,API Usage
 api_usage_section_gemini_ocr,📊 Gemini OCR Statistics
 api_usage_section_gemini_translation,🔄 Gemini Translation Statistics
-api_usage_section_gemini_combined,💰 Combined Gemini API Statistics
+api_usage_section_gemini_combined,💰 Combined Gemini Statistics
 api_usage_section_openai_ocr,📊 OpenAI OCR Statistics
 api_usage_section_openai_translation,🔄 OpenAI Translation Statistics
-api_usage_section_openai_combined,💰 Combined OpenAI API Statistics
+api_usage_section_openai_combined,💰 Combined OpenAI Statistics
 api_usage_section_deepl,📈 DeepL Usage Tracker
 api_usage_total_ocr_calls,Total OCR Calls:
 api_usage_median_duration_ocr,Median Duration:
@@ -163,7 +163,7 @@ api_usage_export_csv_btn,Export to CSV
 api_usage_export_text_btn,Export to Text
 api_usage_copy_btn,Copy
 api_usage_no_data,No data available
-api_usage_info_note,"ℹ️ Note: These statistics are based on GEMINI_API_OCR_short_log.txt and GEMINI_API_TRA_short_log.txt files. Statistics will be reset if these files are deleted or cleared. Estimated cost tracking is provided for reference purposes only. You are responsible for monitoring your own API usage and costs through Google's billing dashboard."
+api_usage_info_note,"ℹ️ Note: These statistics are based on short log files (Short_Log). Statistics will be reset if these files are deleted or cleared. Estimated cost tracking is provided for reference purposes only. You are solely responsible for monitoring the usage and costs of individual providers' APIs."
 check_for_updates_btn,Check for Updates
 check_for_updates_on_startup,Check for updates on startup
 check_updates_title,Checking for Updates
@@ -255,9 +255,9 @@ stats_text_combined_cost_per_minute,Combined Cost per Minute
 stats_text_combined_cost_per_hour,Combined Cost per Hour
 stats_text_ocr_header_gemini,📊 Gemini OCR Statistics
 stats_text_trans_header_gemini,🔄 Gemini Translation Statistics
-stats_text_combined_header_gemini,💰 Combined Gemini API Statistics
+stats_text_combined_header_gemini,💰 Combined Gemini Statistics
 stats_text_ocr_header_openai,📊 OpenAI OCR Statistics
 stats_text_trans_header_openai,🔄 OpenAI Translation Statistics
-stats_text_combined_header_openai,💰 Combined OpenAI API Statistics
+stats_text_combined_header_openai,💰 Combined OpenAI Statistics
 stats_text_deepl_header,📈 DeepL Usage Monitor
 stats_report_generated,Report generated:

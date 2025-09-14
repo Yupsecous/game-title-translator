@@ -138,10 +138,10 @@ deepl_usage_loading,Ładowanie...
 api_usage_tab_title,Zużycie API
 api_usage_section_gemini_ocr,📊 Statystyki OCR Gemini
 api_usage_section_gemini_translation,🔄 Statystyki tłumaczenia Gemini
-api_usage_section_gemini_combined,💰 Łączne statystyki Gemini API
+api_usage_section_gemini_combined,💰 Łączne statystyki Gemini
 api_usage_section_openai_ocr,📊 Statystyki OCR OpenAI
 api_usage_section_openai_translation,🔄 Statystyki tłumaczenia OpenAI
-api_usage_section_openai_combined,💰 Łączne statystyki OpenAI API
+api_usage_section_openai_combined,💰 Łączne statystyki OpenAI
 api_usage_section_deepl,📈 Monitor zużycia DeepL
 api_usage_total_ocr_calls,Łączne wywołania OCR:
 api_usage_median_duration_ocr,Mediana czasu trwania:
@@ -163,7 +163,7 @@ api_usage_export_csv_btn,Eksportuj do CSV
 api_usage_export_text_btn,Eksportuj do tekstu
 api_usage_copy_btn,Kopiuj
 api_usage_no_data,Brak dostępnych danych
-api_usage_info_note,"ℹ️ Uwaga: statystyki te są oparte na plikach GEMINI_API_OCR_short_log.txt i GEMINI_API_TRA_short_log.txt. W razie usunięcia lub wyczyszczenia tych plików statystyki zostaną zresetowane. Monitorowanie szacunkowych kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie wykorzystania i kosztów API w panelu rozliczeniowym Google."
+api_usage_info_note,"ℹ️ Uwaga: statystyki te są oparte na plikach skróconych dzienników (Short_Log). W razie usunięcia lub wyczyszczenia tych plików statystyki zostaną zresetowane. Monitorowanie szacunkowych kosztów ma charakter wyłącznie poglądowy. Użytkownik sam odpowiada za monitorowanie wykorzystania i kosztów API poszczególnych dostawców."
 check_for_updates_btn,Sprawdź dostępność aktualizacji
 check_for_updates_on_startup,Sprawdź dostępność aktualizacji przy uruchomieniu
 check_updates_title,Sprawdzanie aktualizacji
@@ -236,7 +236,7 @@ file_type_text,Pliki tekstowe
 file_type_all,Wszystkie pliki
 csv_header_provider,Dostawca
 csv_header_type,Typ
-csv_header_metric,Metryka
+csv_header_metric,Wskaźnik
 csv_header_value,Wartość
 csv_metric_free_monthly_limit,Darmowy miesięczny limit
 stats_text_total_ocr_calls,Łączne wywołania OCR
@@ -255,9 +255,9 @@ stats_text_combined_cost_per_minute,Łączny koszt na minutę
 stats_text_combined_cost_per_hour,Łączny koszt na godzinę
 stats_text_ocr_header_gemini,📊 Statystyki OCR Gemini
 stats_text_trans_header_gemini,🔄 Statystyki tłumaczenia Gemini
-stats_text_combined_header_gemini,💰 Łączne statystyki Gemini API
+stats_text_combined_header_gemini,💰 Łączne statystyki Gemini
 stats_text_ocr_header_openai,📊 Statystyki OCR OpenAI
 stats_text_trans_header_openai,🔄 Statystyki tłumaczenia OpenAI
-stats_text_combined_header_openai,💰 Łączne statystyki OpenAI API
+stats_text_combined_header_openai,💰 Łączne statystyki OpenAI
 stats_text_deepl_header,📈 Monitor użycia DeepL
 stats_report_generated,Raport wygenerowany:

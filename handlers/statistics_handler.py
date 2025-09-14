@@ -334,7 +334,7 @@ class StatisticsHandler:
             stats = self.get_statistics()
             use_polish_format = ui_lang and hasattr(ui_lang, 'current_lang') and ui_lang.current_lang == 'pol'
             
-            with open(file_path, 'w', encoding='utf-8', newline='') as f:
+            with open(file_path, 'w', encoding='utf-8-sig', newline='') as f:
                 import csv
                 writer = csv.writer(f)
                 
@@ -384,7 +384,7 @@ class StatisticsHandler:
         """Export statistics to text summary format with the new structure."""
         try:
             report_content = self._generate_text_report(ui_lang, deepl_usage)
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, 'w', encoding='utf-8-sig') as f:
                 f.write(report_content)
             
             log_debug(f"Statistics exported to text: {file_path}")
