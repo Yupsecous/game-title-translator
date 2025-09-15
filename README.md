@@ -77,6 +77,11 @@ This application was developed or rather vibe-coded with the support of the foll
     - `GPT-4.1 Mini`
     - `GPT-4.1 Nano`
   - **Dual Functionality**: All supported OpenAI models can be used for both high-quality **Translation** and advanced, vision-capable **OCR**, giving you the freedom to choose the best tool for the job.
+  
+  ![OpenAI Support Interface](docs/screenshots/openai_support.png)
+  
+  *Experience the intuitive OpenAI integration interface - easily switch between models and configure both OCR and translation services with the same or different powerful API providers*
+  
   - Be sure to check out the **comparison between OpenAI and Gemini models** in the updated [user manual](https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html#openai-api-a-flexible-alternative).
 
 ### 🚀 NEW in Version 3.5.8

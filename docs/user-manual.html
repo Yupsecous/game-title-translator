@@ -237,7 +237,7 @@
     </div>
     <h1 id="game-changing-translator-user-manual">Game-Changing Translator User Manual</h1>
     <p>Copyright © 2025 Tomasz Kamiński<br>
-    <em>Last Updated: 6 September 2025</em></p>
+    <em>Last Updated: 15 September 2025</em></p>
     <p>
       <img src="screenshots/screenshot2_eng_deepl.jpg" alt="Game-Changing Translator Main Interface" class="logo-image" />
     </p>
@@ -1082,9 +1082,9 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     <h4>Performance and Cost Comparison: OpenAI vs. Gemini</h4>
     <p>While OpenAI models are highly capable, it's important to note that in testing, Gemini models—specifically Gemini 2.0 Flash—demonstrated better performance at a lower cost for both translation and OCR tasks.</p>
     
-    <p>The total cost for the Gemini setup was less than half that of the OpenAI combination. The higher cost for OpenAI comes from two areas. Firstly, the OCR model (<code>GPT 4.1 Nano</code>) uses more than twice the number of tokens to process the same images as <code>Gemini 2.0 Flash</code>. Secondly, the translation cost is also significantly higher because the only OpenAI model that offers excellent, context-aware translation quality, <code>GPT 4.1 Mini</code>, has a price per token that is four times that of <code>Gemini 2.0 Flash</code>. This makes Gemini the more cost-effective choice for sustained use.</p>
+    <p>The total cost for the Gemini setup was less than half that of the OpenAI combination. The higher cost for OpenAI comes from two areas. Firstly, the OCR model (<code>GPT 4.1 Nano</code>) uses more than twice the number of tokens to process the same images as <code>Gemini 2.0 Flash</code>. Secondly, the translation cost is also significantly higher because the only OpenAI model that offers excellent, context-aware translation quality, <code>GPT 4.1 Mini</code>, has a price per token that is four times that of <code>Gemini 2.0 Flash</code>. As for the <code>GPT-5 Nano</code> model, its reasoning capabilities are excellent. However, with the <code>effort</code> parameter set to <code>minimal</code>, the quality of its translation and OCR is merely average. Furthermore, increasing the <code>effort</code> even to the next <code>low</code> setting causes the token usage, cost, and latency to become too high for real-time translation. All of this makes Gemini the more cost-effective choice for sustained use.</p>
 
-    <p>Here are the results from a test translating the same game content:</p>
+    <p>Here are the results from a test translating the same game content with the 500ms scan interval:</p>
 
     <table>
       <thead>
