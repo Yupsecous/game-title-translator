@@ -82,6 +82,7 @@ file_cache_description,"Buforowanie do plików zapisuje tłumaczenia na dysk, ab
 google_cache_checkbox,"Włącz bufor Google Translate (zapisuje na dysk, zmniejsza wywołania API)"
 deepl_cache_checkbox,"Włącz bufor DeepL (zapisuje na dysk, zmniejsza wywołania API)"
 gemini_file_cache_checkbox,"Włącz bufor Gemini (zapisuje na dysk, zmniejsza wywołania API)"
+openai_file_cache_checkbox,"Włącz bufor OpenAI (zapisuje na dysk, zmniejsza wywołania API)"
 cache_files_label,Pliki buforów:
 clear_caches_btn,Wyczyść pliki buforów
 save_settings_btn,Zapisz ustawienia
