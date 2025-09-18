@@ -97,7 +97,7 @@ class AbstractOCRProvider(ABC):
                 header = f"""
 #######################################################
 {centered_api_line}
-#      Game-Changing Translator - OCR Analysis       #
+#      Game-Changing Translator - OCR Analysis        #
 #######################################################
 
 Logging Started: {timestamp}
