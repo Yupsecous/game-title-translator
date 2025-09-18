@@ -80,6 +80,7 @@ file_cache_description,"File caching saves translations to disk to reduce API co
 google_cache_checkbox,"Enable Google Translate file cache (saves to disk, reduces API calls)"
 deepl_cache_checkbox,"Enable DeepL file cache (saves to disk, reduces API calls)"
 gemini_file_cache_checkbox,"Enable Gemini file cache (saves to disk, reduces API calls)"
+openai_file_cache_checkbox,"Enable OpenAI file cache (saves to disk, reduces API calls)"
 cache_files_label,Cache files:
 clear_caches_btn,Clear File Caches
 save_settings_btn,Save Settings Now
