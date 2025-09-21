@@ -128,6 +128,16 @@ class UIInteractionHandler:
         is_marian = (selected_model_ui_code == 'marianmt')
         is_api_model = is_google or is_deepl or is_gemini or is_openai
 
+        # Manage "Keep Linebreaks" checkbox state
+        if hasattr(self.app, 'keep_linebreaks_checkbox'):
+            if is_marian:
+                self.app.keep_linebreaks_checkbox.config(state=tk.DISABLED)
+                self.app.keep_linebreaks_var.set(False)
+            else:
+                self.app.keep_linebreaks_checkbox.config(state=tk.NORMAL)
+            manage_grid(self.app.keep_linebreaks_label, show=True)
+            manage_grid(self.app.keep_linebreaks_checkbox, show=True)
+
         manage_grid(self.app.source_lang_label, show=is_api_model)
         manage_grid(self.app.source_lang_combobox, show=is_api_model)
         manage_grid(self.app.target_lang_label, show=is_api_model)
@@ -1213,6 +1223,7 @@ class UIInteractionHandler:
             cfg['gui_language'] = self.app.gui_language_var.get()
             cfg['ocr_model'] = self.app.ocr_model_var.get()  # OCR Model Selection (Phase 2)
             cfg['check_for_updates_on_startup'] = 'yes' if self.app.check_for_updates_on_startup_var.get() else 'no'
+            cfg['keep_linebreaks'] = str(self.app.keep_linebreaks_var.get()) # Add this line
             
             cfg['google_translate_api_key'] = self.app.google_api_key_var.get()
             cfg['deepl_api_key'] = self.app.deepl_api_key_var.get()
