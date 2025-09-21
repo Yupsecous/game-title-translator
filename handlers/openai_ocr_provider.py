@@ -76,9 +76,11 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         
         # OCR prompt optimized for text transcription
         if self.app.keep_linebreaks_var.get():
-            prompt = """Transcribe the text from this image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Keep the linebreaks. If no text is present, return only: <EMPTY>"""
+            prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Keep the linebreaks. Don't return anything else.
+2. If there is no text in the image, return only: <EMPTY>."""
         else:
-            prompt = """Transcribe the text from this image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. If no text is present, return only: <EMPTY>"""
+            prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.
+2. If there is no text in the image, return only: <EMPTY>."""
         
         # Create different message structures for different APIs
         if ocr_model_api_name.startswith('gpt-5'):

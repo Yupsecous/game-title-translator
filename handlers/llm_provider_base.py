@@ -303,7 +303,8 @@ Purpose: Concise {self.provider_name} translation call results and statistics
         context_size = self._get_context_window_size()
         
         # Add linebreak instruction conditionally
-        linebreak_instruction = "Use <br> as in the source text. " if self.app.keep_linebreaks_var.get() else ""
+        # linebreak_instruction = "Use <br> as in the source text. " if self.app.keep_linebreaks_var.get() else ""
+        linebreak_instruction = "Keep <br> linebreaks from the source text in the translation. " if self.app.keep_linebreaks_var.get() else ""
         
         # Build instruction line based on actual context window content
         if context_size == 0:
