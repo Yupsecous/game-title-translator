@@ -867,6 +867,12 @@ def create_settings_tab(app):
     ttk.Button(app.tesseract_path_frame, text=app.ui_lang.get_label("browse_btn"), command=app.browse_tesseract).pack(side=tk.RIGHT, padx=(5,0))
     current_row += 1
 
+    app.keep_linebreaks_label = ttk.Label(frame, text=app.ui_lang.get_label("keep_linebreaks_label", "Keep Linebreaks"))
+    app.keep_linebreaks_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
+    app.keep_linebreaks_checkbox = ttk.Checkbutton(frame, variable=app.keep_linebreaks_var)
+    app.keep_linebreaks_checkbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
+    current_row += 1
+
     ttk.Label(frame, text=app.ui_lang.get_label("scan_interval_label")).grid(row=current_row, column=0, padx=5, pady=5, sticky="w") 
     scan_spinbox = ttk.Spinbox(frame, from_=50, to=2000, increment=50, textvariable=app.scan_interval_var, 
                              width=10, validate="key", validatecommand=(validate_scan_interval, '%P'))

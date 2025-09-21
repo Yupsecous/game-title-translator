@@ -228,6 +228,7 @@ class GameChangingTranslator:
         self.debug_logging_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'debug_logging_enabled', fallback=True))
         self.gui_language_var = tk.StringVar(value=self.config['Settings'].get('gui_language', 'English'))
         self.check_for_updates_on_startup_var = tk.BooleanVar(value=self.config['Settings'].get('check_for_updates_on_startup', 'yes') == 'yes')
+        self.keep_linebreaks_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'keep_linebreaks', fallback=False))
         
         # OCR Model Selection (Phase 1 - Gemini OCR)
         self.ocr_model_var = tk.StringVar(value=self.config['Settings'].get('ocr_model', 'tesseract'))

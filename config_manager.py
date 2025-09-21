@@ -66,6 +66,7 @@ DEFAULT_CONFIG_SETTINGS = {
     # Separate Gemini model selection for OCR and Translation
     'gemini_translation_model': 'Gemini 2.5 Flash-Lite',
     'gemini_ocr_model': 'Gemini 2.5 Flash-Lite',
+    'keep_linebreaks': 'False',
     # Auto-update settings
     'check_for_updates_on_startup': 'yes'
 }
