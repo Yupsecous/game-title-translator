@@ -87,7 +87,11 @@ class GeminiOCRProvider(AbstractOCRProvider):
         )
         
         # OCR prompt optimized for text transcription
-        prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.
+        if self.app.keep_linebreaks_var.get():
+            prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Keep the linebreaks. Don't return anything else.
+2. If there is no text in the image, return only: <EMPTY>."""
+        else:
+            prompt = """1. Transcribe the text from the image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Don't return anything else.
 2. If there is no text in the image, return only: <EMPTY>."""
         
         # Make the API call
@@ -109,7 +113,18 @@ class GeminiOCRProvider(AbstractOCRProvider):
         response, call_duration, prompt, image_size = response_data
         
         ocr_result = response.text.strip() if response.text else "<EMPTY>"
-        parsed_text = ocr_result.replace('```text\n', '').replace('```', '').replace('\n', ' ').strip()
+        
+        # First, strip markdown code blocks if they exist
+        parsed_text = ocr_result.replace('```text', '').replace('```', '').strip()
+
+        if self.app.keep_linebreaks_var.get():
+            # If keeping linebreaks, replace newlines with <br>
+            parsed_text = parsed_text.replace('\n', '<br>').strip()
+        else:
+            # Otherwise, replace newlines with spaces
+            parsed_text = parsed_text.replace('\n', ' ').strip()
+
+        # Final check for emptiness
         if not parsed_text or "<EMPTY>" in parsed_text:
             parsed_text = "<EMPTY>"
         

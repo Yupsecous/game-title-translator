@@ -147,7 +147,10 @@ def post_process_ocr_text_general(text, lang='auto'):
     
     for error, correction in ocr_errors.items():
         cleaned = re.sub(r'\b' + re.escape(error) + r'\b', correction, cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned)
+    
+    # Preserve newlines, only collapse multiple spaces/tabs
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    
     return cleaned
 
 def remove_text_after_last_punctuation_mark(text):

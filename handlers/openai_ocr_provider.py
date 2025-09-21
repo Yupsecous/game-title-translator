@@ -75,7 +75,10 @@ class OpenAIOCRProvider(AbstractOCRProvider):
         base64_image = base64.b64encode(image_data).decode('utf-8')
         
         # OCR prompt optimized for text transcription
-        prompt = """Transcribe the text from this image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. If no text is present, return only: <EMPTY>"""
+        if self.app.keep_linebreaks_var.get():
+            prompt = """Transcribe the text from this image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. Keep the linebreaks. If no text is present, return only: <EMPTY>"""
+        else:
+            prompt = """Transcribe the text from this image exactly as it appears. Do not correct, rephrase, or alter the words in any way. Provide a literal and verbatim transcription of all text in the image. If no text is present, return only: <EMPTY>"""
         
         # Create different message structures for different APIs
         if ocr_model_api_name.startswith('gpt-5'):
@@ -174,7 +177,17 @@ class OpenAIOCRProvider(AbstractOCRProvider):
                 output_tokens = response.usage.completion_tokens
             log_debug(f"OpenAI Chat Completions OCR usage metadata: In={input_tokens}, Out={output_tokens}")
 
-        parsed_text = ocr_result.replace('```text\n', '').replace('```', '').replace('\n', ' ').strip()
+        # First, strip markdown code blocks if they exist
+        parsed_text = ocr_result.replace('```text', '').replace('```', '').strip()
+
+        if self.app.keep_linebreaks_var.get():
+            # If keeping linebreaks, replace newlines with <br>
+            parsed_text = parsed_text.replace('\n', '<br>').strip()
+        else:
+            # Otherwise, replace newlines with spaces
+            parsed_text = parsed_text.replace('\n', ' ').strip()
+
+        # Final check for emptiness
         if not parsed_text or "<EMPTY>" in parsed_text:
             parsed_text = "<EMPTY>"
         
