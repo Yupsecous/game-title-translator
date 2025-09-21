@@ -249,15 +249,20 @@ class GeminiProvider(AbstractLLMProvider):
 
         translation_result = response.text.strip()
         
-        # Handle multiple lines - only keep the last line
-        if '\n' in translation_result:
-            lines = translation_result.split('\n')
-            # Filter out empty lines and take the last non-empty line
-            non_empty_lines = [line.strip() for line in lines if line.strip()]
-            if non_empty_lines:
-                translation_result = non_empty_lines[-1]
-            else:
-                translation_result = lines[-1].strip() if lines else ""
+        # Handle multiple lines based on keep_linebreaks setting
+        if self.app.keep_linebreaks_var.get():
+            # Keep linebreaks by replacing them with <br>
+            translation_result = translation_result.replace('\n', '<br>')
+        else:
+            # Original behavior: collapse newlines and take the last line of output
+            if '\n' in translation_result:
+                lines = translation_result.split('\n')
+                # Filter out empty lines and take the last non-empty line
+                non_empty_lines = [line.strip() for line in lines if line.strip()]
+                if non_empty_lines:
+                    translation_result = non_empty_lines[-1]
+                else:
+                    translation_result = lines[-1].strip() if lines else ""
         
         # Strip language prefixes from the result
         translation_result = self._clean_language_prefixes(translation_result)

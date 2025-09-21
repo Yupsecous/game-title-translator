@@ -246,6 +246,9 @@ class DisplayManager:
             new_text_to_display = text_content_main_thread.strip() if text_content_main_thread else ""
             log_debug(f"DisplayManager: Processing text for display: '{new_text_to_display}'")
 
+            # Convert <br> tags to newlines for display
+            new_text_to_display = new_text_to_display.replace('<br>', '\n')
+
             # --- FIX: Directly use the target language code from the correct variable ---
             target_lang_code = self.app.target_lang_var.get()
             log_debug(f"DisplayManager: Target language code is '{target_lang_code}'")

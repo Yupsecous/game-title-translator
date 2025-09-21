@@ -302,26 +302,29 @@ Purpose: Concise {self.provider_name} translation call results and statistics
         # Get context window size
         context_size = self._get_context_window_size()
         
+        # Add linebreak instruction conditionally
+        linebreak_instruction = "Use <br> as in the source text. " if self.app.keep_linebreaks_var.get() else ""
+        
         # Build instruction line based on actual context window content
         if context_size == 0:
-            instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+            instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. {linebreak_instruction}Return translation only.>"
         else:
             # Check actual number of stored context pairs
             actual_context_count = len(self.context_window)
             
             if actual_context_count == 0:
-                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                instruction_line = f"<Translate idiomatically from {source_lang_name} to {target_lang_name}. {linebreak_instruction}Return translation only.>"
             elif context_size == 1:
-                instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. {linebreak_instruction}Return translation only.>"
             elif context_size == 2:
                 if actual_context_count == 1:
-                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically the second subtitle from {source_lang_name} to {target_lang_name}. {linebreak_instruction}Return translation only.>"
                 else:
-                    instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                    instruction_line = f"<Translate idiomatically the third subtitle from {source_lang_name} to {target_lang_name}. {linebreak_instruction}Return translation only.>"
             else:
                 target_position = min(actual_context_count + 1, context_size + 1)
                 ordinal = self._get_ordinal_number(target_position)
-                instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. Return translation only.>"
+                instruction_line = f"<Translate idiomatically the {ordinal} subtitle from {source_lang_name} to {target_lang_name}. {linebreak_instruction}Return translation only.>"
         
         # Build context window with new text integrated in grouped format
         if context_size == 0:
