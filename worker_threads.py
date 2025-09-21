@@ -247,6 +247,13 @@ def run_ocr_thread(app):
             ocr_raw_text = ocr_region_with_confidence(processed_cv_img, full_img_region, tess_langs, cached_tess_params, current_conf_thresh)
             
             ocr_cleaned_text = post_process_ocr_text_general(ocr_raw_text, tess_langs)
+            
+            # Apply conditional linebreak conversion for Tesseract
+            if app.keep_linebreaks_var.get():
+                ocr_cleaned_text = ocr_cleaned_text.replace('\n', '<br>')
+            else:
+                ocr_cleaned_text = ocr_cleaned_text.replace('\n', ' ')
+            
             if app.remove_trailing_garbage_var.get() and ocr_cleaned_text:
                 pattern = r'[.!?]|\.{3}|…' 
                 if not list(re.finditer(pattern, ocr_cleaned_text)):
