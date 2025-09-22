@@ -869,7 +869,13 @@ def create_settings_tab(app):
 
     app.keep_linebreaks_label = ttk.Label(frame, text=app.ui_lang.get_label("keep_linebreaks_label", "Keep Linebreaks"))
     app.keep_linebreaks_label.grid(row=current_row, column=0, padx=5, pady=5, sticky="w")
-    app.keep_linebreaks_checkbox = ttk.Checkbutton(frame, variable=app.keep_linebreaks_var)
+    
+    def on_keep_linebreaks_clicked():
+        # Schedule focus shift to the parent tab frame (app.tab_settings) to remove dotted focus frame
+        if app.keep_linebreaks_checkbox.winfo_exists() and app.tab_settings.winfo_exists():
+            app.keep_linebreaks_checkbox.after_idle(app.tab_settings.focus_set)
+    
+    app.keep_linebreaks_checkbox = ttk.Checkbutton(frame, variable=app.keep_linebreaks_var, command=on_keep_linebreaks_clicked)
     app.keep_linebreaks_checkbox.grid(row=current_row, column=1, padx=5, pady=5, sticky="w")
     current_row += 1
 
