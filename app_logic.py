@@ -437,6 +437,7 @@ class GameChangingTranslator:
         self.remove_trailing_garbage_var.trace_add("write", self.settings_changed_callback)
         self.debug_logging_enabled_var.trace_add("write", self.settings_changed_callback)
         self.check_for_updates_on_startup_var.trace_add("write", self.settings_changed_callback)
+        self.keep_linebreaks_var.trace_add("write", self.settings_changed_callback)
         self.google_api_key_var.trace_add("write", self.settings_changed_callback)
         self.deepl_api_key_var.trace_add("write", self.settings_changed_callback)
         self.deepl_model_type_var.trace_add("write", self.settings_changed_callback)
