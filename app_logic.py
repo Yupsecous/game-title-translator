@@ -2747,7 +2747,7 @@ Copyright © 2025 Tomasz Kamiński
 
 Game-Changing Translator to program komputerowy, który automatycznie przechwytuje tekst z dowolnego fragmentu ekranu, przeprowadza optyczne rozpoznawanie znaków (OCR) i tłumaczy tekst w czasie rzeczywistym. Może służyć do tłumaczenia napisów w grach lub dowolnego innego tekstu, którego nie można łatwo skopiować.
 
-Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4 i Gemini 2.5 Pro.
+Program został napisany w języku Python przy użyciu następujących modeli sztucznej inteligencji: Claude 3.7 Sonnet, Claude Sonnet 4, Claude Sonnet 4.5 i Gemini 2.5 Pro.
 
 Więcej informacji zawiera instrukcja obsługi."""
         else:
@@ -2757,7 +2757,7 @@ Copyright © 2025 Tomasz Kamiński
 
 Game-Changing Translator is a desktop application that automatically captures text from any area of your screen, performs optical character recognition (OCR), and translates the text in real-time. You can use it for translating video game subtitles or any other text that you can't easily copy.
 
-This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
+This application was developed in Python using the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4, Claude Sonnet 4.5 and Gemini 2.5 Pro.
 
 For more information, see the user manual."""
         
