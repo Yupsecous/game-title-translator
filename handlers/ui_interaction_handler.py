@@ -1228,6 +1228,7 @@ class UIInteractionHandler:
             cfg['google_translate_api_key'] = self.app.google_api_key_var.get()
             cfg['deepl_api_key'] = self.app.deepl_api_key_var.get()
             cfg['deepl_model_type'] = self.app.deepl_model_type_var.get()
+            cfg['deepl_context_window'] = str(self.app.deepl_context_window_var.get())
             cfg['gemini_api_key'] = self.app.gemini_api_key_var.get()
             cfg['gemini_context_window'] = str(self.app.gemini_context_window_var.get())
             cfg['google_file_cache'] = str(self.app.google_file_cache_var.get())

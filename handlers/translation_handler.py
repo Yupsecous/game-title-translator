@@ -49,6 +49,11 @@ class TranslationHandler:
             'openai': OpenAIOCRProvider(app)
         }
         
+        # DeepL-specific context storage
+        self.deepl_context_window = []  # List of source texts only
+        self.deepl_current_source_lang = None
+        self.deepl_current_target_lang = None
+        
         log_debug("Translation handler initialized with unified cache, LLM providers, and OCR providers")
 
     def _get_active_llm_provider(self):
@@ -88,12 +93,23 @@ class TranslationHandler:
         provider = self._get_active_llm_provider()
         if provider:
             provider.start_translation_session()
+        
+        # Clear DeepL context at session start
+        self._clear_deepl_context()
+        log_debug("DeepL context cleared for new translation session")
 
     def request_end_translation_session(self):        
         provider = self._get_active_llm_provider()
         if provider:
-            return provider.request_end_translation_session()
-        return True
+            result = provider.request_end_translation_session()
+        else:
+            result = True
+        
+        # Clear DeepL context at session end
+        self._clear_deepl_context()
+        log_debug("DeepL context cleared on translation session end")
+        
+        return result
 
     # === CONTEXT MANAGEMENT ===
     def _clear_active_context(self):
@@ -134,6 +150,72 @@ class TranslationHandler:
                 provider.end_session(force=True)
             except Exception as e:
                 log_debug(f"Error force ending {provider.provider_name} OCR session: {e}")
+        
+        # Clear DeepL context on app close
+        self._clear_deepl_context()
+
+    # === DEEPL CONTEXT MANAGEMENT ===
+    def _clear_deepl_context(self):
+        """Clear DeepL context window (called on language change or session end)."""
+        try:
+            self.deepl_context_window = []
+            self.deepl_current_source_lang = None
+            self.deepl_current_target_lang = None
+            log_debug("DeepL context cleared")
+        except Exception as e:
+            log_debug(f"Error clearing DeepL context: {e}")
+    
+    def _build_deepl_context(self, context_size):
+        """Build DeepL context string from previous source texts only.
+        
+        Args:
+            context_size: Number of previous subtitles to include (0-3)
+            
+        Returns:
+            Context string or None if no context available
+        """
+        # Validate context size
+        if not isinstance(context_size, int):
+            log_debug(f"Invalid DeepL context size type: {type(context_size)}, using 0")
+            return None
+        
+        if context_size < 0 or context_size > 3:
+            log_debug(f"Invalid DeepL context size: {context_size}, clamping to 0-3")
+            context_size = max(0, min(3, context_size))
+        
+        if context_size == 0 or not self.deepl_context_window:
+            return None
+        
+        # Get last N source texts
+        context_texts = self.deepl_context_window[-context_size:]
+        
+        # Simple concatenation with period separation
+        # DeepL expects natural text in source language
+        context_string = ". ".join(context_texts)
+        
+        # Ensure proper ending
+        if context_string and not context_string.endswith('.'):
+            context_string += '.'
+        
+        return context_string
+    
+    def _update_deepl_context(self, source_text):
+        """Update DeepL context window with new source text.
+        
+        Args:
+            source_text: New source subtitle to add to context
+        """
+        # Check for duplicate (same as last subtitle)
+        if self.deepl_context_window and self.deepl_context_window[-1] == source_text:
+            log_debug(f"Skipping DeepL context update - duplicate source text")
+            return
+        
+        # Add new source text
+        self.deepl_context_window.append(source_text)
+        
+        # Keep only last 5 texts (more than max context setting for flexibility)
+        self.deepl_context_window = self.deepl_context_window[-5:]
+        log_debug(f"DeepL context updated. Window size: {len(self.deepl_context_window)}")
 
     # === UNIFIED TRANSLATE METHOD ===
     def translate_text_with_timeout(self, text_content, timeout_seconds=10.0, ocr_batch_number=None):
@@ -326,31 +408,93 @@ class TranslationHandler:
             return f"Google Translate API error: {type(e_cgt).__name__} - {str(e_cgt)}"
 
     def _deepl_translate(self, text_to_translate_dl, source_lang_dl, target_lang_dl):
+        """Translate using DeepL API with context support."""
+        
+        # Check for language change and clear context if needed
+        if (self.deepl_current_source_lang is not None and 
+            self.deepl_current_target_lang is not None and
+            (self.deepl_current_source_lang != source_lang_dl or 
+             self.deepl_current_target_lang != target_lang_dl)):
+            log_debug(f"Language pair changed from {self.deepl_current_source_lang}->{self.deepl_current_target_lang} "
+                     f"to {source_lang_dl}->{target_lang_dl}, clearing DeepL context")
+            self._clear_deepl_context()
+        
+        # Track current language pair
+        self.deepl_current_source_lang = source_lang_dl
+        self.deepl_current_target_lang = target_lang_dl
+        
+        # Get context window size from settings
+        context_size = getattr(self.app, 'deepl_context_window_var', None)
+        context_size = context_size.get() if context_size else 0
+        
+        # Build context string (source language only)
+        context_string = self._build_deepl_context(context_size)
+        
         model_type = self.app.deepl_model_type_var.get()
         log_debug(f"DeepL API call for: {text_to_translate_dl} using model_type={model_type}")
-        if not self.app.deepl_api_client: return "DeepL API client not initialized"
+        
+        if context_string:
+            log_debug(f"DeepL context ({len(context_string)} chars, {context_size} subtitles): {context_string[:100]}...")
+        
+        if not self.app.deepl_api_client:
+            return "DeepL API client not initialized"
+        
         try:
             deepl_source_param = source_lang_dl if source_lang_dl and source_lang_dl.lower() != 'auto' else None
+            
+            # Prepare translation parameters
+            translate_params = {
+                'text': text_to_translate_dl,
+                'target_lang': target_lang_dl,
+                'model_type': model_type
+            }
+            
+            # Add source language if not auto-detect
+            if deepl_source_param:
+                translate_params['source_lang'] = deepl_source_param
+            
+            # Add context if available (IMPORTANT: context not counted for billing!)
+            if context_string and deepl_source_param:  # Only send context with explicit source language
+                translate_params['context'] = context_string
+            
             try:
-                result_dl = self.app.deepl_api_client.translate_text(
-                    text_to_translate_dl, target_lang=target_lang_dl, source_lang=deepl_source_param, model_type=model_type
-                )
+                result_dl = self.app.deepl_api_client.translate_text(**translate_params)
                 if result_dl and hasattr(result_dl, 'text') and result_dl.text:
+                    # Update context window with source text (not translation!)
+                    self._update_deepl_context(text_to_translate_dl)
                     return result_dl.text
                 return "DeepL API returned empty or invalid result"
             except Exception as quality_error:
                 if (model_type == "quality_optimized" and 
-                    ("language pair" in str(quality_error).lower() or "not supported" in str(quality_error).lower() or "unsupported" in str(quality_error).lower())):
+                    ("language pair" in str(quality_error).lower() or 
+                     "not supported" in str(quality_error).lower() or 
+                     "unsupported" in str(quality_error).lower())):
                     log_debug(f"DeepL quality_optimized failed, falling back to latency_optimized: {quality_error}")
-                    result_dl_fallback = self.app.deepl_api_client.translate_text(
-                        text_to_translate_dl, target_lang=target_lang_dl, source_lang=deepl_source_param, model_type="latency_optimized"
-                    )
+                    
+                    # Prepare fallback parameters
+                    fallback_params = {
+                        'text': text_to_translate_dl,
+                        'target_lang': target_lang_dl,
+                        'model_type': "latency_optimized"
+                    }
+                    
+                    if deepl_source_param:
+                        fallback_params['source_lang'] = deepl_source_param
+                    
+                    # Include context in fallback attempt as well
+                    if context_string and deepl_source_param:
+                        fallback_params['context'] = context_string
+                    
+                    result_dl_fallback = self.app.deepl_api_client.translate_text(**fallback_params)
                     if result_dl_fallback and hasattr(result_dl_fallback, 'text') and result_dl_fallback.text:
+                        # Update context window with source text (not translation!)
+                        self._update_deepl_context(text_to_translate_dl)
                         return result_dl_fallback.text
                     return "DeepL API fallback returned empty or invalid result"
                 else:
                     raise quality_error
         except Exception as e_cdl:
+            log_debug(f"DeepL API error: {type(e_cdl).__name__} - {str(e_cdl)}")
             return f"DeepL API error: {type(e_cdl).__name__} - {str(e_cdl)}"
 
     def get_deepl_usage(self):
