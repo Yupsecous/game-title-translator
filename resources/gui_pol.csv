@@ -54,6 +54,11 @@ openai_context_window_4,4 (cztery napisy)
 openai_context_window_5,5 (pięć napisów)
 deepl_classic_model,Klasyczna
 deepl_nextgen_model,Nowej generacji
+deepl_context_window_label,Okno kontekstu:
+deepl_context_window_0,0 (brak)
+deepl_context_window_1,1 (ostatni napis)
+deepl_context_window_2,2 (dwa napisy)
+deepl_context_window_3,3 (trzy napisy)
 models_file_label,Lista modeli MarianMT:
 beam_size_label,Rozmiar wiązki tłumaczenia (MarianMT):
 tesseract_path_label,Ścieżka do Tesseract:

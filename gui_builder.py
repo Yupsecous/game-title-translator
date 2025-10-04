@@ -700,6 +700,53 @@ def create_settings_tab(app):
     # Store the options for later use when updating language
     app.deepl_model_options = deepl_model_options
 
+    # DeepL Context Window Setting (only visible when DeepL is selected)
+    app.deepl_context_window_label = ttk.Label(frame, text=app.ui_lang.get_label("deepl_context_window_label", "Context Window"))
+    app.deepl_context_window_label.grid(row=12, column=0, padx=5, pady=5, sticky="w")
+    
+    deepl_context_window_options = [
+        (0, app.ui_lang.get_label("deepl_context_window_0", "0 (Disabled)")),
+        (1, app.ui_lang.get_label("deepl_context_window_1", "1 (Last subtitle)")),
+        (2, app.ui_lang.get_label("deepl_context_window_2", "2 (Two subtitles)")),
+        (3, app.ui_lang.get_label("deepl_context_window_3", "3 (Three subtitles)"))
+    ]
+    
+    app.deepl_context_window_display_var = tk.StringVar()
+    # Set initial display value based on current setting
+    current_deepl_context_window = app.deepl_context_window_var.get()
+    for value, display in deepl_context_window_options:
+        if value == current_deepl_context_window:
+            app.deepl_context_window_display_var.set(display)
+            break
+    else:
+        # Fallback if current setting doesn't match any option
+        app.deepl_context_window_display_var.set(deepl_context_window_options[2][1])  # Default to 2
+    
+    app.deepl_context_window_combobox = ttk.Combobox(frame, textvariable=app.deepl_context_window_display_var,
+                                                     values=[display for _, display in deepl_context_window_options], 
+                                                     width=25, state='readonly')
+    app.deepl_context_window_combobox.grid(row=12, column=1, padx=5, pady=5, sticky="ew")
+    
+    def on_deepl_context_window_changed(event):
+        selected_display = app.deepl_context_window_display_var.get()
+        # Find the corresponding value
+        for value, display in deepl_context_window_options:
+            if display == selected_display:
+                app.deepl_context_window_var.set(value)
+                log_debug(f"DeepL context window changed to: {value} (display: {display})")
+                # Clear DeepL context when context window changes
+                if hasattr(app, 'translation_handler') and hasattr(app.translation_handler, '_clear_deepl_context'):
+                    app.translation_handler._clear_deepl_context()
+                if app._fully_initialized:
+                    app.save_settings()
+                break
+    
+    app.deepl_context_window_combobox.bind('<<ComboboxSelected>>', 
+        create_combobox_handler_wrapper(on_deepl_context_window_changed))
+
+    # Store the options for later use when updating language
+    app.deepl_context_window_options = deepl_context_window_options
+
     # Function to update DeepL model type options when language changes
     def update_deepl_model_type_for_language():
         if hasattr(app, 'deepl_model_type_combobox') and app.deepl_model_type_combobox.winfo_exists():
@@ -730,6 +777,39 @@ def create_settings_tab(app):
     
     # Store function reference for calling during language updates
     app.update_deepl_model_type_for_language = update_deepl_model_type_for_language
+
+    # Function to update DeepL context window options when language changes
+    def update_deepl_context_window_for_language():
+        if hasattr(app, 'deepl_context_window_combobox') and app.deepl_context_window_combobox.winfo_exists():
+            # Get current context window setting
+            current_deepl_context_window = app.deepl_context_window_var.get()
+            
+            # Update options with new language
+            new_deepl_context_window_options = [
+                (0, app.ui_lang.get_label("deepl_context_window_0", "0 (Disabled)")),
+                (1, app.ui_lang.get_label("deepl_context_window_1", "1 (Last subtitle)")),
+                (2, app.ui_lang.get_label("deepl_context_window_2", "2 (Two subtitles)")),
+                (3, app.ui_lang.get_label("deepl_context_window_3", "3 (Three subtitles)"))
+            ]
+            
+            # Update combobox values
+            app.deepl_context_window_combobox['values'] = [display for _, display in new_deepl_context_window_options]
+            
+            # Restore selection based on current setting
+            for value, display in new_deepl_context_window_options:
+                if value == current_deepl_context_window:
+                    app.deepl_context_window_display_var.set(display)
+                    break
+            else:
+                # Fallback to default option if current setting not found
+                app.deepl_context_window_display_var.set(new_deepl_context_window_options[2][1])  # Default to 2
+            
+            # Update stored options
+            app.deepl_context_window_options = new_deepl_context_window_options
+            log_debug(f"Updated DeepL context window options for language change")
+    
+    # Store function reference for calling during language updates
+    app.update_deepl_context_window_for_language = update_deepl_context_window_for_language
 
     # Function to update Gemini context window options when language changes
     def update_gemini_context_window_for_language():

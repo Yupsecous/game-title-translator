@@ -52,6 +52,11 @@ openai_context_window_4,4 (Four subtitles)
 openai_context_window_5,5 (Five subtitles)
 deepl_classic_model,Classic
 deepl_nextgen_model,Next-gen
+deepl_context_window_label,Context Window:
+deepl_context_window_0,0 (Disabled)
+deepl_context_window_1,1 (Last subtitle)
+deepl_context_window_2,2 (Two subtitles)
+deepl_context_window_3,3 (Three subtitles)
 models_file_label,MarianMT Model List:
 beam_size_label,Translation Beam Size (MarianMT):
 tesseract_path_label,Tesseract Path:
