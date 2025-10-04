@@ -54,6 +54,11 @@ class TranslationHandler:
         self.deepl_current_source_lang = None
         self.deepl_current_target_lang = None
         
+        # DeepL logging system
+        self.deepl_log_file = 'DeepL_Translation_Long_Log.txt'
+        self.deepl_log_lock = threading.Lock()
+        self._initialize_deepl_log_file()
+        
         log_debug("Translation handler initialized with unified cache, LLM providers, and OCR providers")
 
     def _get_active_llm_provider(self):
@@ -216,6 +221,94 @@ class TranslationHandler:
         # Keep only last 5 texts (more than max context setting for flexibility)
         self.deepl_context_window = self.deepl_context_window[-5:]
         log_debug(f"DeepL context updated. Window size: {len(self.deepl_context_window)}")
+    
+    # === DEEPL LOGGING SYSTEM ===
+    
+    def _initialize_deepl_log_file(self):
+        """Initialize DeepL translation log file with header if it doesn't exist."""
+        try:
+            if not os.path.exists(self.deepl_log_file):
+                with open(self.deepl_log_file, 'w', encoding='utf-8') as f:
+                    f.write("=== DEEPL TRANSLATION API CALL LOG ===\n")
+                    f.write(f"Log initialized: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write("=" * 50 + "\n\n")
+                log_debug(f"DeepL translation log file initialized: {self.deepl_log_file}")
+        except Exception as e:
+            log_debug(f"Error initializing DeepL log file: {e}")
+    
+    def _is_deepl_logging_enabled(self):
+        """Check if DeepL API logging is enabled in settings."""
+        # For now, always return True. You can add a setting later if needed.
+        return True
+    
+    def _log_deepl_translation_call(self, original_text, source_lang, target_lang, 
+                                   context_string, translated_text, model_type, 
+                                   call_start_time, call_duration):
+        """Log DeepL translation API call with context information."""
+        if not self._is_deepl_logging_enabled():
+            return
+        
+        try:
+            with self.deepl_log_lock:
+                # Format timestamps
+                start_timestamp = call_start_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                end_time = call_start_time + timedelta(seconds=call_duration)
+                end_timestamp = end_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                
+                # Convert model type to display name
+                model_display = "Next-gen" if model_type == "quality_optimized" else "Classic"
+                
+                # Build the log entry
+                log_entry = f"""=== DEEPL TRANSLATION API CALL ===
+Timestamp: {start_timestamp}
+Language Pair: {source_lang} -> {target_lang}
+Original Text: {original_text}
+
+MESSAGE SENT TO DEEPL:
+"""
+                
+                # Add context section if context was used
+                if context_string:
+                    # Split context back into individual subtitles (they were joined with ". ")
+                    # Remove the trailing period if present, then split
+                    context_clean = context_string.rstrip('.')
+                    context_subtitles = context_clean.split('. ')
+                    context_count = len(context_subtitles)
+                    
+                    log_entry += f"""
+CONTEXT ({context_count} subtitle{'s' if context_count != 1 else ''}):
+"""
+                    # Add each subtitle on its own line
+                    for subtitle in context_subtitles:
+                        if subtitle.strip():
+                            log_entry += f"{subtitle}\n"
+                
+                # Add text to translate
+                log_entry += f"""
+TEXT TO TRANSLATE:
+{original_text}
+
+RESPONSE RECEIVED:
+Model: {model_display}
+Timestamp: {end_timestamp}
+Call Duration: {call_duration:.3f} seconds
+
+---BEGIN RESPONSE---
+{translated_text}
+---END RESPONSE---
+
+========================================
+
+"""
+                
+                # Write to log file
+                with open(self.deepl_log_file, 'a', encoding='utf-8') as f:
+                    f.write(log_entry)
+                
+                log_debug(f"DeepL translation call logged: {source_lang}->{target_lang}, Duration={call_duration:.3f}s")
+        
+        except Exception as e:
+            log_debug(f"Error logging DeepL translation call: {e}")
 
     # === UNIFIED TRANSLATE METHOD ===
     def translate_text_with_timeout(self, text_content, timeout_seconds=10.0, ocr_batch_number=None):
@@ -408,7 +501,7 @@ class TranslationHandler:
             return f"Google Translate API error: {type(e_cgt).__name__} - {str(e_cgt)}"
 
     def _deepl_translate(self, text_to_translate_dl, source_lang_dl, target_lang_dl):
-        """Translate using DeepL API with context support."""
+        """Translate using DeepL API with context support and logging."""
         
         # Check for language change and clear context if needed
         if (self.deepl_current_source_lang is not None and 
@@ -457,12 +550,33 @@ class TranslationHandler:
             if context_string and deepl_source_param:  # Only send context with explicit source language
                 translate_params['context'] = context_string
             
+            # Record start time for logging
+            call_start_time = datetime.now()
+            
             try:
                 result_dl = self.app.deepl_api_client.translate_text(**translate_params)
+                
+                # Calculate call duration
+                call_duration = (datetime.now() - call_start_time).total_seconds()
+                
                 if result_dl and hasattr(result_dl, 'text') and result_dl.text:
+                    translated_text = result_dl.text
+                    
+                    # Log the API call
+                    self._log_deepl_translation_call(
+                        original_text=text_to_translate_dl,
+                        source_lang=source_lang_dl,
+                        target_lang=target_lang_dl,
+                        context_string=context_string if context_string else None,
+                        translated_text=translated_text,
+                        model_type=model_type,
+                        call_start_time=call_start_time,
+                        call_duration=call_duration
+                    )
+                    
                     # Update context window with source text (not translation!)
                     self._update_deepl_context(text_to_translate_dl)
-                    return result_dl.text
+                    return translated_text
                 return "DeepL API returned empty or invalid result"
             except Exception as quality_error:
                 if (model_type == "quality_optimized" and 
@@ -485,11 +599,32 @@ class TranslationHandler:
                     if context_string and deepl_source_param:
                         fallback_params['context'] = context_string
                     
+                    # Record start time for fallback call
+                    fallback_start_time = datetime.now()
+                    
                     result_dl_fallback = self.app.deepl_api_client.translate_text(**fallback_params)
+                    
+                    # Calculate fallback call duration
+                    fallback_duration = (datetime.now() - fallback_start_time).total_seconds()
+                    
                     if result_dl_fallback and hasattr(result_dl_fallback, 'text') and result_dl_fallback.text:
+                        translated_text = result_dl_fallback.text
+                        
+                        # Log the fallback API call (with latency_optimized model)
+                        self._log_deepl_translation_call(
+                            original_text=text_to_translate_dl,
+                            source_lang=source_lang_dl,
+                            target_lang=target_lang_dl,
+                            context_string=context_string if context_string else None,
+                            translated_text=translated_text,
+                            model_type="latency_optimized",
+                            call_start_time=fallback_start_time,
+                            call_duration=fallback_duration
+                        )
+                        
                         # Update context window with source text (not translation!)
                         self._update_deepl_context(text_to_translate_dl)
-                        return result_dl_fallback.text
+                        return translated_text
                     return "DeepL API fallback returned empty or invalid result"
                 else:
                     raise quality_error
