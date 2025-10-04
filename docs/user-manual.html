@@ -1229,6 +1229,17 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     <p>DeepL offers two quality modes to suit different needs. The <strong>Classic</strong> model provides fast, high-quality translations that work with all supported language pairs. The <strong>Next-gen</strong> model uses DeepL's latest translation technology, which can deliver even better results for certain types of content, though it processes slightly slower and may not support all language pairs.</p>
     <p>If you select <strong>Next-gen</strong> and your chosen language pair isn't supported, the application will automatically fall back to <strong>Classic</strong> mode to ensure your translation continues working seamlessly. Both options deliver top-quality results that DeepL is renowned for.</p>
     
+    <p><strong>Context-Aware Translation</strong></p>
+    <p>DeepL translation now supports context awareness by including up to 3 previous subtitles with each translation request. This feature significantly improves translation quality by:</p>
+    <ul>
+      <li>Maintaining proper grammatical agreement across consecutive subtitles.</li>
+      <li>Improving pronoun resolution and character voice consistency.</li>
+      <li>Preserving narrative flow in dialogue-heavy content.</li>
+      <li>Delivering more natural, idiomatic translations.</li>
+    </ul>
+    <p><strong>Important:</strong> Using context with DeepL does <em>not</em> count towards your character usage limit. The context subtitles are provided for free, making this feature completely cost-free to use whilst improving translation quality.</p>
+    <p>Context usage is automatically logged in the <code>DeepL_Translation_Long_Log.txt</code> file, which records the complete context window sent with each translation request. This detailed logging helps you verify translation quality and understand how context improves results.</p>
+    
     <p><strong>DeepL File Caching System</strong></p>
     <p><strong>Game-Changing Translator</strong>  implements a caching system for DeepL translations. Once a text segment has been translated, it's stored in the application's local cache (<code>deepl_cache.txt</code>). When the same text appears again, the application retrieves the translation from the cache instead of sending another API request.</p>
     <p>It's important to understand that this caching mechanism relies entirely on OCR quality. For a cache match to occur, the OCR'd text must be identical – down to the last character – with what is stored in the cache. Even a single character difference will result in a new API call and translation. This means the actual efficiency of the cache depends heavily on consistent OCR results.</p>

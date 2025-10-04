@@ -1222,6 +1222,17 @@ CUMULATIVE TOTALS (INCLUDING THIS CALL, FROM LOG START):
     <p>DeepL ma dwa tryby jakości. Model <strong>Klasyczny</strong> zapewnia szybkie, wysokiej jakości tłumaczenia, które działają ze wszystkimi obsługiwanymi parami językowymi. Model <strong>Nowej generacji</strong> wykorzystuje najnowszą technologię tłumaczeniową DeepL, która może dawać jeszcze lepsze wyniki w przypadku niektórych treści, choć jest nieco wolniejsza i może nie obsługiwać wszystkich par językowych.</p>
     <p>Jeśli wybierzesz model <strong>Nowej generacji</strong>, a wybrana para językowa nie jest obsługiwana, aplikacja automatycznie przełączy się na tryb <strong>Klasyczny</strong>, aby zapewnić ciągłość tłumaczenia. Obie opcje gwarantują doskonałą jakość, z której słynie DeepL.</p>
     
+    <p><strong>Tłumaczenie z uwzględnieniem kontekstu</strong></p>
+    <p>Tłumaczenie DeepL obsługuje obecnie uwzględnianie kontekstu poprzez dołączanie do każdego zapytania tłumaczeniowego do 3 poprzednich napisów. Ta funkcja znacząco poprawia jakość tłumaczenia poprzez:</p>
+    <ul>
+      <li>utrzymanie poprawnej zgodności gramatycznej w kolejnych napisach;</li>
+      <li>poprawę doboru zaimków i spójności wypowiedzi postaci;</li>
+      <li>zachowanie płynności narracji w treściach z dużą ilością dialogów;</li>
+      <li>dostarczanie bardziej naturalnych, idiomatycznych tłumaczeń.</li>
+    </ul>
+    <p><strong>Ważne:</strong> Korzystanie z kontekstu w DeepL <em>nie</em> jest wliczane do limitu zużycia znaków. Napisy kontekstowe są dostarczane bezpłatnie, dzięki czemu ta funkcja jest całkowicie bezpłatna i jednocześnie poprawia jakość tłumaczenia.</p>
+    <p>Wykorzystanie kontekstu jest automatycznie rejestrowane w pliku <code>DeepL_Translation_Long_Log.txt</code>, który zapisuje pełne okno kontekstu wysyłane z każdym zapytaniem tłumaczeniowym. Ten szczegółowy dziennik pomaga zweryfikować jakość tłumaczenia i zrozumieć, jak kontekst poprawia wyniki.</p>
+    
     <p><strong>System buforowania tłumaczeń DeepL w plikach</strong></p>
     <p><strong>Game-Changing Translator</strong> umożliwia buforowanie tłumaczeń DeepL. Po przetłumaczeniu fragmentu tekstu jest on zapisywany w lokalnej pamięci podręcznej aplikacji (<code>deepl_cache.txt</code>). Gdy ten sam tekst pojawi się ponownie, aplikacja pobiera tłumaczenie z pamięci podręcznej zamiast wysyłać kolejne zapytanie API.</p>
     <p>Należy pamiętać, że mechanizm buforowania zależy całkowicie od jakości OCR. Aby tłumaczenie zostało pobrane z pamięci podręcznej, tekst rozpoznany przez OCR musi być identyczny – co do ostatniego znaku – z tym, co już jest w niej przechowywane. Nawet pojedyncza różnica znaku spowoduje nowe wywołanie API i nowe tłumaczenie. Oznacza to, że faktyczna efektywność pamięci podręcznej zależy w dużej mierze od spójności wyników OCR.</p>
