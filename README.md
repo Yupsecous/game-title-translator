@@ -70,6 +70,20 @@ This application was developed or rather vibe-coded with the support of the foll
 
 ## Key Features
 
+### 🚀 NEW in Version 3.7.0
+- **DeepL Translation with Context**: Enhanced DeepL translation supporting up to 3 previous subtitles for **improved grammar and accuracy**
+  - Context window usage **does not count** towards DeepL's free character limit - context is completely free
+  - Dedicated logging system in `DeepL_Translation_Long_Log.txt` for detailed translation tracking
+  - Particularly beneficial for dialogue-heavy content where pronouns, grammatical agreement and meaning depend on previous context
+- **Updated Gemini Model Support**: Latest Gemini models with enhanced performance characteristics
+  - `Gemini 2.5 Flash` (gemini-2.5-flash-preview-09-2025): Good translation quality with lower latency
+  - `Gemini 2.5 Flash-Lite` (gemini-2.5-flash-lite-preview-09-2025): Optimised for OCR operations with reduced latency
+  - However, `Gemini 2.0 Flash` remains the recommended choice for translation quality with more than six times lower output cost than Gemini 2.5 Flash
+- **Experimental Line Break Preservation**: Optional feature to maintain original line breaks in OCR and translation
+  - Works best with Gemini models for consistent results
+  - Less reliable with GPT models and DeepL
+  - Useful for specific dialogue scenes but recommended to keep disabled for most scenarios
+
 ### 🚀 NEW in Version 3.6.0
 - **![OpenAI Logo](docs/screenshots/OpenAI_Logo.png) OpenAI Integration - More Choice, More Power!**: The application now includes support for OpenAI's powerful language models, offering a flexible and high-quality alternative to existing AI services.
   - **Three Versatile Models**: Access to a curated selection of OpenAI's best models:
