@@ -242,7 +242,7 @@ class TranslationHandler:
         return True
     
     def _log_deepl_translation_call(self, original_text, source_lang, target_lang, 
-                                   context_string, translated_text, model_type, 
+                                   context_size, translated_text, model_type, 
                                    call_start_time, call_duration):
         """Log DeepL translation API call with context information."""
         if not self._is_deepl_logging_enabled():
@@ -268,11 +268,9 @@ MESSAGE SENT TO DEEPL:
 """
                 
                 # Add context section if context was used
-                if context_string:
-                    # Split context back into individual subtitles (they were joined with ". ")
-                    # Remove the trailing period if present, then split
-                    context_clean = context_string.rstrip('.')
-                    context_subtitles = context_clean.split('. ')
+                if context_size > 0 and self.deepl_context_window:
+                    # Get the actual subtitles that were used as context
+                    context_subtitles = self.deepl_context_window[-context_size:]
                     context_count = len(context_subtitles)
                     
                     log_entry += f"""
@@ -567,7 +565,7 @@ Call Duration: {call_duration:.3f} seconds
                         original_text=text_to_translate_dl,
                         source_lang=source_lang_dl,
                         target_lang=target_lang_dl,
-                        context_string=context_string if context_string else None,
+                        context_size=context_size,
                         translated_text=translated_text,
                         model_type=model_type,
                         call_start_time=call_start_time,
@@ -615,7 +613,7 @@ Call Duration: {call_duration:.3f} seconds
                             original_text=text_to_translate_dl,
                             source_lang=source_lang_dl,
                             target_lang=target_lang_dl,
-                            context_string=context_string if context_string else None,
+                            context_size=context_size,
                             translated_text=translated_text,
                             model_type="latency_optimized",
                             call_start_time=fallback_start_time,
