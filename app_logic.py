@@ -292,6 +292,7 @@ class GameChangingTranslator:
         
         self.google_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'google_file_cache', fallback=True))
         self.deepl_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'deepl_file_cache', fallback=True))
+        self.deepl_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('deepl_context_window', '2')))
         self.gemini_file_cache_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_file_cache', fallback=True))
         self.gemini_context_window_var = tk.IntVar(value=int(self.config['Settings'].get('gemini_context_window', '1')))
         self.gemini_api_log_enabled_var = tk.BooleanVar(value=self.config.getboolean('Settings', 'gemini_api_log_enabled', fallback=True))
@@ -444,6 +445,7 @@ class GameChangingTranslator:
         self.models_file_var.trace_add("write", self.settings_changed_callback)
         self.google_file_cache_var.trace_add("write", self.settings_changed_callback)
         self.deepl_file_cache_var.trace_add("write", self.settings_changed_callback)
+        self.deepl_context_window_var.trace_add("write", self.settings_changed_callback)
         self.preprocessing_mode_var.trace_add("write", self.settings_changed_callback)
         self.preprocessing_mode_var.trace_add("write", self.on_ocr_parameter_change)
         self.adaptive_block_size_var.trace_add("write", self.settings_changed_callback)
