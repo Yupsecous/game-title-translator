@@ -189,6 +189,12 @@ class UIInteractionHandler:
         if hasattr(self.app, 'deepl_model_type_combobox'):
             manage_grid(self.app.deepl_model_type_combobox, show=is_deepl)
         
+        # DeepL Context Window visibility
+        if hasattr(self.app, 'deepl_context_window_label'):
+            manage_grid(self.app.deepl_context_window_label, show=is_deepl)
+        if hasattr(self.app, 'deepl_context_window_combobox'):
+            manage_grid(self.app.deepl_context_window_combobox, show=is_deepl)
+        
         # DeepL Usage now always visible in API Usage tab - no longer shown in Settings tab
         
         manage_grid(self.app.marian_model_label, show=is_marian)
