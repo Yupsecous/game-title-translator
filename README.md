@@ -71,10 +71,10 @@ This application was developed or rather vibe-coded with the support of the foll
 ## Key Features
 
 ### 🚀 NEW in Version 3.7.0
-- **DeepL Translation with Context**: Enhanced DeepL translation supporting up to 3 previous subtitles for **improved grammar and accuracy**
-  - Context window usage **does not count** towards DeepL's free character limit - context is completely free
-  - Dedicated logging system in `DeepL_Translation_Long_Log.txt` for detailed translation tracking
-  - Particularly beneficial for dialogue-heavy content where pronouns, grammatical agreement and meaning depend on previous context
+- **🎯 DeepL Translation with Context - A Game-Changing First!** 🌟: Revolutionary context-aware DeepL translation that intelligently remembers up to 3 previous subtitles for **dramatically improved grammar, accuracy, and natural conversational flow** ✨
+  - 🎁 **Completely FREE Feature** - Context usage **doesn't count** towards DeepL's character limits! Unlimited context-aware translations at no extra cost 💰
+  - 📊 Dedicated logging system in `DeepL_Translation_Long_Log.txt` for detailed translation tracking and quality verification
+  - 🎮 Perfect for dialogue-heavy games and narrative content where pronouns, grammatical agreement and meaning depend on previous context
 - **Updated Gemini Model Support**: Latest Gemini models with enhanced performance characteristics
   - `Gemini 2.5 Flash` (gemini-2.5-flash-preview-09-2025): Good translation quality with lower latency
   - `Gemini 2.5 Flash-Lite` (gemini-2.5-flash-lite-preview-09-2025): Optimised for OCR operations with reduced latency
