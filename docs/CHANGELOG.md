@@ -5,6 +5,32 @@ All notable changes to the Game-Changing Translator project will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2025-10-04
+
+### Added
+- **DeepL Translation Context Window Support**: Enhanced DeepL translation with context awareness for improved grammar and meaning
+  - Configurable context window supporting up to 3 previous subtitles for narrative coherence
+  - Context usage does not count towards DeepL's free translation character limit
+  - Dedicated detailed logging system in `DeepL_Translation_Long_Log.txt` file for complete translation tracking
+  - Context window improves pronoun resolution and grammatical agreement between consecutive subtitles
+- **Updated Gemini Model Support**: Added latest Gemini models with improved performance characteristics
+  - Gemini 2.5 Flash (gemini-2.5-flash-preview-09-2025) with good translation quality and lower latency
+  - Gemini 2.5 Flash-Lite (gemini-2.5-flash-lite-preview-09-2025) optimised for OCR with reduced latency
+  - Gemini 2.0 Flash remains slightly better for translation quality with more than six times lower output cost than Gemini 2.5 Flash
+- **Experimental Line Break Preservation**: Optional feature to maintain original line breaks in OCR and translation output
+  - Works best with Gemini models for consistent line break handling
+  - Less consistent results with GPT models and DeepL
+  - Recommended to keep disabled for most scenarios but helpful for certain dialogue scenes without initial dashes
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## [3.6.0] - 2025-09-14
 
 ### Added
