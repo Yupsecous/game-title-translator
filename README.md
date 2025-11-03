@@ -1,9 +1,9 @@
 # Game-Changing Translator
-Copyright © 2025 Tomasz Kamiński
+Copyright © 2025 Yupsecous
 
 ![Game-Changing Translator Logo](docs/screenshots/readme_screen.jpg)
 
-## 🌟 **[✨ Visit Our Home Page ✨](https://tomkam1702.github.io/OCR-Translator/)**
+## 🌟 **[✨ Visit Our Home Page ✨](https://Yupsecous.github.io/OCR-Translator/)**
 **Discover why this is the world's first AI-OCR game translator with our comprehensive showcase featuring a video clip, competitive comparisons, and and all the innovative features!** 🚀
 
 ## Overview
@@ -15,8 +15,8 @@ This project was inspired by a family member who was learning French by playing 
 This application was developed or rather vibe-coded with the support of the following AI models: Claude 3.7 Sonnet, Claude Sonnet 4 and Gemini 2.5 Pro.
 
 ## Game-Changing Translator Gallery
-  - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
-  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
+  - [English](https://Yupsecous.github.io/OCR-Translator/docs/gallery.html)
+  - [Polish](https://Yupsecous.github.io/OCR-Translator/docs/gallery_pl.html)
 
 ## 🎬 **See the Magic in Action!**
 
@@ -140,7 +140,7 @@ This application was developed or rather vibe-coded with the support of the foll
 
     ![Spanish OCR Test Sample](docs/OCR%20Test/original_20250709_225151.png)
     
-    [View detailed test results](https://tomkam1702.github.io/OCR-Translator/docs/OCR%20Test/OCR_Gemini_Test.html) showing Gemini 2.0 models' superior accuracy across multilingual content
+    [View detailed test results](https://Yupsecous.github.io/OCR-Translator/docs/OCR%20Test/OCR_Gemini_Test.html) showing Gemini 2.0 models' superior accuracy across multilingual content
   - **Dynamic Model Configuration**: Models available for selection are controlled by `resources/gemini_models.csv` for easy customization
   - **Performance-Optimized Selection**: Choose different models for OCR vs translation based on your specific needs
 - **Enhanced API Integration**: Migration from `google.generativeai` to `google.genai` library for improved performance and stability
@@ -194,7 +194,7 @@ If you want to start using Game-Changing Translator immediately without installi
 
 ### Quick Start Options
 
-**📥 [Download from Releases](https://github.com/tomkam1702/OCR-Translator/releases)**
+**📥 [Download from Releases](https://github.com/Yupsecous/OCR-Translator/releases)**
 
 1. Download both files.
 2. Run the .exe installer file to unpack and install the application to your preferred folder.
@@ -205,8 +205,8 @@ If you want to start using Game-Changing Translator immediately without installi
 ### Need Help?
 
 📖 **Installation Guides:**
-- [English Installation Guide](https://tomkam1702.github.io/OCR-Translator/docs/installation.html)
-- [Polish Installation Guide](https://tomkam1702.github.io/OCR-Translator/docs/installation_pl.html)
+- [English Installation Guide](https://Yupsecous.github.io/OCR-Translator/docs/installation.html)
+- [Polish Installation Guide](https://Yupsecous.github.io/OCR-Translator/docs/installation_pl.html)
 
 The compiled versions include everything you need - no Python installation required!
 
@@ -235,7 +235,7 @@ The compiled versions include everything you need - no Python installation requi
    python main.py
    ```
 
-For detailed installation instructions, see the [Installation Guide](https://tomkam1702.github.io/OCR-Translator/docs/installation.html).
+For detailed installation instructions, see the [Installation Guide](https://Yupsecous.github.io/OCR-Translator/docs/installation.html).
 
 ## Quick Start
 
@@ -246,19 +246,19 @@ For detailed installation instructions, see the [Installation Guide](https://tom
 5. Click "Start" to begin translation
 6. Press the `~` key to toggle translation on/off
 
-For more detailed usage instructions, see the [User Manual](https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html).
+For more detailed usage instructions, see the [User Manual](https://Yupsecous.github.io/OCR-Translator/docs/user-manual.html).
 
 ## Documentation
 
 - **User Manual** 
-  - [English](https://tomkam1702.github.io/OCR-Translator/docs/user-manual.html) 
-  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/user-manual_pl.html)
+  - [English](https://Yupsecous.github.io/OCR-Translator/docs/user-manual.html) 
+  - [Polish](https://Yupsecous.github.io/OCR-Translator/docs/user-manual_pl.html)
 - **Installation Guide** 
-  - [English](https://tomkam1702.github.io/OCR-Translator/docs/installation.html) 
-  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/installation_pl.html)
+  - [English](https://Yupsecous.github.io/OCR-Translator/docs/installation.html) 
+  - [Polish](https://Yupsecous.github.io/OCR-Translator/docs/installation_pl.html)
 - **Game-Changing Translator Gallery**
-  - [English](https://tomkam1702.github.io/OCR-Translator/docs/gallery.html)
-  - [Polish](https://tomkam1702.github.io/OCR-Translator/docs/gallery_pl.html)
+  - [English](https://Yupsecous.github.io/OCR-Translator/docs/gallery.html)
+  - [Polish](https://Yupsecous.github.io/OCR-Translator/docs/gallery_pl.html)
 - **Troubleshooting** 
   - [English](docs/troubleshooting.md)
 - **Developer Guide** 
